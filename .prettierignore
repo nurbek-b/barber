@@ -7,3 +7,5 @@ packages/api-client/openapi.json
 docs/
 **/test-results/
 **/playwright-report/
+firebase-public/
+.firebase/

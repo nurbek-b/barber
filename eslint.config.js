@@ -8,6 +8,7 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
+      "firebase-public/**",
       "**/node_modules/**",
       "backend/**",
       "**/coverage/**",

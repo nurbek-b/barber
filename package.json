@@ -14,7 +14,8 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "build": "pnpm -r build"
+    "build": "pnpm -r build",
+    "deploy:firebase": "firebase deploy --only hosting --project britva-barber"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

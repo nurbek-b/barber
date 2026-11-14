@@ -27,3 +27,7 @@ test-results/
 .vscode/
 
 !.env.e2e
+
+# Firebase Hosting build output and cache
+firebase-public/
+.firebase/

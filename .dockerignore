@@ -1,0 +1,14 @@
+**/node_modules/
+**/dist/
+**/.venv/
+**/__pycache__/
+**/test-results/
+**/playwright-report/
+**/coverage/
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.e2e
+backend/
+.git/
+docs/

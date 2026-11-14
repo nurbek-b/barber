@@ -1,0 +1,116 @@
+# Production / staging stack (one VPS). Images come from the registry, built by CI.
+#   cd /opt/barber && docker compose -f compose.prod.yml --env-file .env up -d
+# Variables: see infra/.env.example. Backend secrets live in backend.env (never in git).
+
+name: barber
+
+x-backend: &backend
+  image: ${REGISTRY}/barber-backend:${IMAGE_TAG:-latest}
+  env_file: [backend.env]
+  environment:
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    REDIS_URL: redis://redis:6379/0
+    MEDIA_DIR: /data/media
+  restart: unless-stopped
+  logging: &logging
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes: [redisdata:/data]
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  # One-shot: `docker compose run --rm migrate` (deploy.sh runs it before switching versions)
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    profiles: [migrate]
+    healthcheck: { disable: true }
+
+  api:
+    <<: *backend
+    volumes: [media:/data/media]
+
+  bot:
+    <<: *backend
+    command:
+      [
+        "uvicorn",
+        "app.bot.main:app_factory",
+        "--factory",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--proxy-headers",
+        "--forwarded-allow-ips",
+        "*",
+      ]
+
+  worker:
+    <<: *backend
+    command: ["arq", "app.worker.main.WorkerSettings"]
+    healthcheck: { disable: true }
+
+  nginx:
+    image: ${REGISTRY}/barber-nginx:${IMAGE_TAG:-latest}
+    environment:
+      DOMAIN: ${DOMAIN}
+      API_UPSTREAM: api:8000
+      BOT_UPSTREAM: bot:8000
+    ports: ["80:80", "443:443"]
+    volumes:
+      - media:/data/media:ro
+      - certs:/etc/letsencrypt:ro
+      - acme:/var/www/certbot:ro
+    restart: unless-stopped
+    logging: *logging
+    depends_on: [api, bot]
+
+  # Renews Let's Encrypt certificates every 12 h (first issue: see README → Deploy)
+  certbot:
+    image: certbot/certbot:v3.0.1
+    entrypoint:
+      [
+        "/bin/sh",
+        "-c",
+        "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done",
+      ]
+    volumes:
+      - certs:/etc/letsencrypt
+      - acme:/var/www/certbot
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  pgdata:
+  redisdata:
+  media:
+  certs:
+  acme:

@@ -1,0 +1,116 @@
+# Rendered at container start by envsubst (only ${DOMAIN}, ${API_UPSTREAM}, ${BOT_UPSTREAM}).
+
+upstream api {
+  server ${API_UPSTREAM};
+  keepalive 32;
+}
+
+upstream bot {
+  server ${BOT_UPSTREAM};
+  keepalive 8;
+}
+
+# ---------------------------------------------------------------- HTTP → HTTPS
+server {
+  listen 80;
+  listen [::]:80;
+  server_name ${DOMAIN};
+
+  # Let's Encrypt HTTP-01 challenges (certbot webroot)
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+  location = /healthz {
+    access_log off;
+    return 200 "ok\n";
+  }
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
+
+# ---------------------------------------------------------------- HTTPS
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  http2 on;
+  server_name ${DOMAIN};
+
+  ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers off;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 1d;
+
+  root /usr/share/nginx/html;
+
+  location = / {
+    return 302 /app/;
+  }
+
+  # ------------------------------------------------ Mini App (embedded by Telegram)
+  location /app/ {
+    include /etc/nginx/snippets/security-headers.conf;
+    # Telegram web clients embed the app in an iframe; the SDK script may come from telegram.org.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://t.me https://*.telegram.org; connect-src 'self' wss://$host; font-src 'self'; frame-ancestors https://web.telegram.org https://*.telegram.org https://telegram.org; base-uri 'self'; form-action 'self'" always;
+    add_header Cache-Control "no-cache" always;
+    include /etc/nginx/snippets/spa-cache.conf;
+    try_files $uri $uri/ /app/index.html;
+  }
+
+  # ------------------------------------------------ Admin panel (never framed)
+  location /admin/ {
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://$host; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Cache-Control "no-cache" always;
+    include /etc/nginx/snippets/spa-cache.conf;
+    try_files $uri $uri/ /admin/index.html;
+  }
+
+  # ------------------------------------------------ uploaded media (barber photos)
+  location /media/ {
+    alias /data/media/;
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Cache-Control "public, max-age=86400" always;
+    add_header Content-Security-Policy "default-src 'none'" always;
+    types { image/jpeg jpg jpeg; image/png png; image/webp webp; }
+    default_type application/octet-stream;
+  }
+
+  # ------------------------------------------------ Telegram webhook → bot service
+  location = /api/v1/bot/webhook {
+    include /etc/nginx/snippets/proxy.conf;
+    proxy_pass http://bot;
+  }
+
+  # ------------------------------------------------ admin WebSocket
+  location = /api/v1/admin/ws {
+    include /etc/nginx/snippets/proxy.conf;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 1h;
+    proxy_pass http://api;
+  }
+
+  location = /api/v1/admin/auth/login {
+    limit_req zone=login burst=5 nodelay;
+    include /etc/nginx/snippets/proxy.conf;
+    proxy_set_header Connection "";
+    proxy_pass http://api;
+  }
+
+  # ------------------------------------------------ REST API
+  location /api/ {
+    limit_req zone=api burst=60 nodelay;
+    include /etc/nginx/snippets/proxy.conf;
+    proxy_set_header Connection "";
+    proxy_pass http://api;
+  }
+
+  location = /healthz {
+    access_log off;
+    return 200 "ok\n";
+  }
+}

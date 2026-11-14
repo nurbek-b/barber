@@ -1,0 +1,49 @@
+# pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+        exclude: ^packages/api-client/(openapi\.json|src/schema\.d\.ts)$
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (backend)
+        entry: bash -c 'cd backend && .venv/bin/mypy app'
+        language: system
+        files: ^backend/app/.*\.py$
+        pass_filenames: false
+      - id: eslint
+        name: eslint
+        entry: pnpm exec eslint --max-warnings=50
+        language: system
+        files: \.(ts|tsx|js|mjs)$
+        exclude: ^backend/
+      - id: prettier
+        name: prettier
+        entry: pnpm exec prettier --check --ignore-unknown
+        language: system
+        files: \.(ts|tsx|js|mjs|json|css|html|ya?ml)$
+        exclude: ^(backend/|packages/api-client/)
+      - id: api-client
+        name: api-client matches OpenAPI
+        entry: pnpm check:api
+        language: system
+        files: ^backend/app/(api|schemas)/
+        pass_filenames: false

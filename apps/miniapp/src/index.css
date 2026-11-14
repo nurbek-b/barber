@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Telegram viewport vars (bound by the SDK) with browser fallbacks */
+  --safe-top: max(
+    var(--tg-viewport-content-safe-area-inset-top, 0px),
+    env(safe-area-inset-top, 0px)
+  );
+  --safe-bottom: max(
+    var(--tg-viewport-safe-area-inset-bottom, 0px),
+    env(safe-area-inset-bottom, 0px)
+  );
+  color-scheme: light dark;
+}
+
+html,
+body {
+  @apply bg-bg-secondary text-text antialiased;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}

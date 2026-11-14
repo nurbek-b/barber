@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import uuid
+from typing import Any
+
+from sqlalchemy import (
+    ARRAY,
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    Integer,
+    SmallInteger,
+    String,
+    text,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.models.base import Base, TimestampMixin, uuid_pk
+
+
+class Branch(TimestampMixin, Base):
+    __tablename__ = "branches"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    slug: Mapped[str] = mapped_column(String(64), unique=True)
+    name: Mapped[str] = mapped_column(String(200))
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+
+
+class SalonSettings(TimestampMixin, Base):
+    __tablename__ = "salon_settings"
+    __table_args__ = (
+        CheckConstraint("slot_step_min BETWEEN 5 AND 120", name="slot_step"),
+        CheckConstraint("buffer_min BETWEEN 0 AND 120", name="buffer"),
+        CheckConstraint("min_lead_time_min >= 0", name="lead_time"),
+        CheckConstraint("max_days_ahead BETWEEN 1 AND 365", name="days_ahead"),
+        CheckConstraint("cancel_min_hours >= 0", name="cancel_hours"),
+        CheckConstraint("reschedule_min_hours >= 0", name="reschedule_hours"),
+        CheckConstraint("max_active_bookings_per_client >= 1", name="max_active"),
+    )
+
+    branch_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("branches.id", ondelete="CASCADE"), primary_key=True
+    )
+    name: Mapped[str] = mapped_column(String(200))
+    timezone: Mapped[str] = mapped_column(String(64), default="Asia/Bishkek")
+    currency: Mapped[str] = mapped_column(String(3), default="KGS")
+    default_language: Mapped[str] = mapped_column(String(5), default="ru")
+    slot_step_min: Mapped[int] = mapped_column(SmallInteger, default=15)
+    buffer_min: Mapped[int] = mapped_column(SmallInteger, default=0)
+    min_lead_time_min: Mapped[int] = mapped_column(Integer, default=60)
+    max_days_ahead: Mapped[int] = mapped_column(SmallInteger, default=30)
+    cancel_min_hours: Mapped[int] = mapped_column(SmallInteger, default=2)
+    reschedule_min_hours: Mapped[int] = mapped_column(SmallInteger, default=2)
+    max_active_bookings_per_client: Mapped[int] = mapped_column(SmallInteger, default=3)
+    reminder_offsets_min: Mapped[list[int]] = mapped_column(
+        ARRAY(Integer), default=lambda: [1440, 120], server_default=text("'{1440,120}'")
+    )
+    admin_chat_id: Mapped[int | None] = mapped_column(BigInteger)
+    notify_barbers: Mapped[bool] = mapped_column(Boolean, default=False)
+    notification_templates: Mapped[dict[str, Any]] = mapped_column(
+        default=dict, server_default=text("'{}'::jsonb")
+    )
+    contacts: Mapped[dict[str, Any]] = mapped_column(
+        default=dict, server_default=text("'{}'::jsonb")
+    )

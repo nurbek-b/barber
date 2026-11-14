@@ -1,0 +1,113 @@
+name: Deploy
+
+# main → build images → staging (automatic) → smoke tests → production (manual approval
+# via the "production" environment's required reviewers).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy to production (defaults to this commit)"
+        required: false
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  images:
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: backend (api / bot / worker / migrate)
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/barber-backend:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/barber-backend:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: nginx with Mini App and admin
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/nginx/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/barber-nginx:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/barber-nginx:latest
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,mode=max,scope=nginx
+
+  staging:
+    needs: images
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - name: deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: IMAGE_TAG=${{ needs.images.outputs.tag }} /opt/barber/scripts/deploy.sh
+
+  smoke:
+    needs: staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @barber/admin exec playwright install --with-deps chromium
+      - name: Playwright smoke against staging
+        env:
+          SMOKE_BASE_URL: ${{ vars.STAGING_URL }}
+          SMOKE_ADMIN_LOGIN: ${{ secrets.SMOKE_ADMIN_LOGIN }}
+          SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+        run: pnpm --filter @barber/admin exec playwright test --config smoke.config.ts
+
+  production:
+    needs: [images, smoke]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - name: deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: IMAGE_TAG=${{ inputs.image_tag || needs.images.outputs.tag }} /opt/barber/scripts/deploy.sh

@@ -1,0 +1,75 @@
+# Local infrastructure for development: PostgreSQL 16 + Redis 7.
+#   docker compose -f infra/compose.dev.yml up -d
+# The backend and both frontends run on the host (hot reload); see README.
+# `--profile full` also starts api/bot/worker in containers.
+
+name: barber-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: barber
+      POSTGRES_PASSWORD: barber
+      POSTGRES_DB: barber
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U barber"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  api:
+    profiles: [full]
+    build: { context: ../backend }
+    env_file: [{ path: ../backend/.env, required: false }]
+    environment:
+      ENV: dev
+      DATABASE_URL: postgresql+asyncpg://barber:barber@postgres:5432/barber
+      REDIS_URL: redis://redis:6379/0
+      COOKIE_SECURE: "false"
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  bot:
+    profiles: [full]
+    build: { context: ../backend }
+    command:
+      ["uvicorn", "app.bot.main:app_factory", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    env_file: [{ path: ../backend/.env, required: false }]
+    environment:
+      ENV: dev
+      DATABASE_URL: postgresql+asyncpg://barber:barber@postgres:5432/barber
+      REDIS_URL: redis://redis:6379/0
+    ports: ["8001:8000"]
+    depends_on: [api]
+
+  worker:
+    profiles: [full]
+    build: { context: ../backend }
+    command: ["arq", "app.worker.main.WorkerSettings"]
+    env_file: [{ path: ../backend/.env, required: false }]
+    environment:
+      ENV: dev
+      DATABASE_URL: postgresql+asyncpg://barber:barber@postgres:5432/barber
+      REDIS_URL: redis://redis:6379/0
+    healthcheck: { disable: true }
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  redisdata:

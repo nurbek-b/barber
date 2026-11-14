@@ -6,8 +6,10 @@ Protocol (server → client JSON):
     {"type": "ping"}                                                every 25 s
 Client may send "ping" (text) and gets {"type": "pong"}.
 
-Auth: the same httpOnly access cookie as the REST API; the Origin header must be allowed
-(CSWSH protection). On reconnect the client fetches GET /admin/notifications?since=<last>.
+Auth: the same httpOnly session cookie as the REST API, or `?ticket=` from
+POST /admin/auth/ws-ticket when the socket goes to another origin (Firebase Hosting -> Cloud Run).
+The Origin header must be allowed (CSWSH protection).
+On reconnect the client fetches GET /admin/notifications?since=<last>.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from redis.exceptions import RedisError
 
 from app.core.config import Settings
 from app.core.errors import AppError
-from app.core.security.tokens import ACCESS_COOKIE
+from app.core.security.cookies import read_session
 from app.services.admin_auth import AdminAuthService
 from app.services.branches import BranchService
 from app.services.events import channel
@@ -55,9 +57,14 @@ async def admin_events(websocket: WebSocket) -> None:
 
     async with app.state.sessionmaker() as session:
         try:
-            admin, _ = await AdminAuthService(session, settings).authenticate_access(
-                websocket.cookies.get(ACCESS_COOKIE)
-            )
+            service = AdminAuthService(session, settings)
+            ticket = websocket.query_params.get("ticket")
+            if ticket:
+                admin, _ = await service.authenticate_ws_ticket(ticket)
+            else:
+                admin, _ = await service.authenticate_access(
+                    read_session(websocket.cookies, settings).access
+                )
             branch_id = await BranchService(session).branch_for_admin(admin)
         except AppError:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)

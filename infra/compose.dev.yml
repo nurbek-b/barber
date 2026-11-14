@@ -48,8 +48,7 @@ services:
   bot:
     profiles: [full]
     build: { context: ../backend }
-    command:
-      ["uvicorn", "app.bot.main:app_factory", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["bot"]
     env_file: [{ path: ../backend/.env, required: false }]
     environment:
       ENV: dev
@@ -61,7 +60,7 @@ services:
   worker:
     profiles: [full]
     build: { context: ../backend }
-    command: ["arq", "app.worker.main.WorkerSettings"]
+    command: ["worker"]
     env_file: [{ path: ../backend/.env, required: false }]
     environment:
       ENV: dev

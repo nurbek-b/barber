@@ -13,7 +13,9 @@ from app.core.security.tokens import (
     AccessClaims,
     TokenError,
     create_access_token,
+    create_ws_ticket,
     decode_access_token,
+    decode_ws_ticket,
     hash_token,
     new_csrf_token,
     new_refresh_token,
@@ -159,7 +161,25 @@ class AdminAuthService:
     async def authenticate_access(self, token: str | None) -> tuple[AdminUser, AccessClaims]:
         if not token:
             raise UnauthorizedError()
-        claims = self.decode_access(token)
+        return await self._authenticate_claims(self.decode_access(token))
+
+    def issue_ws_ticket(self, claims: AccessClaims) -> str:
+        return create_ws_ticket(
+            claims, secret=self._jwt_secret(), algorithm=self.settings.jwt_algorithm
+        )
+
+    async def authenticate_ws_ticket(self, ticket: str | None) -> tuple[AdminUser, AccessClaims]:
+        if not ticket:
+            raise UnauthorizedError()
+        try:
+            claims = decode_ws_ticket(
+                ticket, secret=self._jwt_secret(), algorithm=self.settings.jwt_algorithm
+            )
+        except TokenError as exc:
+            raise UnauthorizedError("Invalid or expired ticket", code="token_invalid") from exc
+        return await self._authenticate_claims(claims)
+
+    async def _authenticate_claims(self, claims: AccessClaims) -> tuple[AdminUser, AccessClaims]:
         admin = await self.admins.get(claims.admin_user_id)
         if admin is None or not admin.is_active:
             raise UnauthorizedError("Account is disabled", code="account_disabled")

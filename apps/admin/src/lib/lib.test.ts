@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { overlappingDays } from "@/features/ScheduleEditor";
 
-import { backoffDelay, connectRealtime } from "./realtime";
+import { backoffDelay, connectRealtime, realtimeUrl } from "./realtime";
 import { fromWallClock, toWallClock, wallDayKey } from "./zoned";
 
 describe("wall clock conversion", () => {
@@ -120,5 +120,35 @@ describe("realtime client", () => {
     vi.advanceTimersByTime(60_000);
     expect(FakeSocket.instances).toHaveLength(2); // no reconnect after stop
     vi.useRealTimers();
+  });
+
+  it("fetches a fresh ticket for every connect when VITE_WS_URL is set", async () => {
+    let n = 0;
+    const resolve = realtimeUrl(
+      "/api/v1/admin/ws",
+      () => Promise.resolve(`t${++n}`),
+      "https://api.example.run.app",
+    );
+    expect(typeof resolve).toBe("function");
+    FakeSocket.instances = [];
+    vi.useFakeTimers();
+    const stop = connectRealtime({
+      url: resolve,
+      onEvent: () => undefined,
+      socketFactory: (url) => new FakeSocket(url) as unknown as WebSocket,
+      random: () => 1,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(FakeSocket.instances[0]!.url).toBe(
+      "wss://api.example.run.app/api/v1/admin/ws?ticket=t1",
+    );
+    FakeSocket.instances[0]!.onclose?.();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(FakeSocket.instances[1]!.url).toBe(
+      "wss://api.example.run.app/api/v1/admin/ws?ticket=t2",
+    );
+    stop();
+    vi.useRealTimers();
+    expect(realtimeUrl("/ws", () => Promise.resolve("x"), "")).toMatch(/^ws/);
   });
 });

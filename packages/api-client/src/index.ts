@@ -76,6 +76,11 @@ export interface ClientOptions {
   authorization?: () => string | null;
   /** Admin: send cookies and mirror the csrf_token cookie into X-CSRF-Token. */
   cookies?: boolean;
+  /**
+   * Admin behind Firebase Hosting: the session lives in one httpOnly `__session` cookie, so
+   * the CSRF token comes from the login/refresh response instead of a readable cookie.
+   */
+  csrfToken?: () => string | null;
   fetch?: typeof fetch;
 }
 
@@ -99,7 +104,7 @@ export function createApi(options: ClientOptions) {
       const value = options.authorization?.();
       if (value) request.headers.set("Authorization", value);
       if (options.cookies && !SAFE.has(request.method)) {
-        const csrf = readCookie("csrf_token");
+        const csrf = options.csrfToken?.() ?? readCookie("csrf_token");
         if (csrf) request.headers.set("X-CSRF-Token", csrf);
       }
       return request;

@@ -63,6 +63,7 @@ def create_bot_app(
     app.add_middleware(RequestContextMiddleware)
 
     @app.get("/health/live")
+    @app.get("/api/v1/health/live")
     async def live() -> dict[str, str]:
         return {"status": "ok"}
 

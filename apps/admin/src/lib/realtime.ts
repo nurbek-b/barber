@@ -14,7 +14,8 @@ export interface RealtimeEvent {
 export type ConnectionState = "connecting" | "open" | "closed";
 
 export interface RealtimeOptions {
-  url: string;
+  /** fixed URL, or a resolver called before every (re)connect — e.g. to fetch a fresh ticket */
+  url: string | (() => Promise<string>);
   onEvent: (event: RealtimeEvent) => void;
   onState?: (state: ConnectionState) => void;
   /** called after a reconnect (not the first connect) to fetch missed events */
@@ -36,10 +37,25 @@ export function connectRealtime(options: RealtimeOptions): () => void {
   let everOpened = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
-  const open = () => {
+  const retry = () => {
+    options.onState?.("closed");
+    if (stopped) return;
+    timer = setTimeout(() => void open(), backoffDelay(attempt, options.random));
+    attempt += 1;
+  };
+
+  const open = async () => {
     if (stopped) return;
     options.onState?.("connecting");
-    socket = make(options.url);
+    let url: string;
+    try {
+      url = typeof options.url === "string" ? options.url : await options.url();
+    } catch {
+      retry();
+      return;
+    }
+    if (stopped) return;
+    socket = make(url);
     socket.onopen = () => {
       if (everOpened) options.onReconnect?.();
       everOpened = true;
@@ -55,20 +71,34 @@ export function connectRealtime(options: RealtimeOptions): () => void {
         // ignore malformed frames
       }
     };
-    socket.onclose = () => {
-      options.onState?.("closed");
-      if (stopped) return;
-      timer = setTimeout(open, backoffDelay(attempt, options.random));
-      attempt += 1;
-    };
+    socket.onclose = retry;
     socket.onerror = () => socket?.close();
   };
 
-  open();
+  void open();
   return () => {
     stopped = true;
     if (timer) clearTimeout(timer);
     socket?.close();
+  };
+}
+
+/**
+ * Same-origin: `wss://<page or VITE_API_BASE>/<path>` (session cookie authenticates).
+ * With VITE_WS_URL (Firebase Hosting cannot proxy WebSockets) the socket goes straight to
+ * Cloud Run and authenticates with a one-minute ticket from POST /admin/auth/ws-ticket.
+ */
+export function realtimeUrl(
+  path: string,
+  fetchTicket: () => Promise<string>,
+  wsBase: string | undefined = import.meta.env.VITE_WS_URL,
+): string | (() => Promise<string>) {
+  if (!wsBase) return websocketUrl(path);
+  return async () => {
+    const url = new URL(path, wsBase);
+    url.protocol = url.protocol === "http:" ? "ws:" : "wss:";
+    url.searchParams.set("ticket", await fetchTicket());
+    return url.toString();
   };
 }
 

@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +14,8 @@ from app.api.v1 import router as v1_router
 from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_sessionmaker
 from app.core.errors import install_error_handlers
-from app.core.logging import RequestContextMiddleware, configure_logging
+from app.core.logging import NoSharedCacheMiddleware, RequestContextMiddleware, configure_logging
+from app.core.media import content_type, get_media_storage
 from app.core.redis import create_redis
 
 
@@ -83,9 +84,25 @@ def create_app(settings: Settings | None = None, redis: Redis | None = None) -> 
             ],
         )
     app.add_middleware(RequestContextMiddleware)
+
+    app.add_middleware(NoSharedCacheMiddleware)
     app.include_router(v1_router)
 
-    if settings.is_dev:  # in production Nginx serves /media
+    if settings.media_backend == "gcs":
+
+        @app.get(settings.media_url_prefix + "/{key:path}", include_in_schema=False)
+        async def media_object(key: str) -> Response:
+            data = await get_media_storage(settings).load(key)
+            if data is None:
+                return Response(status_code=404, headers={"Cache-Control": "public, max-age=60"})
+            return Response(
+                data,
+                media_type=content_type(key),
+                # keys are unique per upload, so the CDN may keep them forever
+                headers={"Cache-Control": "public, max-age=31536000, immutable"},
+            )
+
+    elif settings.is_dev:  # in production Nginx serves /media
         media = Path(settings.media_dir)
         media.mkdir(parents=True, exist_ok=True)
         app.mount(settings.media_url_prefix, StaticFiles(directory=media), name="media")

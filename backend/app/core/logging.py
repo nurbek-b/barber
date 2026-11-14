@@ -6,6 +6,7 @@ import time
 import uuid
 
 import structlog
+from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
@@ -69,3 +70,27 @@ class RequestContextMiddleware:
                     status=status_holder["status"],
                     duration_ms=round((time.perf_counter() - started) * 1000, 2),
                 )
+
+
+class NoSharedCacheMiddleware:
+    """`Cache-Control: private, no-store` on /api/ responses that set no policy themselves.
+
+    API answers are per-user: a CDN in front (Firebase Hosting) or a proxy must never store them.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or not scope["path"].startswith("/api/"):
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                if "cache-control" not in headers:
+                    headers["Cache-Control"] = "private, no-store"
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)

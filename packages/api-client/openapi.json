@@ -2176,6 +2176,58 @@
         }
       }
     },
+    "/api/v1/admin/auth/ws-ticket": {
+      "post": {
+        "tags": [
+          "admin-auth"
+        ],
+        "summary": "Ws Ticket",
+        "description": "One-minute ticket for `/admin/ws?ticket=...` when the socket goes to another origin\n(Firebase Hosting cannot proxy WebSockets, so the admin talks to Cloud Run directly).",
+        "operationId": "admin_ws_ticket",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WsTicketResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/barbers": {
       "get": {
         "tags": [
@@ -12471,6 +12523,24 @@
           "conflicting_bookings"
         ],
         "title": "WeeklyScheduleUpdateOut"
+      },
+      "WsTicketResponse": {
+        "properties": {
+          "ticket": {
+            "type": "string",
+            "title": "Ticket"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticket",
+          "expires_in"
+        ],
+        "title": "WsTicketResponse"
       },
       "app__schemas__admin__BlockIn": {
         "properties": {

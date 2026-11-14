@@ -4,6 +4,48 @@ import { QueryClient } from "@tanstack/react-query";
 const BASE = import.meta.env.VITE_API_BASE ?? "";
 export const ADMIN = "/api/v1/admin";
 
+const CSRF_KEY = "barber.csrf";
+
+/**
+ * CSRF token from the last login/refresh response. Needed when the session is one httpOnly
+ * `__session` cookie (Firebase Hosting); with split cookies the readable csrf_token cookie wins.
+ * localStorage (not memory) so that every tab sees the token rotated by any other tab.
+ */
+export function csrfToken(): string | null {
+  const cookie = document.cookie.split("; ").find((c) => c.startsWith("csrf_token="));
+  if (cookie) return decodeURIComponent(cookie.slice("csrf_token=".length));
+  try {
+    return localStorage.getItem(CSRF_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeCsrf(token: string | null): void {
+  try {
+    if (token) localStorage.setItem(CSRF_KEY, token);
+    else localStorage.removeItem(CSRF_KEY);
+  } catch {
+    // storage unavailable (private mode): split-cookie deployments still work
+  }
+}
+
+/** Remember csrf_token from /auth/login and /auth/refresh, forget it on logout. */
+async function captureCsrf(url: string, response: Response): Promise<void> {
+  if (url.includes("/auth/logout")) {
+    storeCsrf(null);
+    return;
+  }
+  if (!response.ok || !/\/auth\/(login|refresh)$/.test(new URL(url, location.href).pathname))
+    return;
+  try {
+    const body = (await response.clone().json()) as { csrf_token?: string };
+    if (body.csrf_token) storeCsrf(body.csrf_token);
+  } catch {
+    // not JSON
+  }
+}
+
 let refreshing: Promise<boolean> | null = null;
 let onSessionExpired: () => void = () => undefined;
 
@@ -13,8 +55,12 @@ export function setSessionExpiredHandler(handler: () => void): void {
 
 /** Single-flight refresh: concurrent 401s wait for one /auth/refresh call. */
 async function refreshSession(): Promise<boolean> {
-  refreshing ??= fetch(`${BASE}${ADMIN}/auth/refresh`, { method: "POST", credentials: "include" })
-    .then((response) => response.ok)
+  const url = `${BASE}${ADMIN}/auth/refresh`;
+  refreshing ??= fetch(url, { method: "POST", credentials: "include" })
+    .then(async (response) => {
+      await captureCsrf(url, response);
+      return response.ok;
+    })
     .catch(() => false)
     .finally(() => {
       setTimeout(() => {
@@ -29,20 +75,19 @@ async function fetchWithRefresh(info: RequestInfo | URL, init?: RequestInit): Pr
   const input = info instanceof Request ? info : new Request(info, init);
   const retry = input.clone();
   const response = await fetch(input);
+  await captureCsrf(input.url, response);
   if (response.status !== 401 || input.url.includes("/auth/")) return response;
   if (await refreshSession()) {
-    // the CSRF cookie rotated with the session: refresh the header on the retried request
-    const csrf = document.cookie.split("; ").find((c) => c.startsWith("csrf_token="));
-    if (csrf && !["GET", "HEAD"].includes(retry.method)) {
-      retry.headers.set("X-CSRF-Token", decodeURIComponent(csrf.slice("csrf_token=".length)));
-    }
+    // the CSRF token rotated with the session: refresh the header on the retried request
+    const csrf = csrfToken();
+    if (csrf && !["GET", "HEAD"].includes(retry.method)) retry.headers.set("X-CSRF-Token", csrf);
     return fetch(retry);
   }
   onSessionExpired();
   return response;
 }
 
-export const api = createApi({ baseUrl: BASE, cookies: true, fetch: fetchWithRefresh });
+export const api = createApi({ baseUrl: BASE, cookies: true, csrfToken, fetch: fetchWithRefresh });
 
 export const queryClient = new QueryClient({
   defaultOptions: {

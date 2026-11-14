@@ -13,13 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.core.db import session_scope
 from app.core.errors import ForbiddenError, UnauthorizedError
-from app.core.security.tokens import (
-    ACCESS_COOKIE,
-    CSRF_COOKIE,
-    CSRF_HEADER,
-    AccessClaims,
-    csrf_matches,
-)
+from app.core.security.cookies import read_session
+from app.core.security.tokens import CSRF_HEADER, AccessClaims, csrf_matches
 from app.models import AdminUser
 from app.models.enums import ActorType, AdminRole
 from app.services.admin_auth import AdminAuthService
@@ -90,9 +85,10 @@ async def get_admin_context(
     request: Request, session: SessionDep, settings: SettingsDep
 ) -> AdminContext:
     service = AdminAuthService(session, settings)
-    admin, claims = await service.authenticate_access(request.cookies.get(ACCESS_COOKIE))
+    tokens = read_session(request.cookies, settings)
+    admin, claims = await service.authenticate_access(tokens.access)
     if request.method not in SAFE_METHODS and not csrf_matches(
-        request.cookies.get(CSRF_COOKIE), request.headers.get(CSRF_HEADER)
+        tokens.csrf, request.headers.get(CSRF_HEADER)
     ):
         raise ForbiddenError("CSRF token is missing or invalid", code="csrf_failed")
     branch_id = await BranchService(session).branch_for_admin(admin)

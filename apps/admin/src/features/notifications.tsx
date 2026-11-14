@@ -11,7 +11,7 @@ import { useFormat } from "@/lib/format";
 import {
   beep,
   connectRealtime,
-  websocketUrl,
+  realtimeUrl,
   type ConnectionState,
   type RealtimeEvent,
 } from "@/lib/realtime";
@@ -44,7 +44,10 @@ export function useRealtime(): ConnectionState {
       void client.invalidateQueries({ queryKey: ["notifications"] });
     };
     return connectRealtime({
-      url: websocketUrl("/api/v1/admin/ws"),
+      url: realtimeUrl("/api/v1/admin/ws", async () => {
+        const { ticket } = await call(api.POST(`${ADMIN}/auth/ws-ticket`));
+        return ticket;
+      }),
       onState: setState,
       onReconnect: refresh, // catch up: the feed is persisted on the server
       onEvent: (event: RealtimeEvent) => {

@@ -35,7 +35,7 @@ cp .env.example .env    # DATABASE_URL=postgresql+asyncpg://barber:barber@localh
 
 .venv/bin/uvicorn app.main:app_factory --factory --reload --port 8000     # API
 .venv/bin/uvicorn app.bot.main:app_factory --factory --reload --port 8001 # вебхук бота
-.venv/bin/arq app.worker.main.WorkerSettings                              # воркер
+.venv/bin/arq app.worker.main.WorkerSettings                              # воркер (ARQ cron)
 cd ..
 
 # 3. Фронтенды (dev-сервер проксирует /api на :8000)
@@ -122,20 +122,57 @@ Staging — то же самое на втором сервере или во в
 Сертификаты продлевает сервис `certbot`. `deploy.sh` можно запускать повторно; он записывает
 задеплоенный `IMAGE_TAG` в `.env`. Откат: `IMAGE_TAG=<предыдущий sha> ./scripts/deploy.sh`.
 
-### Вариант B — облако
+### Вариант B — Firebase Hosting + Cloud Run (britva-barber)
 
-- **Данные:** управляемый PostgreSQL 16 (включить `btree_gist`; ICU-коллации нужны для
-  поиска клиентов) и управляемый Redis 7 — задайте `DATABASE_URL` / `REDIS_URL`.
-- **Вычисления:** те же образы на контейнерном сервисе (Yandex Cloud Serverless Containers
-  или Compute, DigitalOcean App Platform, AWS ECS Fargate, Google Cloud Run):
-  `api` и `bot` — HTTP-сервисы, `worker` — постоянно работающий сервис (cron-задачи
-  идемпотентны, экземпляров может быть несколько), `migrate` — release-задача перед выкладкой.
-- **Вход:** либо оставить образ `barber-nginx` публичным сервисом, либо положить `dist/` в
-  объектное хранилище + CDN и маршрутизировать `/api` через балансировщик провайдера
-  (с поддержкой WebSocket для `/api/v1/admin/ws`). Заголовки CSP — из
-  `infra/nginx/templates/default.conf.template`.
-- **Секреты:** менеджер секретов провайдера → переменные окружения (имена как в
-  `backend.env.example`).
+Схема: `https://britva-barber.web.app` отдаёт `/app/` и `/admin/` с CDN Firebase и
+переписывает `/api/**` и `/media/**` → Cloud Run `barber-api`, `/api/v1/bot/**` → `barber-bot`.
+База — Neon (PostgreSQL), Redis — Upstash, фото — приватный бакет Cloud Storage.
+Настройки — `infra/cloudrun/config.env`, секреты — Secret Manager.
+
+| Сервис Cloud Run         | Роль образа   | Доступ                                                                           |
+| ------------------------ | ------------- | -------------------------------------------------------------------------------- |
+| `barber-api`             | `api`         | публичный; WebSocket админки идёт сюда напрямую                                  |
+| `barber-bot`             | `bot`         | публичный (вебхук Telegram через Firebase)                                       |
+| `barber-worker`          | `worker-http` | только IAM; Cloud Scheduler: `/tasks/tick` раз в минуту, `/tasks/bonus` ежечасно |
+| `barber-migrate` (job)   | `migrate`     | запускается при каждом деплое                                                    |
+| `barber-bot-setup` (job) | `bot-setup`   | вебхук, команды и кнопка меню                                                    |
+
+Особенности, которые учтены в коде:
+
+- Firebase пропускает в Cloud Run только cookie `__session`, поэтому `COOKIE_MODE=session`
+  хранит в ней access, refresh и CSRF. CSRF-токен клиент берёт из ответа login/refresh.
+- Firebase не проксирует WebSocket. Админка получает одноразовый билет
+  (`POST /admin/auth/ws-ticket`) и подключается к `wss://barber-api-….run.app` (`VITE_WS_URL`).
+- Ответы `/api/**` идут с `Cache-Control: private, no-store`, чтобы CDN их не кешировал.
+- Уведомления в Telegram уходят с задержкой до 1 минуты: воркер будит Cloud Scheduler.
+
+Первый запуск:
+
+1. Включите тариф **Blaze** у проекта `britva-barber` в консоли Firebase.
+2. Создайте базу в [Neon](https://neon.tech) и Redis в [Upstash](https://upstash.com), оба в
+   регионе Frankfurt (`eu-central-1`), рядом с Cloud Run `europe-west3`.
+3. Выполните `gcloud auth login`, затем `infra/cloudrun/setup.sh`. Скрипт включит API, создаст
+   реестр, сервисные аккаунты, бакет и секреты (`JWT_SECRET`, `WEBHOOK_SECRET` и `TASKS_TOKEN`
+   генерирует сам) и напечатает команды для остальных секретов: `DATABASE_URL` (строка Neon с
+   `-pooler`), `DATABASE_URL_DIRECT` (без `-pooler`), `REDIS_URL` (`rediss://…` из Upstash)
+   и `BOT_TOKEN`.
+4. Впишите `BOT_USERNAME` в `infra/cloudrun/config.env`.
+5. Запустите `infra/cloudrun/deploy.sh`. Он собирает образ в Cloud Build и применяет
+   миграции. Затем выкладывает сервисы, планировщик, Firebase Hosting и вебхук бота.
+6. Создайте салон и владельца со своего компьютера по прямой строке Neon. Строку вставьте
+   в терминал сами, в чат её не присылайте:
+
+   ```bash
+   cd backend
+   export DATABASE_URL='<строка Neon без -pooler>' ENV=dev
+   .venv/bin/barber init --name "Britva"
+   .venv/bin/barber create-admin --login owner --role owner
+   ```
+
+`firebase deploy` проверяет, что сервисы Cloud Run уже существуют. Поэтому Hosting с этими
+rewrites выкладывается только через `deploy.sh`, после сервисов. Повторный деплой выполняется
+той же командой. Для отката выполните `TAG=<sha> SKIP_BOT_SETUP=1 infra/cloudrun/deploy.sh`,
+если образ уже есть в реестре.
 
 ### CI/CD (GitHub Actions)
 
@@ -143,9 +180,11 @@ Staging — то же самое на втором сервере или во в
   бэкенд — ruff, mypy, pytest с PostgreSQL и Redis как services, `alembic check`;
   фронтенд — установка с кэшем pnpm, актуальность api-client, ESLint, Prettier, tsc, Vitest,
   сборка (с бюджетом бандла Mini App); Playwright e2e; сборка Docker-образов и `nginx -t`.
-- **main** (`deploy.yml`): CI → сборка и пуш образов (`<sha>` и `latest`) → деплой на
-  **staging** по SSH (`deploy.sh` применяет миграции) → Playwright **smoke**-тесты на staging →
-  **production** (GitHub environment с обязательным подтверждением).
+- **main** (`deploy-cloudrun.yml`): CI → `infra/cloudrun/deploy.sh` → проверка
+  `/api/v1/health/live`. Нужен secret `GCP_SA_KEY` (ключ `barber-deploy@`, команду печатает
+  `setup.sh`). Пока ключа нет, деплой пропускается.
+- **Вручную** (`deploy.yml`, вариант A): сборка образов в GHCR → **staging** по SSH →
+  **smoke**-тесты Playwright → **production** с подтверждением.
 
 Настройки репозитория: environments `staging` и `production`; secrets `STAGING_HOST`,
 `PRODUCTION_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `SMOKE_ADMIN_LOGIN`,

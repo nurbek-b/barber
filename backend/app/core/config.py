@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from enum import StrEnum
 from functools import lru_cache
+from typing import Annotated, Literal
 
 from pydantic import Field, SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Environment(StrEnum):
@@ -25,6 +26,8 @@ class Settings(BaseSettings):
     log_json: bool = True
 
     database_url: str = "postgresql+asyncpg://localhost:5432/barber"
+    # direct (non-pooled) connection for migrations; falls back to database_url
+    database_url_direct: str = ""
     database_pool_size: int = 10
     database_echo: bool = False
     redis_url: str = "redis://localhost:6379/0"
@@ -45,13 +48,19 @@ class Settings(BaseSettings):
     refresh_token_ttl_seconds: int = 30 * 24 * 3600
     cookie_secure: bool = True
     cookie_domain: str | None = None
+    # "split": access/refresh/csrf cookies; "session": one __session cookie (Firebase Hosting)
+    cookie_mode: Literal["split", "session"] = "split"
     login_rate_limit_per_minute: int = 5
 
     # HTTP
-    cors_origins: list[str] = Field(default_factory=list)
+    # comma-separated in env: CORS_ORIGINS=https://a.example,https://b.example
+    cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
     public_base_url: str = "http://localhost:8000"
     media_dir: str = "./media"
     media_url_prefix: str = "/media"
+    # "local": files in media_dir; "gcs": Cloud Storage bucket, served through the API
+    media_backend: Literal["local", "gcs"] = "local"
+    media_bucket: str = ""
     max_upload_bytes: int = 5 * 1024 * 1024
 
     sentry_dsn: str | None = None

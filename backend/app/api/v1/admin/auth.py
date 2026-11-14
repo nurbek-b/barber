@@ -3,18 +3,19 @@ from __future__ import annotations
 from fastapi import APIRouter, Request, Response, status
 
 from app.api.deps import AdminDep, RedisDep, SessionDep, SettingsDep, client_ip
-from app.core.config import Settings
 from app.core.errors import ErrorResponse, RateLimitedError, UnauthorizedError
 from app.core.redis import hit_rate_limit
-from app.core.security.tokens import (
-    ACCESS_COOKIE,
-    CSRF_COOKIE,
-    REFRESH_COOKIE,
-    REFRESH_COOKIE_PATH,
-)
+from app.core.security.cookies import clear_session, read_session, set_session
+from app.core.security.tokens import WS_TICKET_TTL_SECONDS
 from app.models import AdminUser
-from app.schemas.auth import AdminMe, LoginRequest, LoginResponse, RefreshResponse
-from app.services.admin_auth import AdminAuthService, IssuedSession
+from app.schemas.auth import (
+    AdminMe,
+    LoginRequest,
+    LoginResponse,
+    RefreshResponse,
+    WsTicketResponse,
+)
+from app.services.admin_auth import AdminAuthService
 from app.services.permissions import permissions_for
 
 router = APIRouter(prefix="/auth", tags=["admin-auth"])
@@ -39,47 +40,6 @@ def to_me(admin: AdminUser) -> AdminMe:
     )
 
 
-def _set_session_cookies(response: Response, issued: IssuedSession, settings: Settings) -> None:
-    common = {"secure": settings.cookie_secure, "domain": settings.cookie_domain}
-    response.set_cookie(
-        ACCESS_COOKIE,
-        issued.access_token,
-        max_age=settings.access_token_ttl_seconds,
-        httponly=True,
-        samesite="strict",
-        path="/",
-        **common,  # type: ignore[arg-type]
-    )
-    response.set_cookie(
-        REFRESH_COOKIE,
-        issued.refresh_token,
-        max_age=settings.refresh_token_ttl_seconds,
-        httponly=True,
-        samesite="strict",
-        path=REFRESH_COOKIE_PATH,
-        **common,  # type: ignore[arg-type]
-    )
-    # Readable by JS: double-submit CSRF token echoed back in X-CSRF-Token.
-    response.set_cookie(
-        CSRF_COOKIE,
-        issued.csrf_token,
-        max_age=settings.refresh_token_ttl_seconds,
-        httponly=False,
-        samesite="strict",
-        path="/",
-        **common,  # type: ignore[arg-type]
-    )
-
-
-def _clear_session_cookies(response: Response, settings: Settings) -> None:
-    for name, path in (
-        (ACCESS_COOKIE, "/"),
-        (REFRESH_COOKIE, REFRESH_COOKIE_PATH),
-        (CSRF_COOKIE, "/"),
-    ):
-        response.delete_cookie(name, path=path, domain=settings.cookie_domain)
-
-
 @router.post("/login", response_model=LoginResponse, responses=ERRORS)
 async def login(
     body: LoginRequest,
@@ -96,7 +56,7 @@ async def login(
     issued = await AdminAuthService(session, settings).login(
         body.login, body.password, user_agent=request.headers.get("user-agent"), ip=ip
     )
-    _set_session_cookies(response, issued, settings)
+    set_session(response, issued, settings)
     return LoginResponse(user=to_me(issued.admin), csrf_token=issued.csrf_token)
 
 
@@ -107,11 +67,11 @@ async def refresh(
     """Rotates the refresh token. No CSRF check: the cookie is SameSite=Strict and scoped
     to this path, and the endpoint only reissues the caller's own session."""
     issued = await AdminAuthService(session, settings).refresh(
-        request.cookies.get(REFRESH_COOKIE),
+        read_session(request.cookies, settings).refresh,
         user_agent=request.headers.get("user-agent"),
         ip=client_ip(request),
     )
-    _set_session_cookies(response, issued, settings)
+    set_session(response, issued, settings)
     return RefreshResponse(csrf_token=issued.csrf_token)
 
 
@@ -121,18 +81,27 @@ async def logout(
 ) -> Response:
     service = AdminAuthService(session, settings)
     claims = None
-    access = request.cookies.get(ACCESS_COOKIE)
+    tokens = read_session(request.cookies, settings)
+    access = tokens.access
     if access:
         try:
             claims = service.decode_access(access)
         except UnauthorizedError:  # expired access token is fine for logout
             claims = None
-    await service.logout(request.cookies.get(REFRESH_COOKIE), claims)
+    await service.logout(tokens.refresh, claims)
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
-    _clear_session_cookies(response, settings)
+    clear_session(response, settings)
     return response
 
 
 @router.get("/me", response_model=AdminMe, responses=ERRORS)
 async def me(ctx: AdminDep) -> AdminMe:
     return to_me(ctx.admin)
+
+
+@router.post("/ws-ticket", response_model=WsTicketResponse, responses=ERRORS)
+async def ws_ticket(ctx: AdminDep, session: SessionDep, settings: SettingsDep) -> WsTicketResponse:
+    """One-minute ticket for `/admin/ws?ticket=...` when the socket goes to another origin
+    (Firebase Hosting cannot proxy WebSockets, so the admin talks to Cloud Run directly)."""
+    ticket = AdminAuthService(session, settings).issue_ws_ticket(ctx.claims)
+    return WsTicketResponse(ticket=ticket, expires_in=WS_TICKET_TTL_SECONDS)

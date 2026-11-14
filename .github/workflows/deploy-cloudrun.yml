@@ -1,0 +1,58 @@
+name: Deploy (Cloud Run + Firebase)
+
+# main → CI → build image → migrate → Cloud Run services → Firebase Hosting → bot webhook.
+# Needs repository secret GCP_SA_KEY (key of barber-deploy@, see infra/cloudrun/setup.sh).
+# Until it is added the job is skipped, so pushes stay green.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cloudrun
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.GCP_SA_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.HAS_KEY == 'true'
+      - uses: google-github-actions/auth@v2
+        if: env.HAS_KEY == 'true'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+        if: env.HAS_KEY == 'true'
+      - uses: pnpm/action-setup@v4
+        if: env.HAS_KEY == 'true'
+      - uses: actions/setup-node@v4
+        if: env.HAS_KEY == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: env.HAS_KEY == 'true'
+      - name: Deploy
+        if: env.HAS_KEY == 'true'
+        env:
+          BUILDER: docker
+          TAG: ${{ github.sha }}
+        run: infra/cloudrun/deploy.sh
+      - name: Smoke check
+        if: env.HAS_KEY == 'true'
+        run: |
+          curl -fsS https://britva-barber.web.app/api/v1/health/live
+          curl -fsS -o /dev/null https://britva-barber.web.app/admin/
+      - name: Skipped
+        if: env.HAS_KEY != 'true'
+        run: echo "GCP_SA_KEY is not set — deployment skipped"

@@ -48,7 +48,7 @@ services:
   # One-shot: `docker compose run --rm migrate` (deploy.sh runs it before switching versions)
   migrate:
     <<: *backend
-    command: ["alembic", "upgrade", "head"]
+    command: ["migrate"]
     restart: "no"
     profiles: [migrate]
     healthcheck: { disable: true }
@@ -59,23 +59,11 @@ services:
 
   bot:
     <<: *backend
-    command:
-      [
-        "uvicorn",
-        "app.bot.main:app_factory",
-        "--factory",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8000",
-        "--proxy-headers",
-        "--forwarded-allow-ips",
-        "*",
-      ]
+    command: ["bot"]
 
   worker:
     <<: *backend
-    command: ["arq", "app.worker.main.WorkerSettings"]
+    command: ["worker"]
     healthcheck: { disable: true }
 
   nginx:

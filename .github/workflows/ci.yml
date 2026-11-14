@@ -1,6 +1,6 @@
 name: CI
 
-# PRs run it directly; pushes to main run it through deploy.yml (workflow_call).
+# PRs run it directly; pushes to main run it through deploy-cloudrun.yml (workflow_call).
 on:
   pull_request:
   workflow_call:

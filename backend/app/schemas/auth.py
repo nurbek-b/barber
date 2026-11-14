@@ -31,3 +31,8 @@ class LoginResponse(ApiModel):
 
 class RefreshResponse(ApiModel):
     csrf_token: str
+
+
+class WsTicketResponse(ApiModel):
+    ticket: str
+    expires_in: int

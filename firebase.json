@@ -14,6 +14,27 @@
     ],
     "rewrites": [
       {
+        "source": "/api/v1/bot/**",
+        "run": {
+          "serviceId": "barber-bot",
+          "region": "europe-west3"
+        }
+      },
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "barber-api",
+          "region": "europe-west3"
+        }
+      },
+      {
+        "source": "/media/**",
+        "run": {
+          "serviceId": "barber-api",
+          "region": "europe-west3"
+        }
+      },
+      {
         "source": "/app/**",
         "destination": "/app/index.html"
       },
@@ -49,7 +70,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://t.me https://*.telegram.org; connect-src 'self' wss://britva-barber.web.app; font-src 'self'; frame-ancestors https://web.telegram.org https://*.telegram.org https://telegram.org; base-uri 'self'; form-action 'self'"
+            "value": "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://t.me https://*.telegram.org; connect-src 'self'; font-src 'self'; frame-ancestors https://web.telegram.org https://*.telegram.org https://telegram.org; base-uri 'self'; form-action 'self'"
           }
         ]
       },
@@ -66,7 +87,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://britva-barber.web.app; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://*.run.app; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
           }
         ]
       },

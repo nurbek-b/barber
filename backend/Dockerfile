@@ -1,4 +1,4 @@
-# One image for api, bot and worker (different commands in compose).
+# One image for api, bot and worker; the role is the first argument (docker-entrypoint.sh).
 # syntax=docker/dockerfile:1.7
 
 FROM python:3.12-slim AS build
@@ -30,9 +30,10 @@ COPY --from=build /opt/venv /opt/venv
 COPY --from=build /src/alembic ./alembic
 COPY --from=build /src/alembic.ini ./
 USER app
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
-    CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live', timeout=2)" || exit 1
-# api by default; compose overrides the command for bot / worker / migrate
-CMD ["uvicorn", "app.main:app_factory", "--factory", "--host", "0.0.0.0", "--port", "8000", \
-     "--proxy-headers", "--forwarded-allow-ips", "*", "--workers", "2", "--no-server-header"]
+    CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/api/v1/health/live' % os.environ.get('PORT','8000'), timeout=2)" || exit 1
+ENTRYPOINT ["docker-entrypoint.sh"]
+# role: api (default) | bot | worker | worker-http | migrate
+CMD ["api"]

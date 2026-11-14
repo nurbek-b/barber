@@ -65,7 +65,7 @@ flowchart LR
 |---|---|---|
 | `api` | `uvicorn app.main:app` | REST + WebSocket админки |
 | `bot` | `uvicorn app.bot.main:app` | Приём вебхуков Telegram, команды `/start`, приём контакта, callback-кнопки |
-| `worker` | `arq app.worker.WorkerSettings` | Отправка сообщений (outbox), напоминания, cron-задачи бонусов |
+| `worker` | `arq app.worker.main.WorkerSettings` (на Cloud Run — `worker-http` + Cloud Scheduler) | Отправка сообщений (outbox), напоминания, cron-задачи бонусов |
 
 Для CI/CD образов четыре: `backend` (используется api/bot/worker с разными командами — по ТЗ можно тегировать как три образа из одного Dockerfile с разными `CMD`), `nginx` (со статикой обоих фронтов).
 

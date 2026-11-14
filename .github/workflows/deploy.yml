@@ -1,10 +1,9 @@
-name: Deploy
+name: Deploy (VPS)
 
-# main → build images → staging (automatic) → smoke tests → production (manual approval
-# via the "production" environment's required reviewers).
+# VPS / docker-compose deployment: build images → staging → smoke tests → production
+# (manual approval via the "production" environment). Manual only: the live deployment is
+# Firebase Hosting + Cloud Run (deploy-cloudrun.yml).
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       image_tag:

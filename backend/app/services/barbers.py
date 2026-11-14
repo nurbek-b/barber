@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import asyncio
 import secrets
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.errors import AppError, NotFoundError, ValidationAppError
+from app.core.media import get_media_storage, key_from_url, url_for
 from app.models import Barber, BarberService, Service
 from app.repositories.catalog import BarberRepository, BarberServiceRepository, ServiceRepository
 from app.schemas.catalog import BarberIn, BarberPatch, BarberServiceIn
@@ -36,19 +35,6 @@ class BarberServiceView:
     @property
     def effective_duration_min(self) -> int:
         return effective_duration(self.link, self.service)
-
-
-def _write_file(directory: Path, filename: str, content: bytes) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    (directory / filename).write_bytes(content)
-
-
-def _remove_file(directory: Path, filename: str) -> None:
-    """Delete a previous upload; refuses anything outside `directory` (path traversal)."""
-    root = directory.resolve()
-    path = (root / filename).resolve()
-    if path.parent == root:
-        path.unlink(missing_ok=True)
 
 
 def detect_image_type(head: bytes) -> str | None:
@@ -212,12 +198,12 @@ class BarbersService:
             raise ValidationAppError("Only JPEG, PNG or WebP images", code="unsupported_image")
 
         barber = await self.get(branch_id, barber_id)
-        target_dir = Path(self.settings.media_dir) / "barbers"
-        filename = f"{barber.id}-{secrets.token_hex(6)}.{extension}"
-        await asyncio.to_thread(_write_file, target_dir, filename, content)
+        storage = get_media_storage(self.settings)
+        key = f"barbers/{barber.id}-{secrets.token_hex(6)}.{extension}"
+        await storage.save(key, content)
 
         old_url = barber.photo_url
-        barber.photo_url = f"{self.settings.media_url_prefix}/barbers/{filename}"
+        barber.photo_url = url_for(self.settings, key)
         self.audit.record(
             actor,
             "barber.photo",
@@ -228,7 +214,7 @@ class BarbersService:
         )
         await self.session.commit()
 
-        prefix = f"{self.settings.media_url_prefix}/barbers/"
-        if old_url and old_url.startswith(prefix):
-            await asyncio.to_thread(_remove_file, target_dir, old_url.removeprefix(prefix))
+        old_key = key_from_url(self.settings, old_url)
+        if old_key:
+            await storage.delete(old_key)
         return barber

@@ -14,6 +14,7 @@ from sqlalchemy import (
     String,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, uuid_pk
@@ -65,4 +66,9 @@ class SalonSettings(TimestampMixin, Base):
     )
     contacts: Mapped[dict[str, Any]] = mapped_column(
         default=dict, server_default=text("'{}'::jsonb")
+    )
+    # branding for the Mini App: /media/salon/... URLs
+    logo_url: Mapped[str | None] = mapped_column(String(512))
+    gallery: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
     )

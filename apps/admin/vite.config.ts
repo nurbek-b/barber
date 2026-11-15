@@ -14,6 +14,8 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      // uploaded photos (production: Firebase Hosting rewrites /media to the API)
+      "/media": { target: process.env.API_PROXY ?? "http://localhost:8000", changeOrigin: true },
     },
   },
   build: {

@@ -543,7 +543,8 @@ export interface paths {
         put?: never;
         /** Upload Photo */
         post: operations["admin_upload_photo"];
-        delete?: never;
+        /** Delete Photo */
+        delete: operations["admin_delete_photo"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1108,6 +1109,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/settings/salon/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Logo */
+        post: operations["admin_upload_logo"];
+        /** Delete Logo */
+        delete: operations["admin_delete_logo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/settings/salon/gallery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Gallery */
+        put: operations["admin_put_gallery"];
+        /** Add Gallery Photo */
+        post: operations["admin_add_gallery_photo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/admin-users": {
         parameters: {
             query?: never;
@@ -1511,6 +1548,13 @@ export interface components {
             is_bookable_online: boolean;
             /** Telegram Chat Id */
             telegram_chat_id: number | null;
+            /** Commission Bp */
+            commission_bp: number;
+            /**
+             * Has Schedule
+             * @description false: no weekly hours, clients cannot book
+             */
+            has_schedule: boolean;
             /** Services */
             services: components["schemas"]["BarberServiceOut"][];
         };
@@ -1518,6 +1562,12 @@ export interface components {
         BarberIn: {
             /** Name */
             name: string;
+            /**
+             * Commission Bp
+             * @description Master's share of the services price, basis points: 4000 = 40 %. Owner only.
+             * @default 0
+             */
+            commission_bp: number;
             /**
              * Specialization I18N
              * @description Localized text: {ru, ky, en}
@@ -1612,11 +1662,23 @@ export interface components {
             is_bookable_online: boolean;
             /** Telegram Chat Id */
             telegram_chat_id: number | null;
+            /** Commission Bp */
+            commission_bp: number;
+            /**
+             * Has Schedule
+             * @description false: no weekly hours, clients cannot book
+             */
+            has_schedule: boolean;
         };
         /** BarberPatch */
         BarberPatch: {
             /** Name */
             name?: string | null;
+            /**
+             * Commission Bp
+             * @description Master's share of the services price, basis points: 4000 = 40 %. Owner only.
+             */
+            commission_bp?: number | null;
             /** Specialization I18N */
             specialization_i18n?: {
                 [key: string]: string;
@@ -1676,6 +1738,22 @@ export interface components {
         BarberServicesPut: {
             /** Services */
             services: components["schemas"]["BarberServiceIn"][];
+        };
+        /** Body_admin_add_gallery_photo */
+        Body_admin_add_gallery_photo: {
+            /**
+             * File
+             * @description JPEG, PNG or WebP, up to 5 MB
+             */
+            file: string;
+        };
+        /** Body_admin_upload_logo */
+        Body_admin_upload_logo: {
+            /**
+             * File
+             * @description JPEG, PNG or WebP, up to 5 MB
+             */
+            file: string;
         };
         /** Body_admin_upload_photo */
         Body_admin_upload_photo: {
@@ -2228,12 +2306,22 @@ export interface components {
             /** Paid */
             paid: number;
             /**
+             * Master Share
+             * @description Barbers' commission: % of subtotal, see commission_bp
+             */
+            master_share: number;
+            /**
              * Barber Id
              * Format: uuid
              */
             barber_id: string;
             /** Name */
             name: string;
+            /**
+             * Commission Bp
+             * @description Current rate; past visits keep their own rate
+             */
+            commission_bp: number;
         };
         /** FinanceByMethod */
         FinanceByMethod: {
@@ -2293,6 +2381,19 @@ export interface components {
             total_due: number;
             /** Paid */
             paid: number;
+            /**
+             * Master Share
+             * @description Barbers' commission: % of subtotal, see commission_bp
+             */
+            master_share: number;
+        };
+        /**
+         * GalleryPut
+         * @description Current gallery URLs in the new order; leaving one out deletes it.
+         */
+        GalleryPut: {
+            /** Urls */
+            urls: string[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2703,6 +2804,10 @@ export interface components {
             contacts: {
                 [key: string]: string;
             };
+            /** Logo Url */
+            logo_url?: string | null;
+            /** Gallery */
+            gallery?: string[];
         };
         /** SalonSettingsIn */
         SalonSettingsIn: {
@@ -2788,6 +2893,10 @@ export interface components {
             contacts: {
                 [key: string]: string;
             };
+            /** Logo Url */
+            logo_url: string | null;
+            /** Gallery */
+            gallery: string[];
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {
@@ -5141,6 +5250,64 @@ export interface operations {
                 "multipart/form-data": components["schemas"]["Body_admin_upload_photo"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barber_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -8056,6 +8223,206 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TemplateDefaultsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_upload_logo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_admin_upload_logo"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalonSettingsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_logo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalonSettingsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_put_gallery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalleryPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalonSettingsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_add_gallery_photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_admin_add_gallery_photo"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalonSettingsOut"];
                 };
             };
             /** @description Unauthorized */

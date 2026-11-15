@@ -97,6 +97,8 @@ class Booking(TimestampMixin, Base):
     cancelled_by: Mapped[ActorType | None] = mapped_column(str_enum(ActorType, "actor_type"))
     cancelled_at: Mapped[datetime | None] = mapped_column()
     completed_at: Mapped[datetime | None] = mapped_column()
+    # barber's commission at completion time: later rate changes do not rewrite payouts
+    barber_commission_bp: Mapped[int | None] = mapped_column(SmallInteger)
     rating: Mapped[int | None] = mapped_column(SmallInteger)  # 1..5 from the post-visit poll
     rated_at: Mapped[datetime | None] = mapped_column()
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")

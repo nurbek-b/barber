@@ -5,12 +5,13 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.errors import AppError, NotFoundError, ValidationAppError
 from app.core.media import get_media_storage, key_from_url, url_for
-from app.models import Barber, BarberService, Service
+from app.models import Barber, BarberSchedule, BarberService, Service
 from app.repositories.catalog import BarberRepository, BarberServiceRepository, ServiceRepository
 from app.schemas.catalog import BarberIn, BarberPatch, BarberServiceIn
 from app.services.audit import Actor, AuditService, diff, snapshot
@@ -76,6 +77,17 @@ class BarbersService:
             branch_id, only_active=only_active, ids=ids, limit=limit, offset=offset
         )
 
+    async def scheduled_ids(self, barber_ids: Sequence[uuid.UUID]) -> set[uuid.UUID]:
+        """Barbers that have at least one weekly working interval."""
+        if not barber_ids:
+            return set()
+        rows = await self.session.execute(
+            select(BarberSchedule.barber_id)
+            .where(BarberSchedule.barber_id.in_(barber_ids))
+            .distinct()
+        )
+        return set(rows.scalars())
+
     async def list_public(
         self, branch_id: uuid.UUID, service_ids: Sequence[uuid.UUID] | None
     ) -> list[Barber]:
@@ -87,7 +99,9 @@ class BarbersService:
         barbers, _ = await self.barbers.list_page(
             branch_id, only_active=True, only_bookable=True, ids=ids, limit=1000
         )
-        return barbers
+        # without weekly hours a barber has no free time at all: do not offer them to clients
+        scheduled = await self.scheduled_ids([barber.id for barber in barbers])
+        return [barber for barber in barbers if barber.id in scheduled]
 
     async def services_of(self, barber_id: uuid.UUID) -> list[BarberServiceView]:
         pairs = await self.links.list_with_services([barber_id])
@@ -185,6 +199,25 @@ class BarbersService:
                 after={"is_active": False},
             )
             await self.session.commit()
+
+    async def remove_photo(
+        self, branch_id: uuid.UUID, barber_id: uuid.UUID, actor: Actor
+    ) -> Barber:
+        if self.settings is None:
+            raise RuntimeError("settings are required for uploads")
+        barber = await self.get(branch_id, barber_id)
+        old_url = barber.photo_url
+        if old_url is None:
+            return barber
+        barber.photo_url = None
+        self.audit.record(
+            actor, "barber.photo", "barber", barber.id, before={"photo_url": old_url}, after={}
+        )
+        await self.session.commit()
+        old_key = key_from_url(self.settings, old_url)
+        if old_key:
+            await get_media_storage(self.settings).delete(old_key)
+        return barber
 
     async def set_photo(
         self, branch_id: uuid.UUID, barber_id: uuid.UUID, content: bytes, actor: Actor

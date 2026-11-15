@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from pydantic import Field
 
 from app.api.deps import AdminContext, SessionDep, SettingsDep, ensure_own_barber, require
-from app.core.errors import ErrorResponse
+from app.core.errors import ErrorResponse, ForbiddenError
 from app.models import Barber
+from app.models.enums import AdminRole
 from app.schemas.catalog import (
     BarberDetailOut,
     BarberIn,
@@ -36,7 +37,7 @@ CanRead = Annotated[AdminContext, Depends(require(Perm.BARBERS_READ, Perm.BARBER
 CanWrite = Annotated[AdminContext, Depends(require(Perm.BARBERS_WRITE))]
 
 
-def to_out(barber: Barber) -> BarberOut:
+def to_out(barber: Barber, has_schedule: bool) -> BarberOut:
     return BarberOut(
         id=barber.id,
         name=barber.name,
@@ -49,7 +50,15 @@ def to_out(barber: Barber) -> BarberOut:
         is_active=barber.is_active,
         is_bookable_online=barber.is_bookable_online,
         telegram_chat_id=barber.telegram_chat_id,
+        commission_bp=barber.commission_bp,
+        has_schedule=has_schedule,
     )
+
+
+def ensure_commission_allowed(ctx: AdminContext, commission_bp: int | None) -> None:
+    """The master's percentage is money: only the owner sets it."""
+    if commission_bp is not None and ctx.role is not AdminRole.OWNER:
+        raise ForbiddenError("Only the owner can change the commission", code="owner_only")
 
 
 def to_service_out(view: BarberServiceView) -> BarberServiceOut:
@@ -65,8 +74,10 @@ def to_service_out(view: BarberServiceView) -> BarberServiceOut:
 
 async def _detail(service: BarbersService, barber: Barber) -> BarberDetailOut:
     views = await service.services_of(barber.id)
+    scheduled = barber.id in await service.scheduled_ids([barber.id])
     return BarberDetailOut(
-        **to_out(barber).model_dump(), services=[to_service_out(view) for view in views]
+        **to_out(barber, scheduled).model_dump(),
+        services=[to_service_out(view) for view in views],
     )
 
 
@@ -81,16 +92,24 @@ async def list_barbers(
     ids = None
     if not ctx.can(Perm.BARBERS_READ):  # barber role: only themselves
         ids = [ctx.admin.barber_id] if ctx.admin.barber_id else []
-    items, total = await BarbersService(session).list_page(
+    service = BarbersService(session)
+    items, total = await service.list_page(
         ctx.branch_id, only_active=only_active, ids=ids, limit=limit, offset=offset
     )
-    return Page(items=[to_out(item) for item in items], total=total, limit=limit, offset=offset)
+    scheduled = await service.scheduled_ids([item.id for item in items])
+    return Page(
+        items=[to_out(item, item.id in scheduled) for item in items],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.post(
     "", response_model=BarberDetailOut, status_code=status.HTTP_201_CREATED, responses=ERRORS
 )
 async def create_barber(body: BarberIn, ctx: CanWrite, session: SessionDep) -> BarberDetailOut:
+    ensure_commission_allowed(ctx, body.commission_bp or None)
     service = BarbersService(session)
     barber = await service.create(ctx.branch_id, body, ctx.actor)
     return await _detail(service, barber)
@@ -107,6 +126,7 @@ async def get_barber(barber_id: uuid.UUID, ctx: CanRead, session: SessionDep) ->
 async def update_barber(
     barber_id: uuid.UUID, body: BarberPatch, ctx: CanWrite, session: SessionDep
 ) -> BarberDetailOut:
+    ensure_commission_allowed(ctx, body.commission_bp)
     service = BarbersService(session)
     barber = await service.update(ctx.branch_id, barber_id, body, ctx.actor)
     return await _detail(service, barber)
@@ -155,7 +175,15 @@ async def upload_photo(
     file: Annotated[UploadFile, File(description="JPEG, PNG or WebP, up to 5 MB")],
 ) -> BarberOut:
     content = await file.read(settings.max_upload_bytes + 1)
-    barber = await BarbersService(session, settings).set_photo(
-        ctx.branch_id, barber_id, content, ctx.actor
-    )
-    return to_out(barber)
+    service = BarbersService(session, settings)
+    barber = await service.set_photo(ctx.branch_id, barber_id, content, ctx.actor)
+    return to_out(barber, barber.id in await service.scheduled_ids([barber.id]))
+
+
+@router.delete("/{barber_id}/photo", response_model=BarberOut, responses=ERRORS)
+async def delete_photo(
+    barber_id: uuid.UUID, ctx: CanWrite, session: SessionDep, settings: SettingsDep
+) -> BarberOut:
+    service = BarbersService(session, settings)
+    barber = await service.remove_photo(ctx.branch_id, barber_id, ctx.actor)
+    return to_out(barber, barber.id in await service.scheduled_ids([barber.id]))

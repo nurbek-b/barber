@@ -279,3 +279,20 @@ function invalidateAfterBooking(client: QueryClient): void {
 }
 
 export { ApiError, newIdempotencyKey };
+
+/** Interface language, stored in the client profile (the bot uses it too). Optimistic. */
+export function useSetLanguage() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (language: string) => call(api.PATCH(`${BASE}/me`, { body: { language } })),
+    onMutate: (language) => {
+      const previous = client.getQueryData<ClientMe>(keys.me);
+      if (previous) client.setQueryData<ClientMe>(keys.me, { ...previous, language });
+      return { previous };
+    },
+    onError: (_error, _language, context) => {
+      if (context?.previous) client.setQueryData(keys.me, context.previous);
+    },
+    onSuccess: (me) => client.setQueryData(keys.me, me),
+  });
+}

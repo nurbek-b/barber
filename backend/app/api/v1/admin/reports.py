@@ -54,8 +54,8 @@ def to_out(report: FinanceReport) -> FinanceReportOut:
         currency=report.currency,
         totals=totals(report.totals),
         by_barber=[
-            FinanceByBarber(barber_id=bid, name=name, **totals(t).model_dump())
-            for bid, name, t in report.by_barber
+            FinanceByBarber(barber_id=bid, name=name, commission_bp=bp, **totals(t).model_dump())
+            for bid, name, bp, t in report.by_barber
         ],
         by_service=[
             FinanceByService(service_id=sid, name_i18n=name, count=count, revenue=revenue)

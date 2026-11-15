@@ -59,8 +59,33 @@ export function ScheduleEditor({
   const update = (index: number, patch: Partial<Interval>) =>
     onChange(value.map((item, i) => (i === index ? { ...item, ...patch } : item)));
 
+  const fill = (days: number[]) =>
+    onChange(days.map((weekday) => ({ weekday, start_time: "10:00", end_time: "20:00" })));
+
   return (
     <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2 pb-1">
+        <span className="text-sm text-muted-foreground">{t("barbers.presets")}:</span>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => fill([0, 1, 2, 3, 4, 5])}
+        >
+          {t("barbers.presetWeekdays")}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => fill([0, 1, 2, 3, 4, 5, 6])}
+        >
+          {t("barbers.presetEveryDay")}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => onChange([])}>
+          {t("barbers.presetClear")}
+        </Button>
+      </div>
       {weekdays.map((label, weekday) => {
         const rows = value
           .map((item, index) => ({ item, index }))

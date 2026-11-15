@@ -17,6 +17,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/api": { target: process.env.API_PROXY ?? "http://localhost:8000", changeOrigin: true },
+      "/media": { target: process.env.API_PROXY ?? "http://localhost:8000", changeOrigin: true },
     },
   },
   build: {

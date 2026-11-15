@@ -22,7 +22,7 @@ from app.core.errors import (
     ValidationAppError,
 )
 from app.domain.pricing import PriceLine, build_quote
-from app.models import Booking, BookingReminder, Client, SalonSettings
+from app.models import Barber, Booking, BookingReminder, Client, SalonSettings
 from app.models.enums import (
     ACTIVE_BOOKING_STATUSES,
     ActorType,
@@ -380,6 +380,8 @@ class AdminBookingService:
                 data.paid_amount if data.paid_amount is not None else booking.total_due
             )
             booking.completed_at = now
+            barber = await self.session.get(Barber, booking.barber_id)
+            booking.barber_commission_bp = barber.commission_bp if barber else 0
         elif data.status is BookingStatus.CANCELLED:
             booking.cancelled_by = ActorType.ADMIN
             booking.cancelled_at = now

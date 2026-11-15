@@ -9,3 +9,4 @@ docs/
 **/playwright-report/
 firebase-public/
 .firebase/
+.claude/

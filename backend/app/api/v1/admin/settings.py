@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 
-from app.api.deps import AdminContext, SessionDep, require
+from app.api.deps import AdminContext, SessionDep, SettingsDep, require
 from app.core.errors import ErrorResponse
 from app.models import SalonSettings
 from app.notify.templates import DEFAULTS
-from app.schemas.admin import SalonSettingsIn, SalonSettingsOut, TemplateDefaultsOut
+from app.schemas.admin import GalleryPut, SalonSettingsIn, SalonSettingsOut, TemplateDefaultsOut
 from app.services.audit import AuditService, diff, snapshot
 from app.services.branches import BranchService
+from app.services.branding import BrandingService
 from app.services.permissions import Perm
 
 router = APIRouter(prefix="/settings", tags=["admin-settings"])
@@ -43,6 +44,8 @@ def to_out(salon: SalonSettings) -> SalonSettingsOut:
         notify_barbers=salon.notify_barbers,
         notification_templates=salon.notification_templates or {},
         contacts={str(k): str(v) for k, v in (salon.contacts or {}).items()},
+        logo_url=salon.logo_url,
+        gallery=list(salon.gallery or []),
     )
 
 
@@ -73,3 +76,42 @@ async def put_salon(body: SalonSettingsIn, ctx: CanWrite, session: SessionDep) -
 async def template_defaults(ctx: CanRead) -> TemplateDefaultsOut:
     """Built-in texts the salon may override (placeholders like {when}, {barber})."""
     return TemplateDefaultsOut(templates=DEFAULTS)
+
+
+Image = Annotated[UploadFile, File(description="JPEG, PNG or WebP, up to 5 MB")]
+
+
+@router.post("/salon/logo", response_model=SalonSettingsOut, responses=ERRORS)
+async def upload_logo(
+    file: Image, ctx: CanWrite, session: SessionDep, settings: SettingsDep
+) -> SalonSettingsOut:
+    content = await file.read(settings.max_upload_bytes + 1)
+    return to_out(
+        await BrandingService(session, settings).set_logo(ctx.branch_id, content, ctx.actor)
+    )
+
+
+@router.delete("/salon/logo", response_model=SalonSettingsOut, responses=ERRORS)
+async def delete_logo(
+    ctx: CanWrite, session: SessionDep, settings: SettingsDep
+) -> SalonSettingsOut:
+    return to_out(await BrandingService(session, settings).remove_logo(ctx.branch_id, ctx.actor))
+
+
+@router.post("/salon/gallery", response_model=SalonSettingsOut, responses=ERRORS)
+async def add_gallery_photo(
+    file: Image, ctx: CanWrite, session: SessionDep, settings: SettingsDep
+) -> SalonSettingsOut:
+    content = await file.read(settings.max_upload_bytes + 1)
+    return to_out(
+        await BrandingService(session, settings).add_photo(ctx.branch_id, content, ctx.actor)
+    )
+
+
+@router.put("/salon/gallery", response_model=SalonSettingsOut, responses=ERRORS)
+async def put_gallery(
+    body: GalleryPut, ctx: CanWrite, session: SessionDep, settings: SettingsDep
+) -> SalonSettingsOut:
+    return to_out(
+        await BrandingService(session, settings).set_gallery(ctx.branch_id, body.urls, ctx.actor)
+    )

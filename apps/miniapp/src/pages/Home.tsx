@@ -1,9 +1,18 @@
 import { useNavigate } from "react-router-dom";
 
-import { useBarbers, useBookings, useBonus, useMe, useRepeat, useServices } from "../api";
+import {
+  useBarbers,
+  useBookings,
+  useBonus,
+  useMe,
+  useRepeat,
+  useSalon,
+  useServices,
+  useSetLanguage,
+} from "../api";
 import { BookingCard } from "../components/BookingCard";
 import { Card, ErrorState, Screen, Skeleton, useMoney } from "../components/ui";
-import { pickI18n, useLang, useT } from "../i18n";
+import { type Lang, pickI18n, useLang, useT } from "../i18n";
 import { useBooking } from "../store/booking";
 import { useBackButton, useMainButton } from "../telegram/hooks";
 
@@ -13,6 +22,8 @@ export default function Home() {
   const navigate = useNavigate();
   const { money } = useMoney();
   const me = useMe();
+  const salon = useSalon();
+  const setLanguage = useSetLanguage();
   const upcoming = useBookings("upcoming");
   const repeat = useRepeat();
   const bonus = useBonus();
@@ -54,6 +65,10 @@ export default function Home() {
       withMainButton
     >
       <div className="space-y-4">
+        {salon.data && <SalonHeader name={salon.data.name} logo={salon.data.logo_url ?? null} />}
+        {salon.data?.gallery?.length ? (
+          <Gallery photos={salon.data.gallery} label={t("home.photos")} />
+        ) : null}
         {me.isPending && <Skeleton className="h-24" />}
 
         {draft && draft.service_ids.length > 0 && (
@@ -110,7 +125,85 @@ export default function Home() {
             ))}
           </div>
         )}
+
+        <LanguageSwitch
+          value={lang}
+          label={t("home.language")}
+          onChange={(next) => setLanguage.mutate(next)}
+        />
       </div>
     </Screen>
+  );
+}
+
+function SalonHeader({ name, logo }: { name: string; logo: string | null }) {
+  return (
+    <div className="flex items-center gap-3">
+      {logo && (
+        <img
+          src={logo}
+          alt=""
+          className="h-14 w-14 shrink-0 rounded-2xl bg-section object-contain p-1"
+        />
+      )}
+      <div className="text-lg font-semibold leading-tight">{name}</div>
+    </div>
+  );
+}
+
+/** Swipeable salon photos; the first one is the cover. */
+function Gallery({ photos, label }: { photos: string[]; label: string }) {
+  return (
+    <section aria-label={label}>
+      <div className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1">
+        {photos.map((url, index) => (
+          <img
+            key={url}
+            src={url}
+            alt=""
+            loading={index === 0 ? "eager" : "lazy"}
+            className="aspect-[4/3] w-[85%] shrink-0 snap-center rounded-2xl bg-section object-cover"
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const LANGUAGES: { code: Lang; label: string }[] = [
+  { code: "ru", label: "Русский" },
+  { code: "ky", label: "Кыргызча" },
+  { code: "en", label: "English" },
+];
+
+function LanguageSwitch({
+  value,
+  label,
+  onChange,
+}: {
+  value: Lang;
+  label: string;
+  onChange: (lang: Lang) => void;
+}) {
+  return (
+    <div
+      className="flex items-center justify-center gap-1 pt-2 text-sm"
+      role="group"
+      aria-label={label}
+    >
+      {LANGUAGES.map((item) => (
+        <button
+          key={item.code}
+          type="button"
+          aria-pressed={item.code === value}
+          onClick={() => item.code !== value && onChange(item.code)}
+          className={`rounded-full px-3 py-1 ${
+            item.code === value ? "bg-button text-button-text" : "text-hint"
+          }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
   );
 }

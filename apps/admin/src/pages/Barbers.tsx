@@ -60,12 +60,21 @@ export default function Barbers() {
                   <div className="truncate text-sm text-muted-foreground">
                     {pickName(barber.specialization_i18n, i18n.language)}
                   </div>
-                  <div className="mt-1 flex gap-1">
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {barber.is_active && !barber.has_schedule && (
+                      <Badge variant="warning">{t("barbers.noSchedule")}</Badge>
+                    )}
+                    {!barber.photo_url && <Badge variant="secondary">{t("barbers.noPhoto")}</Badge>}
+                    {barber.commission_bp > 0 && (
+                      <Badge variant="secondary">
+                        {t("barbers.commissionShort", { value: barber.commission_bp / 100 })}
+                      </Badge>
+                    )}
                     {!barber.is_active && (
                       <Badge variant="destructive">{t("common.inactive")}</Badge>
                     )}
                     {barber.is_active && !barber.is_bookable_online && (
-                      <Badge variant="warning">offline</Badge>
+                      <Badge variant="warning">{t("barbers.offline")}</Badge>
                     )}
                     {barber.rating !== null && barber.rating !== undefined && (
                       <Badge variant="secondary">
@@ -99,7 +108,14 @@ function NewBarberDialog({
     mutationFn: () =>
       call(
         api.POST(`${ADMIN}/barbers`, {
-          body: { name, services: [], sort_order: 0, is_active: true, is_bookable_online: true },
+          body: {
+            name,
+            services: [],
+            sort_order: 0,
+            commission_bp: 0,
+            is_active: true,
+            is_bookable_online: true,
+          },
         }),
       ),
     onSuccess: (barber) => {

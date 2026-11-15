@@ -52,6 +52,8 @@ async def get_salon(ctx: MiniappDep, session: SessionDep) -> SalonPublicOut:
         cancel_min_hours=salon.cancel_min_hours,
         reschedule_min_hours=salon.reschedule_min_hours,
         contacts={str(key): str(value) for key, value in salon.contacts.items()},
+        logo_url=salon.logo_url,
+        gallery=list(salon.gallery or []),
     )
 
 

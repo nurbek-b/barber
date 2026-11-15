@@ -26,11 +26,16 @@ from app.models.enums import ScheduleExceptionKind
 
 class Barber(TimestampMixin, Base):
     __tablename__ = "barbers"
-    __table_args__ = (CheckConstraint("rating_x100 BETWEEN 0 AND 500", name="rating"),)
+    __table_args__ = (
+        CheckConstraint("rating_x100 BETWEEN 0 AND 500", name="rating"),
+        CheckConstraint("commission_bp BETWEEN 0 AND 10000", name="commission_bp"),
+    )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     branch_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("branches.id"), index=True)
     name: Mapped[str] = mapped_column(String(200))
+    # master's share of the services price, basis points (4000 = 40 %); set by the owner
+    commission_bp: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
     photo_url: Mapped[str | None] = mapped_column(String(512))
     specialization_i18n: Mapped[I18n] = mapped_column(
         default=dict, server_default=text("'{}'::jsonb")

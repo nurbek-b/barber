@@ -1,11 +1,12 @@
 import { todayKey, addDaysKey } from "@barber/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Camera, Trash2, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import { FileButton } from "@/components/FileButton";
 import { MoneyInput } from "@/components/MoneyInput";
 import {
   Badge,
@@ -27,7 +28,7 @@ import { PageHeader } from "@/features/Layout";
 import { keys, pickName, useServicesList } from "@/features/queries";
 import { ScheduleEditor, overlappingDays, type Interval } from "@/features/ScheduleEditor";
 import { ADMIN, api, call, errorMessage } from "@/lib/api";
-import { useCan } from "@/lib/auth";
+import { useAuth, useCan } from "@/lib/auth";
 import { useFormat } from "@/lib/format";
 
 const hhmm = (value: string) => value.slice(0, 5);
@@ -37,6 +38,7 @@ export default function BarberEdit() {
   const { t } = useTranslation();
   const can = useCan();
   const writable = can("barbers:write");
+  const [tab, setTab] = useState("profile");
   const barber = useQuery({
     queryKey: keys.barber(barberId),
     queryFn: () =>
@@ -47,7 +49,21 @@ export default function BarberEdit() {
   return (
     <div>
       <PageHeader title={barber.data.name} />
-      <Tabs defaultValue="profile" className="space-y-4">
+      {!barber.data.has_schedule && (
+        <div
+          role="alert"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+        >
+          <TriangleAlert className="h-4 w-4 shrink-0 text-amber-600" />
+          <span className="flex-1">{t("barbers.noScheduleHint")}</span>
+          {tab !== "schedule" && (
+            <Button size="sm" variant="outline" onClick={() => setTab("schedule")}>
+              {t("barbers.setSchedule")}
+            </Button>
+          )}
+        </div>
+      )}
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile">{t("barbers.profile")}</TabsTrigger>
           <TabsTrigger value="services">{t("barbers.services")}</TabsTrigger>
@@ -79,13 +95,24 @@ function useBarber(barberId: string) {
   });
 }
 
+/** "37.5" -> 3750 basis points, clamped to 0..100 %. */
+function percentToBp(value: string): number {
+  const number = Number(value.replace(",", "."));
+  if (!Number.isFinite(number)) return 0;
+  return Math.round(Math.min(100, Math.max(0, number)) * 100);
+}
+
 function ProfileTab({ barberId, writable }: { barberId: string; writable: boolean }) {
   const { t } = useTranslation();
+  const can = useCan();
   const client = useQueryClient();
   const barber = useBarber(barberId).data!;
   const [name, setName] = useState(barber.name);
   const [spec, setSpec] = useState(barber.specialization_i18n);
-  const [bio, setBio] = useState(barber.bio_i18n.ru ?? "");
+  const [bio, setBio] = useState(barber.bio_i18n);
+  const { me } = useAuth();
+  const isOwner = me.role === "owner";
+  const [commission, setCommission] = useState(String(barber.commission_bp / 100));
   const [sortOrder, setSortOrder] = useState(String(barber.sort_order));
   const [active, setActive] = useState(barber.is_active);
   const [online, setOnline] = useState(barber.is_bookable_online);
@@ -100,10 +127,11 @@ function ProfileTab({ barberId, writable }: { barberId: string; writable: boolea
           body: {
             name,
             specialization_i18n: spec,
-            bio_i18n: { ...barber.bio_i18n, ru: bio },
+            bio_i18n: bio,
             sort_order: Number(sortOrder) || 0,
             is_active: active,
             is_bookable_online: online,
+            ...(isOwner ? { commission_bp: percentToBp(commission) } : {}),
           },
         }),
       ),
@@ -125,6 +153,19 @@ function ProfileTab({ barberId, writable }: { barberId: string; writable: boolea
         }),
       );
     },
+    onSuccess: () => {
+      toast.success(t("barbers.photoUploaded"));
+      refresh();
+    },
+    onError: (error) => toast.error(errorMessage(error)),
+  });
+  const removePhoto = useMutation({
+    mutationFn: () =>
+      call(
+        api.DELETE(`${ADMIN}/barbers/{barber_id}/photo`, {
+          params: { path: { barber_id: barberId } },
+        }),
+      ),
     onSuccess: refresh,
     onError: (error) => toast.error(errorMessage(error)),
   });
@@ -165,34 +206,76 @@ function ProfileTab({ barberId, writable }: { barberId: string; writable: boolea
               />
             </Field>
           ))}
-          <Field label={t("barbers.bio")} htmlFor="b-bio">
-            <Textarea
-              id="b-bio"
-              value={bio}
-              disabled={!writable}
-              onChange={(e) => setBio(e.target.value)}
-            />
-          </Field>
+          {(["ru", "ky", "en"] as const).map((lang) => (
+            <Field key={lang} label={`${t("barbers.bio")} (${lang})`} htmlFor={`b-bio-${lang}`}>
+              <Textarea
+                id={`b-bio-${lang}`}
+                value={bio[lang] ?? ""}
+                disabled={!writable}
+                onChange={(e) => setBio({ ...bio, [lang]: e.target.value })}
+              />
+            </Field>
+          ))}
         </div>
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 rounded-md border p-3">
             {barber.photo_url ? (
-              <img src={barber.photo_url} alt="" className="h-24 w-24 rounded-full object-cover" />
+              <img
+                src={barber.photo_url}
+                alt={barber.name}
+                className="h-24 w-24 shrink-0 rounded-full object-cover"
+              />
             ) : (
-              <div className="h-24 w-24 rounded-full bg-muted" />
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <Camera className="h-8 w-8" />
+              </div>
             )}
-            {writable && (
-              <label className="cursor-pointer text-sm text-primary">
-                {t("barbers.uploadPhoto")}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && upload.mutate(e.target.files[0])}
-                />
-              </label>
-            )}
+            <div className="space-y-2">
+              <div className="text-sm font-medium">{t("barbers.photo")}</div>
+              {writable && (
+                <div className="flex flex-wrap gap-2">
+                  <FileButton
+                    accept="image/jpeg,image/png,image/webp"
+                    loading={upload.isPending}
+                    onFile={(file) => upload.mutate(file)}
+                  >
+                    <Camera />
+                    {barber.photo_url ? t("barbers.replacePhoto") : t("barbers.uploadPhoto")}
+                  </FileButton>
+                  {barber.photo_url && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      loading={removePhoto.isPending}
+                      onClick={() => removePhoto.mutate()}
+                    >
+                      <Trash2 /> {t("barbers.removePhoto")}
+                    </Button>
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">{t("barbers.photoHint")}</p>
+            </div>
           </div>
+          {(isOwner || can("finance:read")) && (
+            <Field label={t("barbers.commission")} htmlFor="b-commission">
+              <div className="flex items-center gap-2">
+                <Input
+                  id="b-commission"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  className="w-28"
+                  value={commission}
+                  disabled={!isOwner}
+                  onChange={(e) => setCommission(e.target.value)}
+                />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{t("barbers.commissionHint")}</p>
+            </Field>
+          )}
           <Field label={t("barbers.sortOrder")} htmlFor="b-sort">
             <Input
               id="b-sort"
@@ -387,6 +470,7 @@ function ScheduleTab({ barberId, writable }: { barberId: string; writable: boole
         toast.warning(t("barbers.conflicts", { count: result.conflicting_bookings.length }));
       void client.invalidateQueries({ queryKey: ["schedule", barberId] });
       void client.invalidateQueries({ queryKey: ["calendar"] });
+      void client.invalidateQueries({ queryKey: keys.barbers }); // has_schedule badge/warning
     },
     onError: (error) => toast.error(errorMessage(error)),
   });

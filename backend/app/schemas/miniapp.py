@@ -58,3 +58,5 @@ class SalonPublicOut(ApiModel):
     cancel_min_hours: int
     reschedule_min_hours: int
     contacts: dict[str, str]
+    logo_url: str | None = None
+    gallery: list[str] = Field(default_factory=list)

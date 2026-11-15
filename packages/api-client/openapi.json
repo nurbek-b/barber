@@ -2853,6 +2853,77 @@
             "description": "Unprocessable Entity"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "admin-barbers"
+        ],
+        "summary": "Delete Photo",
+        "operationId": "admin_delete_photo",
+        "parameters": [
+          {
+            "name": "barber_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Barber Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarberOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
       }
     },
     "/api/v1/admin/barbers/{barber_id}/schedule": {
@@ -6787,6 +6858,236 @@
         }
       }
     },
+    "/api/v1/admin/settings/salon/logo": {
+      "post": {
+        "tags": [
+          "admin-settings"
+        ],
+        "summary": "Upload Logo",
+        "operationId": "admin_upload_logo",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_logo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalonSettingsOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin-settings"
+        ],
+        "summary": "Delete Logo",
+        "operationId": "admin_delete_logo",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalonSettingsOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/salon/gallery": {
+      "put": {
+        "tags": [
+          "admin-settings"
+        ],
+        "summary": "Put Gallery",
+        "operationId": "admin_put_gallery",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalleryPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalonSettingsOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-settings"
+        ],
+        "summary": "Add Gallery Photo",
+        "operationId": "admin_add_gallery_photo",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_add_gallery_photo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalonSettingsOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/admin-users": {
       "get": {
         "tags": [
@@ -8282,6 +8583,15 @@
             ],
             "title": "Telegram Chat Id"
           },
+          "commission_bp": {
+            "type": "integer",
+            "title": "Commission Bp"
+          },
+          "has_schedule": {
+            "type": "boolean",
+            "title": "Has Schedule",
+            "description": "false: no weekly hours, clients cannot book"
+          },
           "services": {
             "items": {
               "$ref": "#/components/schemas/BarberServiceOut"
@@ -8303,6 +8613,8 @@
           "is_active",
           "is_bookable_online",
           "telegram_chat_id",
+          "commission_bp",
+          "has_schedule",
           "services"
         ],
         "title": "BarberDetailOut"
@@ -8314,6 +8626,14 @@
             "maxLength": 200,
             "minLength": 1,
             "title": "Name"
+          },
+          "commission_bp": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Commission Bp",
+            "description": "Master's share of the services price, basis points: 4000 = 40 %. Owner only.",
+            "default": 0
           },
           "specialization_i18n": {
             "additionalProperties": {
@@ -8499,6 +8819,15 @@
               }
             ],
             "title": "Telegram Chat Id"
+          },
+          "commission_bp": {
+            "type": "integer",
+            "title": "Commission Bp"
+          },
+          "has_schedule": {
+            "type": "boolean",
+            "title": "Has Schedule",
+            "description": "false: no weekly hours, clients cannot book"
           }
         },
         "type": "object",
@@ -8513,7 +8842,9 @@
           "sort_order",
           "is_active",
           "is_bookable_online",
-          "telegram_chat_id"
+          "telegram_chat_id",
+          "commission_bp",
+          "has_schedule"
         ],
         "title": "BarberOut"
       },
@@ -8531,6 +8862,20 @@
               }
             ],
             "title": "Name"
+          },
+          "commission_bp": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commission Bp",
+            "description": "Master's share of the services price, basis points: 4000 = 40 %. Owner only."
           },
           "specialization_i18n": {
             "anyOf": [
@@ -8740,6 +9085,36 @@
           "services"
         ],
         "title": "BarberServicesPut"
+      },
+      "Body_admin_add_gallery_photo": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "JPEG, PNG or WebP, up to 5 MB"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_add_gallery_photo"
+      },
+      "Body_admin_upload_logo": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "JPEG, PNG or WebP, up to 5 MB"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_logo"
       },
       "Body_admin_upload_photo": {
         "properties": {
@@ -10192,6 +10567,11 @@
             "type": "integer",
             "title": "Paid"
           },
+          "master_share": {
+            "type": "integer",
+            "title": "Master Share",
+            "description": "Barbers' commission: % of subtotal, see commission_bp"
+          },
           "barber_id": {
             "type": "string",
             "format": "uuid",
@@ -10200,6 +10580,11 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "commission_bp": {
+            "type": "integer",
+            "title": "Commission Bp",
+            "description": "Current rate; past visits keep their own rate"
           }
         },
         "type": "object",
@@ -10209,8 +10594,10 @@
           "bonus_spent",
           "total_due",
           "paid",
+          "master_share",
           "barber_id",
-          "name"
+          "name",
+          "commission_bp"
         ],
         "title": "FinanceByBarber"
       },
@@ -10365,6 +10752,11 @@
           "paid": {
             "type": "integer",
             "title": "Paid"
+          },
+          "master_share": {
+            "type": "integer",
+            "title": "Master Share",
+            "description": "Barbers' commission: % of subtotal, see commission_bp"
           }
         },
         "type": "object",
@@ -10373,9 +10765,28 @@
           "subtotal",
           "bonus_spent",
           "total_due",
-          "paid"
+          "paid",
+          "master_share"
         ],
         "title": "FinanceTotals"
+      },
+      "GalleryPut": {
+        "properties": {
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Urls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "urls"
+        ],
+        "title": "GalleryPut",
+        "description": "Current gallery URLs in the new order; leaving one out deletes it."
       },
       "HTTPValidationError": {
         "properties": {
@@ -11293,6 +11704,24 @@
             },
             "type": "object",
             "title": "Contacts"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
+          "gallery": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Gallery"
           }
         },
         "type": "object",
@@ -11515,6 +11944,24 @@
             },
             "type": "object",
             "title": "Contacts"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
+          "gallery": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Gallery"
           }
         },
         "type": "object",
@@ -11534,7 +11981,9 @@
           "admin_chat_id",
           "notify_barbers",
           "notification_templates",
-          "contacts"
+          "contacts",
+          "logo_url",
+          "gallery"
         ],
         "title": "SalonSettingsOut"
       },

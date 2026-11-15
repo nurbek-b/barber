@@ -116,6 +116,14 @@ class SalonSettingsOut(ApiModel):
     notify_barbers: bool
     notification_templates: dict[str, dict[str, str]]
     contacts: dict[str, str]
+    logo_url: str | None
+    gallery: list[str]
+
+
+class GalleryPut(ApiModel):
+    """Current gallery URLs in the new order; leaving one out deletes it."""
+
+    urls: list[str] = Field(max_length=8)
 
 
 class SalonSettingsIn(ApiModel):
@@ -287,11 +295,13 @@ class FinanceTotals(ApiModel):
     bonus_spent: int
     total_due: int
     paid: int
+    master_share: int = Field(description="Barbers' commission: % of subtotal, see commission_bp")
 
 
 class FinanceByBarber(FinanceTotals):
     barber_id: uuid.UUID
     name: str
+    commission_bp: int = Field(description="Current rate; past visits keep their own rate")
 
 
 class FinanceByService(ApiModel):

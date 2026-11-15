@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import time as clock_time
 
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security.initdata import build_init_data
-from app.models import Barber, BarberService, Branch, Client, Service, User
+from app.models import Barber, BarberSchedule, BarberService, Branch, Client, Service, User
 from tests.conftest import BOT_TOKEN, tma_header
 
 API = "/api/v1/miniapp"
@@ -163,6 +164,13 @@ async def _seed_catalog(session: AsyncSession, branch: Branch) -> dict[str, obje
             BarberService(barber_id=senior.id, service_id=hidden.id),
             BarberService(barber_id=junior.id, service_id=haircut.id),
             BarberService(barber_id=offline.id, service_id=beard.id, price=1),
+            # barbers without weekly hours are hidden from clients
+            *(
+                BarberSchedule(
+                    barber_id=b.id, weekday=0, start_time=clock_time(10), end_time=clock_time(18)
+                )
+                for b in (senior, junior, offline)
+            ),
         ]
     )
     await session.commit()

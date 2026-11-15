@@ -78,8 +78,14 @@ class BarberServiceOut(ApiModel):
     effective_duration_min: int
 
 
+COMMISSION_DESCRIPTION = (
+    "Master's share of the services price, basis points: 4000 = 40 %. Owner only."
+)
+
+
 class BarberIn(ApiModel):
     name: str = Field(min_length=1, max_length=200)
+    commission_bp: int = Field(default=0, ge=0, le=10_000, description=COMMISSION_DESCRIPTION)
     specialization_i18n: I18nText = Field(default_factory=dict)
     bio_i18n: I18nText = Field(default_factory=dict)
     sort_order: int = Field(default=0, ge=0, le=10_000)
@@ -98,6 +104,9 @@ class BarberIn(ApiModel):
 
 class BarberPatch(ApiModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
+    commission_bp: int | None = Field(
+        default=None, ge=0, le=10_000, description=COMMISSION_DESCRIPTION
+    )
     specialization_i18n: I18nText | None = None
     bio_i18n: I18nText | None = None
     sort_order: int | None = Field(default=None, ge=0, le=10_000)
@@ -129,6 +138,8 @@ class BarberOut(ApiModel):
     is_active: bool
     is_bookable_online: bool
     telegram_chat_id: int | None
+    commission_bp: int
+    has_schedule: bool = Field(description="false: no weekly hours, clients cannot book")
 
 
 class BarberDetailOut(BarberOut):

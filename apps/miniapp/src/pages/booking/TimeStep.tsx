@@ -8,7 +8,7 @@ import { ApiError, keys, placeHold, releaseHold, useDays, useSlots } from "../..
 import { DayStrip, SlotGrid } from "../../components/SlotPicker";
 import { ErrorState, Screen, Skeleton, SkeletonList, useTimezone } from "../../components/ui";
 import { useLang, useT } from "../../i18n";
-import { barberParam, useBooking } from "../../store/booking";
+import { ANY_BARBER, barberParam, useBooking } from "../../store/booking";
 import { haptic } from "../../telegram/sdk";
 import { useBackButton } from "../../telegram/hooks";
 
@@ -72,6 +72,7 @@ export default function TimeStep() {
     }
   };
 
+  const noFreeDays = Boolean(days.data && !days.data.days.some((item) => item.slots_count > 0));
   const step = rescheduleBookingId ? 1 : 3;
   const total = rescheduleBookingId ? 2 : 4;
 
@@ -79,9 +80,31 @@ export default function TimeStep() {
     <Screen title={t("step.time")} step={step} totalSteps={total} back>
       {days.isPending && <Skeleton className="mb-4 h-16" />}
       {days.isError && <ErrorState error={days.error} onRetry={() => void days.refetch()} />}
-      {days.data && <DayStrip days={days.data.days} selected={day} onSelect={setDay} />}
+      {noFreeDays && days.data && (
+        <div className="space-y-3 py-8 text-center" role="status">
+          <p className="text-hint">
+            {t(barber === ANY_BARBER ? "time.noFreeDaysAny" : "time.noFreeDays", {
+              days: days.data.days.length,
+            })}
+          </p>
+          {barber !== ANY_BARBER && !rescheduleBookingId && (
+            <button
+              type="button"
+              className="rounded-xl bg-button px-4 py-2 text-sm font-medium text-button-text"
+              onClick={() => navigate("/book/barber")}
+            >
+              {t("time.otherBarber")}
+            </button>
+          )}
+        </div>
+      )}
+      {days.data && !noFreeDays && (
+        <DayStrip days={days.data.days} selected={day} onSelect={setDay} />
+      )}
 
-      {day && <h2 className="mb-3 mt-4 font-medium capitalize">{formatDayLong(day, lang)}</h2>}
+      {day && (
+        <h2 className="mb-3 mt-4 font-medium first-letter:uppercase">{formatDayLong(day, lang)}</h2>
+      )}
       {notice && (
         <p
           className="mb-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -101,7 +124,9 @@ export default function TimeStep() {
           onSelect={(slot) => void choose(slot)}
         />
       )}
-      {!day && days.data && <p className="py-8 text-center text-hint">{t("time.pickDay")}</p>}
+      {!day && days.data && !noFreeDays && (
+        <p className="py-8 text-center text-hint">{t("time.pickDay")}</p>
+      )}
     </Screen>
   );
 }

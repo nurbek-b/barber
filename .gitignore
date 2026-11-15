@@ -31,3 +31,6 @@ test-results/
 # Firebase Hosting build output and cache
 firebase-public/
 .firebase/
+
+# local dev servers for the Claude browser preview (dev-only values)
+.claude/launch.json

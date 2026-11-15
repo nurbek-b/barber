@@ -36,13 +36,23 @@ class Totals:
     bonus_spent: int = 0
     total_due: int = 0
     paid: int = 0
+    master_share: int = 0
 
-    def add(self, booking: Booking) -> None:
+    def add(self, booking: Booking, master_share: int = 0) -> None:
         self.bookings += 1
         self.subtotal += booking.subtotal
         self.bonus_spent += booking.bonus_spent
         self.total_due += booking.total_due
         self.paid += booking.paid_amount or 0
+        self.master_share += master_share
+
+
+def master_share(subtotal: int, commission_bp: int) -> int:
+    """Barber's share of the services price (before bonuses), rounded half up to a tyiyn.
+
+    Paying part of the bill with bonuses is the salon's discount, not the barber's.
+    """
+    return (subtotal * commission_bp + 5_000) // 10_000
 
 
 @dataclass(slots=True)
@@ -51,7 +61,7 @@ class FinanceReport:
     date_to: date
     currency: str
     totals: Totals
-    by_barber: list[tuple[uuid.UUID, str, Totals]]
+    by_barber: list[tuple[uuid.UUID, str, int, Totals]]  # id, name, current commission_bp
     by_service: list[tuple[uuid.UUID | None, dict[str, str], int, int]]
     by_method: list[tuple[str | None, int, int]]
     daily: list[tuple[date, int, int]]
@@ -260,7 +270,7 @@ class ReportService:
         start = local_day_bounds(date_from, tz).start
         end = local_day_bounds(date_to, tz).end
         query = (
-            select(Booking, Barber.name, Client.name, Client.phone)
+            select(Booking, Barber.name, Barber.commission_bp, Client.name, Client.phone)
             .join(Barber, Barber.id == Booking.barber_id)
             .outerjoin(Client, Client.id == Booking.client_id)
             .where(
@@ -277,12 +287,17 @@ class ReportService:
         rows = (await self.session.execute(query)).all()
 
         totals = Totals()
-        per_barber: dict[uuid.UUID, tuple[str, Totals]] = {}
+        per_barber: dict[uuid.UUID, tuple[str, int, Totals]] = {}
         per_method: dict[str | None, list[int]] = defaultdict(lambda: [0, 0])
         export_rows: list[dict[str, Any]] = []
-        for booking, barber_name, client_name, client_phone in rows:
-            totals.add(booking)
-            per_barber.setdefault(booking.barber_id, (barber_name, Totals()))[1].add(booking)
+        for booking, barber_name, barber_bp, client_name, client_phone in rows:
+            # rate fixed at completion; visits completed before rates existed use today's rate
+            rate = booking.barber_commission_bp
+            share = master_share(booking.subtotal, barber_bp if rate is None else rate)
+            totals.add(booking, share)
+            per_barber.setdefault(booking.barber_id, (barber_name, barber_bp, Totals()))[2].add(
+                booking, share
+            )
             method = booking.payment_method.value if booking.payment_method else None
             per_method[method][0] += 1
             per_method[method][1] += booking.paid_amount or 0
@@ -297,6 +312,7 @@ class ReportService:
                         "bonus_spent": booking.bonus_spent,
                         "total_due": booking.total_due,
                         "paid": booking.paid_amount or 0,
+                        "master_share": share,
                         "payment_method": method or "",
                         "booking_id": str(booking.id),
                     }
@@ -327,8 +343,8 @@ class ReportService:
             currency=salon.currency,
             totals=totals,
             by_barber=sorted(
-                ((bid, name, t) for bid, (name, t) in per_barber.items()),
-                key=lambda item: -item[2].paid,
+                ((bid, name, bp, t) for bid, (name, bp, t) in per_barber.items()),
+                key=lambda item: -item[3].paid,
             ),
             by_service=by_service,
             by_method=[(m, c[0], c[1]) for m, c in per_method.items()],
@@ -346,10 +362,11 @@ EXPORT_COLUMNS = [
     ("bonus_spent", "Бонусами"),
     ("total_due", "К оплате"),
     ("paid", "Оплачено"),
+    ("master_share", "Мастеру"),
     ("payment_method", "Способ оплаты"),
     ("booking_id", "ID записи"),
 ]
-MONEY_COLUMNS = {"subtotal", "bonus_spent", "total_due", "paid"}
+MONEY_COLUMNS = {"subtotal", "bonus_spent", "total_due", "paid", "master_share"}
 
 
 def _major(amount: int) -> str:
@@ -400,8 +417,10 @@ def export_xlsx(report: FinanceReport) -> bytes:
         )
 
     summary = workbook.create_sheet("Мастера")
-    summary.append(["Мастер", "Визиты", "Сумма", "Бонусами", "Оплачено"])
-    for _, name, totals in report.by_barber:
+    summary.append(
+        ["Мастер", "Визиты", "Сумма", "Бонусами", "Оплачено", "Процент сейчас", "Мастеру", "Салону"]
+    )
+    for _, name, commission_bp, totals in report.by_barber:
         summary.append(
             [
                 name,
@@ -409,6 +428,9 @@ def export_xlsx(report: FinanceReport) -> bytes:
                 Decimal(_major(totals.subtotal)),
                 Decimal(_major(totals.bonus_spent)),
                 Decimal(_major(totals.paid)),
+                Decimal(commission_bp) / 100,
+                Decimal(_major(totals.master_share)),
+                Decimal(_major(totals.paid - totals.master_share)),
             ]
         )
     buffer = io.BytesIO()

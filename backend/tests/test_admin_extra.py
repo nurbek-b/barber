@@ -389,6 +389,7 @@ async def test_finance_report_and_exports(
         "bonus_spent": 20_000,
         "total_due": 300_000,
         "paid": 300_000,
+        "master_share": 0,  # no commission rates set
     }
     by_barber = {item["name"]: item["paid"] for item in report["by_barber"]}
     assert by_barber == {"Первый": 200_000, "Второй": 100_000}
@@ -412,6 +413,7 @@ async def test_finance_report_and_exports(
     assert 'filename="finance_2026-12-01_2026-12-07.xlsx"' in xlsx.headers["content-disposition"]
     workbook = load_workbook(io.BytesIO(xlsx.content))
     assert workbook.sheetnames == ["Визиты", "Мастера"]
+    assert workbook["Мастера"]["G1"].value == "Мастеру"
     assert workbook["Визиты"].max_row == 5
 
     bad = await owner_client.get(

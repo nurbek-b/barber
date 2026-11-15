@@ -77,12 +77,13 @@ export default function Finance() {
       {report.isError && <p className="text-destructive">{errorMessage(report.error)}</p>}
       {report.data && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {[
               [t("finance.visits"), String(report.data.totals.bookings)],
               [t("finance.subtotal"), money(report.data.totals.subtotal)],
               [t("finance.bonusSpent"), money(report.data.totals.bonus_spent)],
               [t("finance.paid"), money(report.data.totals.paid)],
+              [t("finance.mastersTotal"), money(report.data.totals.master_share)],
             ].map(([label, value]) => (
               <Card key={label}>
                 <CardContent className="pt-5">
@@ -132,6 +133,9 @@ export default function Finance() {
                       <Th>{t("finance.subtotal")}</Th>
                       <Th>{t("finance.bonusSpent")}</Th>
                       <Th>{t("finance.paid")}</Th>
+                      <Th>{t("finance.commission")}</Th>
+                      <Th>{t("finance.masterShare")}</Th>
+                      <Th>{t("finance.salonShare")}</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -142,6 +146,9 @@ export default function Finance() {
                         <Td className="tabular-nums">{money(row.subtotal)}</Td>
                         <Td className="tabular-nums">{money(row.bonus_spent)}</Td>
                         <Td className="tabular-nums">{money(row.paid)}</Td>
+                        <Td className="tabular-nums">{row.commission_bp / 100}%</Td>
+                        <Td className="tabular-nums font-medium">{money(row.master_share)}</Td>
+                        <Td className="tabular-nums">{money(row.paid - row.master_share)}</Td>
                       </tr>
                     ))}
                   </tbody>

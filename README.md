@@ -180,9 +180,10 @@ rewrites выкладывается только через `deploy.sh`, пос�
   бэкенд — ruff, mypy, pytest с PostgreSQL и Redis как services, `alembic check`;
   фронтенд — установка с кэшем pnpm, актуальность api-client, ESLint, Prettier, tsc, Vitest,
   сборка (с бюджетом бандла Mini App); Playwright e2e; сборка Docker-образов и `nginx -t`.
-- **main** (`deploy-cloudrun.yml`): CI → `infra/cloudrun/deploy.sh` → проверка
-  `/api/v1/health/live`. Нужен secret `GCP_SA_KEY` (ключ `barber-deploy@`, команду печатает
-  `setup.sh`). Пока ключа нет, деплой пропускается.
+- **main** (`deploy-cloudrun.yml`): CI → `infra/cloudrun/deploy.sh` → проверка сайта.
+  Доступ к Google Cloud без ключей: Workload Identity Federation выдаёт workflow часовой токен
+  `barber-deploy@`, и только для ветки `main` репозитория `nurbek-b/barber`. Пул и провайдер
+  создаёт `setup.sh`. Секреты в GitHub не нужны.
 - **Вручную** (`deploy.yml`, вариант A): сборка образов в GHCR → **staging** по SSH →
   **smoke**-тесты Playwright → **production** с подтверждением.
 

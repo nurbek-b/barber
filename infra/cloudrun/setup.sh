@@ -79,6 +79,23 @@ if ((${#missing[@]})); then
 else
   echo "All secrets present."
 fi
-echo "GitHub Actions key (optional, for auto-deploy):"
-echo "  gcloud iam service-accounts keys create key.json --iam-account=$(sa barber-deploy)"
-echo "  -> add the file content as repository secret GCP_SA_KEY, then delete key.json"
+echo "==> GitHub Actions: Workload Identity Federation (no keys)"
+NUMBER="$($G projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
+$G services enable iamcredentials.googleapis.com sts.googleapis.com
+$G iam workload-identity-pools describe github --location=global >/dev/null 2>&1 ||
+  $G iam workload-identity-pools create github --location=global --display-name="GitHub Actions"
+$G iam workload-identity-pools providers describe barber-repo --location=global \
+  --workload-identity-pool=github >/dev/null 2>&1 ||
+  $G iam workload-identity-pools providers create-oidc barber-repo --location=global \
+    --workload-identity-pool=github --display-name="${GITHUB_REPO}" \
+    --issuer-uri=https://token.actions.githubusercontent.com \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
+    --attribute-condition="assertion.repository=='${GITHUB_REPO}' && assertion.ref=='refs/heads/main'"
+$G iam service-accounts add-iam-policy-binding "$(sa barber-deploy)" \
+  --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/${NUMBER}/locations/global/workloadIdentityPools/github/attribute.repository/${GITHUB_REPO}" >/dev/null
+# deploy.sh reads TASKS_TOKEN to configure Cloud Scheduler
+$G secrets add-iam-policy-binding TASKS_TOKEN --member="serviceAccount:$(sa barber-deploy)" \
+  --role=roles/secretmanager.secretAccessor >/dev/null
+echo "Provider: projects/${NUMBER}/locations/global/workloadIdentityPools/github/providers/barber-repo"
+echo "(already set in .github/workflows/deploy-cloudrun.yml)"

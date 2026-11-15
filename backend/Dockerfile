@@ -29,8 +29,9 @@ WORKDIR /app
 COPY --from=build /opt/venv /opt/venv
 COPY --from=build /src/alembic ./alembic
 COPY --from=build /src/alembic.ini ./
+# executable bit comes from git (no --chmod: Cloud Build's default builder lacks BuildKit)
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 USER app
-COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
     CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/api/v1/health/live' % os.environ.get('PORT','8000'), timeout=2)" || exit 1

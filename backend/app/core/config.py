@@ -65,6 +65,20 @@ class Settings(BaseSettings):
 
     sentry_dsn: str | None = None
 
+    @field_validator(
+        "database_url",
+        "database_url_direct",
+        "redis_url",
+        "bot_token",
+        "webhook_secret",
+        "jwt_secret",
+        mode="before",
+    )
+    @classmethod
+    def _strip(cls, value: object) -> object:
+        # values pasted into Secret Manager often end with a newline
+        return value.strip() if isinstance(value, str) else value
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: object) -> object:

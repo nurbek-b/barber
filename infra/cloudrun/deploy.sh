@@ -83,7 +83,8 @@ schedule barber-bonus "5 * * * *" /tasks/bonus
 
 if [[ -z "${SKIP_HOSTING:-}" ]]; then
   echo "==> Firebase Hosting (admin WebSocket -> ${API_URL})"
-  (cd "${ROOT}" && VITE_WS_URL="${API_URL}" npx --yes firebase-tools@13 deploy --only hosting \
+  FIREBASE="$(command -v firebase || echo "npx --yes firebase-tools@13")"
+  (cd "${ROOT}" && VITE_WS_URL="${API_URL}" ${FIREBASE} deploy --only hosting \
     --project "${PROJECT_ID}" --non-interactive ${FIREBASE_ACCOUNT:+--account "${FIREBASE_ACCOUNT}"})
 fi
 

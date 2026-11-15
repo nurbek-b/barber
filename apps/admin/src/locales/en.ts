@@ -187,6 +187,15 @@ export const en: Messages = {
     commissionHint:
       "The barber's share of the services price. Only the owner can change it; completed visits keep their rate.",
     commissionShort: "{{value}}%",
+    works: "Works",
+    worksHint: "Up to {{max}} photos of the barber's work, shown on their Mini App page.",
+    addWork: "Add photo",
+    reviews: "Reviews",
+    noReviews: "No reviews yet",
+    hide: "Hide",
+    show: "Show",
+    hidden: "Hidden",
+    hiddenHint: "Hidden reviews are not shown to clients and do not count in the rating.",
   },
   services: {
     title: "Services",

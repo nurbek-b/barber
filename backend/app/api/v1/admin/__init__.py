@@ -9,6 +9,7 @@ from app.api.v1.admin import (
     clients,
     notifications,
     reports,
+    reviews,
     schedule,
     services,
     settings,
@@ -24,6 +25,7 @@ router.include_router(services.router)
 router.include_router(availability.router)
 router.include_router(bookings.router)
 router.include_router(notifications.router)
+router.include_router(reviews.router)
 router.include_router(bonus.router)
 router.include_router(clients.router)
 router.include_router(settings.router)

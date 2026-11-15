@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     ForeignKey,
     Index,
@@ -53,6 +54,13 @@ class Booking(TimestampMixin, Base):
         Index("ix_bookings_barber_start", "barber_id", "start_at"),
         Index("ix_bookings_branch_start", "branch_id", "start_at"),
         Index("ix_bookings_client_start", "client_id", "start_at"),
+        # public review feed of a barber, newest first
+        Index(
+            "ix_bookings_barber_reviews",
+            "barber_id",
+            "rated_at",
+            postgresql_where=text("rating IS NOT NULL AND NOT review_hidden"),
+        ),
         Index(
             "ux_bookings_idempotency",
             "client_id",
@@ -101,6 +109,9 @@ class Booking(TimestampMixin, Base):
     barber_commission_bp: Mapped[int | None] = mapped_column(SmallInteger)
     rating: Mapped[int | None] = mapped_column(SmallInteger)  # 1..5 from the post-visit poll
     rated_at: Mapped[datetime | None] = mapped_column()
+    # written review of this visit (one per completed booking); hidden = moderated by the salon
+    review_text: Mapped[str | None] = mapped_column(Text)
+    review_hidden: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     services: Mapped[list[BookingService]] = relationship(

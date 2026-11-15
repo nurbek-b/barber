@@ -101,6 +101,11 @@ TEXTS: dict[str, dict[str, str]] = {
         "ky": "Баалаганыңыз үчүн рахмат! {stars}",
         "en": "Thanks for your rating! {stars}",
     },
+    "write_review": {
+        "ru": "✍️ Написать отзыв",
+        "ky": "✍️ Пикир жазуу",
+        "en": "✍️ Write a review",
+    },
     "rate_already": {
         "ru": "Вы уже оценили этот визит.",
         "ky": "Бул визитти баалагансыз.",

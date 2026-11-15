@@ -26,6 +26,7 @@ import {
 } from "@/components/ui";
 import { PageHeader } from "@/features/Layout";
 import { keys, pickName, useServicesList } from "@/features/queries";
+import { ReviewsTab, WorksTab } from "@/features/BarberWorks";
 import { ScheduleEditor, overlappingDays, type Interval } from "@/features/ScheduleEditor";
 import { ADMIN, api, call, errorMessage } from "@/lib/api";
 import { useAuth, useCan } from "@/lib/auth";
@@ -69,6 +70,8 @@ export default function BarberEdit() {
           <TabsTrigger value="services">{t("barbers.services")}</TabsTrigger>
           <TabsTrigger value="schedule">{t("barbers.schedule")}</TabsTrigger>
           <TabsTrigger value="exceptions">{t("barbers.exceptions")}</TabsTrigger>
+          <TabsTrigger value="works">{t("barbers.works")}</TabsTrigger>
+          {can("barbers:read") && <TabsTrigger value="reviews">{t("barbers.reviews")}</TabsTrigger>}
         </TabsList>
         <TabsContent value="profile">
           <ProfileTab barberId={barberId} writable={writable} />
@@ -81,6 +84,12 @@ export default function BarberEdit() {
         </TabsContent>
         <TabsContent value="exceptions">
           <ExceptionsTab barberId={barberId} writable={writable} />
+        </TabsContent>
+        <TabsContent value="works">
+          <WorksTab barber={barber.data} writable={writable} />
+        </TabsContent>
+        <TabsContent value="reviews">
+          <ReviewsTab barberId={barberId} />
         </TabsContent>
       </Tabs>
     </div>

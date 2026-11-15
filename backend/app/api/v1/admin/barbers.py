@@ -50,6 +50,7 @@ def to_out(barber: Barber, has_schedule: bool) -> BarberOut:
         is_active=barber.is_active,
         is_bookable_online=barber.is_bookable_online,
         telegram_chat_id=barber.telegram_chat_id,
+        portfolio=list(barber.portfolio or []),
         commission_bp=barber.commission_bp,
         has_schedule=has_schedule,
     )
@@ -186,4 +187,37 @@ async def delete_photo(
 ) -> BarberOut:
     service = BarbersService(session, settings)
     barber = await service.remove_photo(ctx.branch_id, barber_id, ctx.actor)
+    return to_out(barber, barber.id in await service.scheduled_ids([barber.id]))
+
+
+class PortfolioPut(ApiModel):
+    """Current catalogue URLs in the new order; leaving one out deletes it."""
+
+    urls: list[str] = Field(max_length=12)
+
+
+@router.post("/{barber_id}/portfolio", response_model=BarberOut, responses=ERRORS)
+async def add_portfolio_photo(
+    barber_id: uuid.UUID,
+    ctx: CanWrite,
+    session: SessionDep,
+    settings: SettingsDep,
+    file: Annotated[UploadFile, File(description="JPEG, PNG or WebP, up to 5 MB")],
+) -> BarberOut:
+    content = await file.read(settings.max_upload_bytes + 1)
+    service = BarbersService(session, settings)
+    barber = await service.add_portfolio_photo(ctx.branch_id, barber_id, content, ctx.actor)
+    return to_out(barber, barber.id in await service.scheduled_ids([barber.id]))
+
+
+@router.put("/{barber_id}/portfolio", response_model=BarberOut, responses=ERRORS)
+async def put_portfolio(
+    barber_id: uuid.UUID,
+    body: PortfolioPut,
+    ctx: CanWrite,
+    session: SessionDep,
+    settings: SettingsDep,
+) -> BarberOut:
+    service = BarbersService(session, settings)
+    barber = await service.set_portfolio(ctx.branch_id, barber_id, body.urls, ctx.actor)
     return to_out(barber, barber.id in await service.scheduled_ids([barber.id]))

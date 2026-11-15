@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { ApiError, useBookings, useCancelBooking } from "../api";
 import { BookingCard } from "../components/BookingCard";
+import { Stars } from "../components/Stars";
 import { ErrorState, Screen, SkeletonList } from "../components/ui";
 import { useT } from "../i18n";
 import { useBooking } from "../store/booking";
@@ -111,6 +112,19 @@ export default function MyBookings() {
                 ) : (
                   <p className="text-xs text-hint">{t("bookings.tooLate")}</p>
                 )
+              ) : booking.status === "completed" && (booking.can_review || booking.rating) ? (
+                <div className="flex items-center justify-between gap-2">
+                  {booking.rating ? <Stars value={booking.rating} /> : <span />}
+                  {booking.can_review && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/review/${booking.id}`)}
+                      className="rounded-xl bg-button/10 px-3 py-2 text-sm font-medium text-button"
+                    >
+                      {t(booking.rating ? "review.edit" : "review.leave")}
+                    </button>
+                  )}
+                </div>
               ) : null
             }
           />

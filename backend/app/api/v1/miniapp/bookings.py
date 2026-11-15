@@ -21,8 +21,10 @@ from app.schemas.bookings import (
     RepeatDraftOut,
     RescheduleIn,
 )
+from app.schemas.catalog import ReviewIn
 from app.services.bookings import ClientBookingService
 from app.services.branches import BranchService
+from app.services.reviews import ReviewService
 
 router = APIRouter(tags=["miniapp-bookings"])
 
@@ -199,4 +201,22 @@ async def reschedule_booking(
     booking = await ClientBookingService(session, redis, cache).reschedule(
         ctx.branch_id, ctx.identity.client, ctx.actor, booking_id, body.hold_id, now
     )
+    return await _one(ctx, session, booking, now)
+
+
+@router.put("/bookings/{booking_id}/review", response_model=BookingOut, responses=ERRORS)
+async def review_booking(
+    booking_id: uuid.UUID,
+    body: ReviewIn,
+    ctx: MiniappDep,
+    session: SessionDep,
+    redis: RedisDep,
+    cache: SlotCacheDep,
+    now: NowDep,
+) -> BookingOut:
+    """Rate a completed visit (1..5) with optional text; can be edited for 30 days."""
+    await ReviewService(session).submit(
+        ctx.identity.client, booking_id, body.rating, body.text, now
+    )
+    booking = await ClientBookingService(session, redis, cache).get(ctx.identity.client, booking_id)
     return await _one(ctx, session, booking, now)

@@ -56,26 +56,34 @@ export default function BarberStep() {
           <ErrorState error={barbers.error} onRetry={() => void barbers.refetch()} />
         )}
         {barbers.data?.map((barber) => (
-          <button
-            key={barber.id}
-            type="button"
-            className={option(barber.id, selected === barber.id)}
-            aria-pressed={selected === barber.id}
-            onClick={() => choose(barber.id)}
-          >
-            <Avatar name={barber.name} url={barber.photo_url} />
-            <div className="min-w-0 flex-1">
-              <div className="font-medium">{barber.name}</div>
-              <div className="truncate text-sm text-hint">
-                {pickI18n(barber.specialization_i18n, lang)}
+          <div key={barber.id} className="relative">
+            <button
+              type="button"
+              className={`${option(barber.id, selected === barber.id)} pr-24`}
+              aria-pressed={selected === barber.id}
+              onClick={() => choose(barber.id)}
+            >
+              <Avatar name={barber.name} url={barber.photo_url} />
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">{barber.name}</div>
+                <div className="truncate text-sm text-hint">
+                  {pickI18n(barber.specialization_i18n, lang)}
+                </div>
               </div>
-            </div>
-            <div className="text-sm text-hint">
-              {barber.rating !== null && barber.rating !== undefined
-                ? `★ ${barber.rating.toFixed(1)}`
-                : t("barber.noRating")}
-            </div>
-          </button>
+              <div className="text-sm text-hint">
+                {barber.rating !== null && barber.rating !== undefined
+                  ? `★ ${barber.rating.toFixed(1)}`
+                  : t("barber.noRating")}
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/barber/${barber.id}`)}
+              className="absolute bottom-2 right-3 rounded-full px-2 py-1 text-xs text-link"
+            >
+              {t("profile.more")} ›
+            </button>
+          </div>
         ))}
         {barbers.data?.length === 0 && (
           <Card>

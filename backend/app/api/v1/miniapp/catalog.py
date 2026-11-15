@@ -6,18 +6,22 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from app.api.deps import MiniappDep, SessionDep
-from app.core.errors import ErrorResponse
+from app.core.errors import ErrorResponse, NotFoundError
 from app.models import Barber
 from app.schemas.catalog import (
     PublicBarberOut,
+    PublicBarberProfileOut,
     PublicCatalogOut,
     PublicServiceOut,
+    ReviewOut,
+    ReviewPage,
     ServiceCategoryOut,
 )
 from app.schemas.miniapp import SalonPublicOut
 from app.services.barbers import BarbersService
 from app.services.branches import BranchService
 from app.services.catalog import CatalogService
+from app.services.reviews import ReviewService, ReviewView
 
 router = APIRouter(tags=["miniapp-catalog"])
 
@@ -66,6 +70,45 @@ async def list_barbers(
     """Barbers bookable online; with service_ids — only those who perform all of them."""
     barbers = await BarbersService(session).list_public(ctx.branch_id, service_ids)
     return [to_public_barber(barber) for barber in barbers]
+
+
+def to_review(view: ReviewView) -> ReviewOut:
+    booking = view.booking
+    return ReviewOut(
+        booking_id=booking.id,
+        rating=booking.rating or 0,
+        text=booking.review_text,
+        author=view.author,
+        services=[line.name_snapshot for line in booking.services],
+        created_at=booking.rated_at or booking.end_at,
+    )
+
+
+@router.get("/barbers/{barber_id}", response_model=PublicBarberProfileOut, responses=ERRORS)
+async def get_barber_profile(
+    barber_id: uuid.UUID, ctx: MiniappDep, session: SessionDep
+) -> PublicBarberProfileOut:
+    """Profile page: bio, rating, works catalogue. Reviews: /barbers/{id}/reviews."""
+    barber = await BarbersService(session).get(ctx.branch_id, barber_id)
+    if not barber.is_active or not barber.is_bookable_online:
+        raise NotFoundError("Barber not found")
+    return PublicBarberProfileOut(
+        **to_public_barber(barber).model_dump(), portfolio=list(barber.portfolio or [])
+    )
+
+
+@router.get("/barbers/{barber_id}/reviews", response_model=ReviewPage, responses=ERRORS)
+async def list_barber_reviews(
+    barber_id: uuid.UUID,
+    ctx: MiniappDep,
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    cursor: str | None = None,
+) -> ReviewPage:
+    items, next_cursor = await ReviewService(session).public_page(
+        ctx.branch_id, barber_id, limit=limit, cursor=cursor
+    )
+    return ReviewPage(items=[to_review(item) for item in items], next_cursor=next_cursor)
 
 
 @router.get("/services", response_model=PublicCatalogOut, responses=ERRORS)

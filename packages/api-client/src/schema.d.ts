@@ -114,6 +114,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/miniapp/barbers/{barber_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Barber Profile
+         * @description Profile page: bio, rating, works catalogue. Reviews: /barbers/{id}/reviews.
+         */
+        get: operations["miniapp_get_barber_profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/miniapp/barbers/{barber_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Barber Reviews */
+        get: operations["miniapp_list_barber_reviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/miniapp/services": {
         parameters: {
             query?: never;
@@ -302,6 +339,26 @@ export interface paths {
          * @description Move to a new time using a hold placed with `reschedule_booking_id`.
          */
         post: operations["miniapp_reschedule_booking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/miniapp/bookings/{booking_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Review Booking
+         * @description Rate a completed visit (1..5) with optional text; can be edited for 30 days.
+         */
+        put: operations["miniapp_review_booking"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -545,6 +602,24 @@ export interface paths {
         post: operations["admin_upload_photo"];
         /** Delete Photo */
         delete: operations["admin_delete_photo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/barbers/{barber_id}/portfolio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Portfolio */
+        put: operations["admin_put_portfolio"];
+        /** Add Portfolio Photo */
+        post: operations["admin_add_portfolio_photo"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -905,6 +980,43 @@ export interface paths {
         put?: never;
         /** Mark All Read */
         post: operations["admin_mark_all_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Reviews */
+        get: operations["admin_list_reviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{booking_id}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Visibility
+         * @description Hidden reviews leave the public feed and the barber's average rating.
+         */
+        post: operations["admin_set_visibility"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1416,6 +1528,36 @@ export interface components {
             /** Permissions */
             permissions: string[];
         };
+        /** AdminReviewOut */
+        AdminReviewOut: {
+            /**
+             * Booking Id
+             * Format: uuid
+             */
+            booking_id: string;
+            /**
+             * Barber Id
+             * Format: uuid
+             */
+            barber_id: string;
+            /** Barber Name */
+            barber_name: string;
+            /** Client Id */
+            client_id: string | null;
+            /** Client Name */
+            client_name: string;
+            /** Rating */
+            rating: number;
+            /** Text */
+            text: string | null;
+            /** Hidden */
+            hidden: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /**
          * AdminRole
          * @enum {string}
@@ -1548,6 +1690,8 @@ export interface components {
             is_bookable_online: boolean;
             /** Telegram Chat Id */
             telegram_chat_id: number | null;
+            /** Portfolio */
+            portfolio?: string[];
             /** Commission Bp */
             commission_bp: number;
             /**
@@ -1662,6 +1806,8 @@ export interface components {
             is_bookable_online: boolean;
             /** Telegram Chat Id */
             telegram_chat_id: number | null;
+            /** Portfolio */
+            portfolio?: string[];
             /** Commission Bp */
             commission_bp: number;
             /**
@@ -1741,6 +1887,14 @@ export interface components {
         };
         /** Body_admin_add_gallery_photo */
         Body_admin_add_gallery_photo: {
+            /**
+             * File
+             * @description JPEG, PNG or WebP, up to 5 MB
+             */
+            file: string;
+        };
+        /** Body_admin_add_portfolio_photo */
+        Body_admin_add_portfolio_photo: {
             /**
              * File
              * @description JPEG, PNG or WebP, up to 5 MB
@@ -1987,6 +2141,16 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Rating */
+            rating?: number | null;
+            /** Review Text */
+            review_text?: string | null;
+            /**
+             * Can Review
+             * @description Completed within 30 days, not moderated
+             * @default false
+             */
+            can_review: boolean;
         };
         /** BookingPage */
         BookingPage: {
@@ -2586,6 +2750,17 @@ export interface components {
          * @enum {string}
          */
         NotificationType: "booking_created" | "booking_cancelled" | "booking_rescheduled" | "booking_status_changed" | "client_registered";
+        /** Page[AdminReviewOut] */
+        Page_AdminReviewOut_: {
+            /** Items */
+            items: components["schemas"]["AdminReviewOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** Page[BarberOut] */
         Page_BarberOut_: {
             /** Items */
@@ -2621,6 +2796,14 @@ export interface components {
              */
             contact: string;
         };
+        /**
+         * PortfolioPut
+         * @description Current catalogue URLs in the new order; leaving one out deletes it.
+         */
+        PortfolioPut: {
+            /** Urls */
+            urls: string[];
+        };
         /** PublicBarberOut */
         PublicBarberOut: {
             /**
@@ -2644,6 +2827,35 @@ export interface components {
             rating: number | null;
             /** Rating Count */
             rating_count: number;
+        };
+        /** PublicBarberProfileOut */
+        PublicBarberProfileOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Photo Url */
+            photo_url: string | null;
+            /** Specialization I18N */
+            specialization_i18n: {
+                [key: string]: string;
+            };
+            /** Bio I18N */
+            bio_i18n: {
+                [key: string]: string;
+            };
+            /** Rating */
+            rating: number | null;
+            /** Rating Count */
+            rating_count: number;
+            /**
+             * Portfolio
+             * @description Photos of the barber's work, /media/... URLs
+             */
+            portfolio: string[];
         };
         /** PublicCatalogOut */
         PublicCatalogOut: {
@@ -2781,6 +2993,54 @@ export interface components {
             revenue: number;
             /** Bookings */
             bookings: number;
+        };
+        /** ReviewIn */
+        ReviewIn: {
+            /** Rating */
+            rating: number;
+            /** Text */
+            text?: string | null;
+        };
+        /** ReviewOut */
+        ReviewOut: {
+            /**
+             * Booking Id
+             * Format: uuid
+             */
+            booking_id: string;
+            /** Rating */
+            rating: number;
+            /** Text */
+            text: string | null;
+            /**
+             * Author
+             * @description First name and initial, e.g. 'Бектур А.'
+             */
+            author: string;
+            /**
+             * Services
+             * @description name_i18n of the visit's services
+             */
+            services: {
+                [key: string]: string;
+            }[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ReviewPage */
+        ReviewPage: {
+            /** Items */
+            items: components["schemas"]["ReviewOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ReviewVisibilityIn */
+        ReviewVisibilityIn: {
+            /** Hidden */
+            hidden: boolean;
         };
         /** SalonPublicOut */
         SalonPublicOut: {
@@ -3613,6 +3873,111 @@ export interface operations {
             };
         };
     };
+    miniapp_get_barber_profile: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                barber_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicBarberProfileOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    miniapp_list_barber_reviews: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                barber_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     miniapp_list_services: {
         parameters: {
             query?: {
@@ -4401,6 +4766,97 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RescheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description slot_conflict → details.alternatives */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    miniapp_review_booking: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewIn"];
             };
         };
         responses: {
@@ -5308,6 +5764,130 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_put_portfolio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barber_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortfolioPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_add_portfolio_photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barber_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_admin_add_portfolio_photo"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -7280,6 +7860,129 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_reviews: {
+        parameters: {
+            query?: {
+                barber_id?: string | null;
+                hidden?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AdminReviewOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_set_visibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewVisibilityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

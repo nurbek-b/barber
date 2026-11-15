@@ -21,6 +21,7 @@ from app.schemas.bookings import (
     QuoteOut,
 )
 from app.services.bookings import can_change
+from app.services.reviews import can_review
 
 
 def quote_out(quote: Quote) -> QuoteOut:
@@ -78,6 +79,9 @@ async def client_bookings_out(
             can_cancel=can_change(booking, now, salon.cancel_min_hours),
             can_reschedule=can_change(booking, now, salon.reschedule_min_hours),
             created_at=booking.created_at,
+            rating=booking.rating,
+            review_text=None if booking.review_hidden else booking.review_text,
+            can_review=can_review(booking, now),
         )
         for booking in bookings
     ]

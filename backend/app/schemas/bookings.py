@@ -102,6 +102,9 @@ class BookingOut(ApiModel):
     can_cancel: bool
     can_reschedule: bool
     created_at: datetime
+    rating: int | None = None
+    review_text: str | None = None
+    can_review: bool = Field(default=False, description="Completed within 30 days, not moderated")
 
 
 class BookingPage(ApiModel):

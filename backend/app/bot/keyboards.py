@@ -17,18 +17,25 @@ LANGUAGES = (("ru", "🇷🇺 Русский"), ("ky", "🇰🇬 Кыргызч�
 
 
 def app_button(
-    settings: Settings, lang: str, start_param: str | None = None
+    settings: Settings, lang: str, start_param: str | None = None, text_key: str = "open_app"
 ) -> InlineKeyboardButton:
     """WebApp button when the Mini App URL is configured, otherwise a t.me deep link."""
+    text = t(text_key, lang)
     if settings.miniapp_url:
         url = settings.miniapp_url
         if start_param:
             url += ("&" if "?" in url else "?") + f"startapp={start_param}"
-        return InlineKeyboardButton(text=t("open_app", lang), web_app=WebAppInfo(url=url))
+        return InlineKeyboardButton(text=text, web_app=WebAppInfo(url=url))
     link = f"https://t.me/{settings.bot_username}/{settings.miniapp_short_name}"
     if start_param:
         link += f"?startapp={start_param}"
-    return InlineKeyboardButton(text=t("open_app", lang), url=link)
+    return InlineKeyboardButton(text=text, url=link)
+
+
+def write_review(settings: Settings, lang: str, booking_id: object) -> InlineKeyboardMarkup:
+    """After a star rating: open the Mini App review form of that visit."""
+    button = app_button(settings, lang, f"review_{booking_id}", text_key="write_review")
+    return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
 
 def open_app(settings: Settings, lang: str) -> InlineKeyboardMarkup:

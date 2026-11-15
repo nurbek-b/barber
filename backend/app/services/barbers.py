@@ -17,6 +17,8 @@ from app.schemas.catalog import BarberIn, BarberPatch, BarberServiceIn
 from app.services.audit import Actor, AuditService, diff, snapshot
 from app.services.catalog import effective_duration, effective_price
 
+MAX_PORTFOLIO = 12
+
 
 class PayloadTooLargeError(AppError):
     status_code = 413
@@ -199,6 +201,57 @@ class BarbersService:
                 after={"is_active": False},
             )
             await self.session.commit()
+
+    async def add_portfolio_photo(
+        self, branch_id: uuid.UUID, barber_id: uuid.UUID, content: bytes, actor: Actor
+    ) -> Barber:
+        if self.settings is None:
+            raise RuntimeError("settings are required for uploads")
+        barber = await self.get(branch_id, barber_id)
+        if len(barber.portfolio or []) >= MAX_PORTFOLIO:
+            raise ValidationAppError(
+                f"The works catalogue holds up to {MAX_PORTFOLIO} photos", code="portfolio_full"
+            )
+        if len(content) > self.settings.max_upload_bytes:
+            raise PayloadTooLargeError()
+        extension = detect_image_type(content[:16])
+        if extension is None:
+            raise ValidationAppError("Only JPEG, PNG or WebP images", code="unsupported_image")
+        key = f"portfolio/{barber.id}-{secrets.token_hex(6)}.{extension}"
+        await get_media_storage(self.settings).save(key, content)
+        url = url_for(self.settings, key)
+        barber.portfolio = [*(barber.portfolio or []), url]
+        self.audit.record(actor, "barber.portfolio_add", "barber", barber.id, after={"url": url})
+        await self.session.commit()
+        return barber
+
+    async def set_portfolio(
+        self, branch_id: uuid.UUID, barber_id: uuid.UUID, urls: Sequence[str], actor: Actor
+    ) -> Barber:
+        """Reorder or remove works: `urls` must be a subset of the current catalogue."""
+        if self.settings is None:
+            raise RuntimeError("settings are required for uploads")
+        barber = await self.get(branch_id, barber_id)
+        current = list(barber.portfolio or [])
+        if any(url not in current for url in urls) or len(set(urls)) != len(urls):
+            raise ValidationAppError("Unknown or duplicate photo", code="portfolio_invalid")
+        removed = [url for url in current if url not in urls]
+        barber.portfolio = list(urls)
+        self.audit.record(
+            actor,
+            "barber.portfolio",
+            "barber",
+            barber.id,
+            before={"portfolio": current},
+            after={"portfolio": list(urls)},
+        )
+        await self.session.commit()
+        storage = get_media_storage(self.settings)
+        for url in removed:
+            key = key_from_url(self.settings, url)
+            if key:
+                await storage.delete(key)
+        return barber
 
     async def remove_photo(
         self, branch_id: uuid.UUID, barber_id: uuid.UUID, actor: Actor

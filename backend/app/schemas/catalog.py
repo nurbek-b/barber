@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from pydantic import Field, model_validator
 
@@ -138,6 +139,7 @@ class BarberOut(ApiModel):
     is_active: bool
     is_bookable_online: bool
     telegram_chat_id: int | None
+    portfolio: list[str] = Field(default_factory=list)
     commission_bp: int
     has_schedule: bool = Field(description="false: no weekly hours, clients cannot book")
 
@@ -157,6 +159,45 @@ class PublicBarberOut(ApiModel):
     bio_i18n: dict[str, str]
     rating: float | None
     rating_count: int
+
+
+class PublicBarberProfileOut(PublicBarberOut):
+    portfolio: list[str] = Field(description="Photos of the barber's work, /media/... URLs")
+
+
+class ReviewOut(ApiModel):
+    booking_id: uuid.UUID
+    rating: int
+    text: str | None
+    author: str = Field(description="First name and initial, e.g. 'Бектур А.'")
+    services: list[dict[str, str]] = Field(description="name_i18n of the visit's services")
+    created_at: datetime
+
+
+class ReviewPage(ApiModel):
+    items: list[ReviewOut]
+    next_cursor: str | None
+
+
+class ReviewIn(ApiModel):
+    rating: int = Field(ge=1, le=5)
+    text: str | None = Field(default=None, max_length=1000)
+
+
+class AdminReviewOut(ApiModel):
+    booking_id: uuid.UUID
+    barber_id: uuid.UUID
+    barber_name: str
+    client_id: uuid.UUID | None
+    client_name: str
+    rating: int
+    text: str | None
+    hidden: bool
+    created_at: datetime
+
+
+class ReviewVisibilityIn(ApiModel):
+    hidden: bool
 
 
 class PublicServiceOut(ApiModel):

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -18,6 +18,7 @@ from app.models.enums import ACTIVE_BOOKING_STATUSES, ActorType, BookingKind, Bo
 from app.services.audit import Actor, AuditService
 from app.services.branches import BranchService
 from app.services.client_registry import ClientRegistry, normalize_phone
+from app.services.reviews import recompute_barber_rating
 from app.services.staff_link import PREFIX as STAFF_PREFIX
 from app.services.staff_link import parse_token
 
@@ -153,18 +154,7 @@ class BotActions:
         booking.rating = rating
         booking.rated_at = now
         await self.session.flush()
-        avg, count = (
-            await self.session.execute(
-                select(func.avg(Booking.rating), func.count(Booking.rating)).where(
-                    Booking.barber_id == booking.barber_id, Booking.rating.is_not(None)
-                )
-            )
-        ).one()
-        await self.session.execute(
-            update(Barber)
-            .where(Barber.id == booking.barber_id)
-            .values(rating_x100=round(float(avg) * 100), rating_count=int(count))
-        )
+        await recompute_barber_rating(self.session, booking.barber_id)
         await self.session.commit()
         return RateOutcome.OK
 

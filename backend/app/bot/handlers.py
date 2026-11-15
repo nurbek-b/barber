@@ -143,6 +143,7 @@ async def rate(callback: CallbackQuery, session: AsyncSession, settings: Setting
                 text=t("rate_thanks", lang, stars="⭐" * value),
                 chat_id=callback.message.chat.id,
                 message_id=callback.message.message_id,
+                reply_markup=keyboards.write_review(settings, lang, booking_id),
             )
     elif outcome is RateOutcome.ALREADY:
         await callback.answer(t("rate_already", lang), show_alert=False)

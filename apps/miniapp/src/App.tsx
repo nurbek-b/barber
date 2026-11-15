@@ -12,6 +12,7 @@ import { queryClient, useMe } from "./api";
 import { OfflineBanner, SkeletonList } from "./components/ui";
 import { LangContext, normalizeLang, useT } from "./i18n";
 import Home from "./pages/Home";
+import { pathForStartParam } from "./deeplinks";
 import { telegramEnv } from "./telegram/sdk";
 import { MainButtonHost } from "./telegram/hooks";
 
@@ -23,6 +24,8 @@ const ConfirmStep = lazy(() => import("./pages/booking/ConfirmStep"));
 const DoneStep = lazy(() => import("./pages/booking/DoneStep"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const Bonus = lazy(() => import("./pages/Bonus"));
+const BarberProfile = lazy(() => import("./pages/BarberProfile"));
+const ReviewForm = lazy(() => import("./pages/ReviewForm"));
 
 function Lazy({ children }: { children: ReactNode }) {
   return (
@@ -94,6 +97,27 @@ export const routes: RouteObject[] = [
     ],
   },
   {
+    element: <Shell tabs={false} />,
+    children: [
+      {
+        path: "/barber/:barberId",
+        element: (
+          <Lazy>
+            <BarberProfile />
+          </Lazy>
+        ),
+      },
+      {
+        path: "/review/:bookingId",
+        element: (
+          <Lazy>
+            <ReviewForm />
+          </Lazy>
+        ),
+      },
+    ],
+  },
+  {
     path: "/book",
     element: <Shell tabs={false} />,
     children: [
@@ -142,8 +166,9 @@ export const routes: RouteObject[] = [
 ];
 
 function initialPath(): string {
-  // deep links: startapp=book → open the flow; the referral payload is handled by the backend
-  return telegramEnv().startParam === "book" ? "/book/barber" : "/";
+  // WebApp buttons carry ?startapp=... in the URL instead of Telegram's start_param
+  const fromUrl = new URLSearchParams(window.location.search).get("startapp");
+  return pathForStartParam(telegramEnv().startParam ?? fromUrl);
 }
 
 function Localized({ children }: { children: ReactNode }) {

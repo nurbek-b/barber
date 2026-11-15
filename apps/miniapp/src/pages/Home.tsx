@@ -107,7 +107,12 @@ export default function Home() {
         {barbers.data && barbers.data.length > 0 && (
           <div className="-mx-4 flex gap-3 overflow-x-auto px-4">
             {barbers.data.map((barber) => (
-              <div key={barber.id} className="w-20 shrink-0 text-center text-xs">
+              <button
+                key={barber.id}
+                type="button"
+                onClick={() => navigate(`/barber/${barber.id}`)}
+                className="w-20 shrink-0 text-center text-xs"
+              >
                 {barber.photo_url ? (
                   <img
                     src={barber.photo_url}
@@ -121,7 +126,10 @@ export default function Home() {
                   </div>
                 )}
                 <div className="truncate">{barber.name}</div>
-              </div>
+                {barber.rating !== null && barber.rating !== undefined && (
+                  <div className="text-hint">★ {barber.rating.toFixed(1)}</div>
+                )}
+              </button>
             ))}
           </div>
         )}

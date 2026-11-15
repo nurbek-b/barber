@@ -7,6 +7,7 @@ import {
   type BookingPage,
   type ClientMe,
   type Hold,
+  type ReviewPage,
 } from "@barber/api-client";
 import {
   QueryClient,
@@ -53,6 +54,8 @@ export const keys = {
   bonus: ["bonus"] as const,
   bonusHistory: ["bonus", "history"] as const,
   referral: ["referral"] as const,
+  barber: (id: string) => ["barber", id] as const,
+  reviews: (id: string) => ["reviews", id] as const,
 };
 
 const BASE = "/api/v1/miniapp";
@@ -294,5 +297,60 @@ export function useSetLanguage() {
       if (context?.previous) client.setQueryData(keys.me, context.previous);
     },
     onSuccess: (me) => client.setQueryData(keys.me, me),
+  });
+}
+
+export function useBarberProfile(barberId: string) {
+  return useQuery({
+    queryKey: keys.barber(barberId),
+    queryFn: () =>
+      call(api.GET(`${BASE}/barbers/{barber_id}`, { params: { path: { barber_id: barberId } } })),
+  });
+}
+
+export function useBarberReviews(barberId: string) {
+  return useInfiniteQuery({
+    queryKey: keys.reviews(barberId),
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) =>
+      call(
+        api.GET(`${BASE}/barbers/{barber_id}/reviews`, {
+          params: {
+            path: { barber_id: barberId },
+            query: { limit: 10, cursor: pageParam ?? undefined },
+          },
+        }),
+      ),
+    getNextPageParam: (last: ReviewPage) => last.next_cursor ?? null,
+  });
+}
+
+/** Rate a completed visit; refreshes the visit list and that barber's profile and reviews. */
+export function useSubmitReview() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { bookingId: string; rating: number; text: string }) =>
+      call(
+        api.PUT(`${BASE}/bookings/{booking_id}/review`, {
+          params: { path: { booking_id: input.bookingId } },
+          body: { rating: input.rating, text: input.text.trim() || null },
+        }),
+      ),
+    onSuccess: (booking: Booking) => {
+      void client.invalidateQueries({ queryKey: ["bookings"] });
+      void client.invalidateQueries({ queryKey: keys.barber(booking.barber.id) });
+      void client.invalidateQueries({ queryKey: keys.reviews(booking.barber.id) });
+      void client.invalidateQueries({ queryKey: ["barbers"] });
+    },
+  });
+}
+
+export function useBookingDetails(bookingId: string) {
+  return useQuery({
+    queryKey: ["booking", bookingId],
+    queryFn: () =>
+      call(
+        api.GET(`${BASE}/bookings/{booking_id}`, { params: { path: { booking_id: bookingId } } }),
+      ),
   });
 }

@@ -25,6 +25,10 @@ export type BonusSummary = Schemas["BonusSummaryOut"];
 export type BonusTransaction = Schemas["BonusTransactionOut"];
 export type Referral = Schemas["ReferralOut"];
 export type AdminMe = Schemas["AdminMe"];
+export type BarberProfile = Schemas["PublicBarberProfileOut"];
+export type Review = Schemas["ReviewOut"];
+export type ReviewPage = Schemas["ReviewPage"];
+export type AdminReview = Schemas["AdminReviewOut"];
 export type AdminBooking = Schemas["AdminBookingOut"];
 
 export interface ErrorBody {

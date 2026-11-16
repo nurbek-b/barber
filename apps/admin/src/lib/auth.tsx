@@ -20,6 +20,7 @@ export type Permission =
   | "bookings:status_own"
   | "finance:read"
   | "finance:export"
+  | "payouts:write"
   | "settings:read"
   | "settings:write"
   | "bonus:adjust"

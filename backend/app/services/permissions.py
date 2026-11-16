@@ -22,6 +22,7 @@ class Perm(StrEnum):
     BOOKINGS_STATUS_OWN = "bookings:status_own"
     FINANCE_READ = "finance:read"
     FINANCE_EXPORT = "finance:export"
+    PAYOUTS_WRITE = "payouts:write"
     SETTINGS_READ = "settings:read"
     SETTINGS_WRITE = "settings:write"
     BONUS_ADJUST = "bonus:adjust"
@@ -31,7 +32,9 @@ class Perm(StrEnum):
     NOTIFICATIONS_READ = "notifications:read"
 
 
-_OWNER_ONLY = frozenset({Perm.BONUS_SETTINGS_WRITE, Perm.STAFF_MANAGE, Perm.AUDIT_READ})
+_OWNER_ONLY = frozenset(
+    {Perm.BONUS_SETTINGS_WRITE, Perm.STAFF_MANAGE, Perm.AUDIT_READ, Perm.PAYOUTS_WRITE}
+)
 _OWN_SCOPED = frozenset({Perm.BARBERS_READ_OWN, Perm.BOOKINGS_READ_OWN, Perm.BOOKINGS_STATUS_OWN})
 
 ROLE_PERMISSIONS: dict[AdminRole, frozenset[Perm]] = {

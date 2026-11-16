@@ -10,6 +10,7 @@ from app.api.v1.admin import (
     clients,
     notifications,
     payments,
+    payouts,
     promo,
     reports,
     reviews,
@@ -31,6 +32,7 @@ router.include_router(notifications.router)
 router.include_router(reviews.router)
 router.include_router(promo.router)
 router.include_router(payments.router)
+router.include_router(payouts.router)
 router.include_router(broadcasts.router)
 router.include_router(bonus.router)
 router.include_router(clients.router)

@@ -16,6 +16,7 @@ from app.models.catalog import (
 )
 from app.models.notification import Notification, NotificationRead, TelegramOutbox
 from app.models.payment import Payment
+from app.models.payout import BarberPayout
 from app.models.promo import PromoCode
 from app.models.staff import AdminRefreshToken, AdminUser
 from app.models.user import Client, User
@@ -26,6 +27,7 @@ __all__ = [
     "AdminUser",
     "AuditLog",
     "Barber",
+    "BarberPayout",
     "BarberSchedule",
     "BarberScheduleException",
     "BarberService",

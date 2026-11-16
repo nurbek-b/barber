@@ -125,6 +125,23 @@ export const en: Messages = {
     prepayRequiredHint:
       "Online bookings of this client wait for a prepayment (when prepayment is on in settings).",
   },
+  payouts: {
+    title: "Barber payouts",
+    until: "Earned up to",
+    earned: "Earned",
+    paidOut: "Paid",
+    due: "Due",
+    last: "Last payout",
+    pay: "Pay out",
+    date: "Payout date",
+    note: "Note",
+    history: "Payout history",
+    empty: "No payouts yet",
+    saved: "Payout recorded",
+    deleted: "Payout deleted",
+    delete: "Delete",
+    hint: "Earnings are the barber's share of completed visits (rate at the time of the visit). The barber gets a Telegram note if linked.",
+  },
   booking: {
     title: "Booking",
     client: "Client",

@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from app.models.enums import ActorType, AdminRole, PromoKind
+from app.models.enums import ActorType, AdminRole, PaymentMethod, PromoKind
 from app.schemas.common import SUPPORTED_LANGUAGES, ApiModel, Money
 
 # ---------------- clients ----------------
@@ -440,4 +440,36 @@ class BroadcastOut(ApiModel):
     segment: dict[str, Any]
     promo_code: str | None
     recipients: int
+    created_at: datetime
+
+
+# ---------------- barber payouts ----------------
+
+
+class PayoutBalanceOut(ApiModel):
+    barber_id: uuid.UUID
+    barber_name: str
+    commission_bp: int
+    earned: int = Field(description="Barber's share of completed visits up to `until`")
+    paid: int
+    due: int = Field(description="earned - paid; negative = paid in advance")
+    last_paid_on: date | None
+
+
+class PayoutIn(ApiModel):
+    barber_id: uuid.UUID
+    amount: int = Field(gt=0, le=10**12)
+    paid_on: date
+    method: PaymentMethod = PaymentMethod.CASH
+    note: str | None = Field(default=None, max_length=300)
+
+
+class PayoutOut(ApiModel):
+    id: uuid.UUID
+    barber_id: uuid.UUID
+    barber_name: str
+    amount: int
+    paid_on: date
+    method: PaymentMethod
+    note: str | None
     created_at: datetime

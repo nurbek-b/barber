@@ -78,6 +78,11 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "en": "⚠️ We couldn't find your payment of {amount} for the booking on {when}. "
         "Please check the transfer or contact the salon.",
     },
+    "payout_barber": {
+        "ru": "💰 Выплата {amount} от {date}\n{note}",
+        "ky": "💰 {date} күнкү төлөм: {amount}\n{note}",
+        "en": "💰 Payout of {amount} on {date}\n{note}",
+    },
     "booking_cancelled_client": {
         "ru": "❌ Запись на {when} отменена.",
         "ky": "❌ {when} жазылуу жокко чыгарылды.",

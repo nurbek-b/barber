@@ -19,6 +19,7 @@ import {
   Th,
 } from "@/components/ui";
 import { PageHeader } from "@/features/Layout";
+import { PayoutsCard } from "@/features/Payouts";
 import { pickName } from "@/features/queries";
 import { ADMIN, api, call, downloadFile, errorMessage } from "@/lib/api";
 import { Can } from "@/lib/auth";
@@ -195,6 +196,7 @@ export default function Finance() {
           </div>
         </>
       )}
+      <PayoutsCard until={to} />
     </div>
   );
 }

@@ -53,6 +53,7 @@ def to_out(barber: Barber, has_schedule: bool) -> BarberOut:
         portfolio=list(barber.portfolio or []),
         commission_bp=barber.commission_bp,
         has_schedule=has_schedule,
+        payment_qr_url=barber.payment_qr_url,
     )
 
 

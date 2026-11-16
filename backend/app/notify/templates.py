@@ -38,6 +38,46 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "ky": "🆕 Сизге жаңы жазылуу: {when}\n{client}\n{services}",
         "en": "🆕 New booking for you: {when}\n{client}\n{services}",
     },
+    "booking_prepay_client": {
+        "ru": "⏳ <b>Запись ждёт предоплаты</b>\n{when}\nПредоплата: <b>{amount}</b>\n"
+        "Оплатите по QR и нажмите «Я оплатил» в приложении. Без оплаты запись отменится "
+        "через {minutes} мин.\n\n{salon}",
+        "ky": "⏳ <b>Жазылуу алдын ала төлөмдү күтүүдө</b>\n{when}\nАлдын ала төлөм: "
+        "<b>{amount}</b>\nQR аркылуу төлөп, тиркемеде «Төлөдүм» баскычын басыңыз. Төлөнбөсө "
+        "жазылуу {minutes} мүнөттөн кийин жокко чыгат.\n\n{salon}",
+        "en": "⏳ <b>Your booking awaits a prepayment</b>\n{when}\nPrepayment: <b>{amount}</b>\n"
+        "Pay by QR and tap \u201cI paid\u201d in the app. Unpaid bookings are cancelled after "
+        "{minutes} min.\n\n{salon}",
+    },
+    "payment_claimed_admin": {
+        "ru": "💳 <b>Клиент сообщил об оплате</b>\n{amount} (к оплате {total_due})\n"
+        "Клиент: {client} {phone}\nМастер: {barber}\n{when}\n"
+        "Проверьте поступление и подтвердите в админке.",
+        "ky": "💳 <b>Кардар төлөгөнүн билдирди</b>\n{amount} (төлөөгө {total_due})\n"
+        "Кардар: {client} {phone}\nУстат: {barber}\n{when}\n"
+        "Түшкөнүн текшерип, админкада ырастаңыз.",
+        "en": "💳 <b>Client reports a payment</b>\n{amount} (due {total_due})\n"
+        "Client: {client} {phone}\nBarber: {barber}\n{when}\n"
+        "Check your bank and confirm it in the admin panel.",
+    },
+    "payment_confirmed_client": {
+        "ru": "💳 Оплата {amount} получена. Спасибо!\nЗапись: {when}",
+        "ky": "💳 {amount} төлөм алынды. Рахмат!\nЖазылуу: {when}",
+        "en": "💳 Payment of {amount} received. Thank you!\nBooking: {when}",
+    },
+    "payment_confirmed_booking_client": {
+        "ru": "✅ <b>Предоплата {amount} получена — запись подтверждена</b>\n{when}\n\n{salon}",
+        "ky": "✅ <b>{amount} алдын ала төлөм алынды — жазылуу ырасталды</b>\n{when}\n\n{salon}",
+        "en": "✅ <b>Prepayment of {amount} received — you're booked</b>\n{when}\n\n{salon}",
+    },
+    "payment_rejected_client": {
+        "ru": "⚠️ Мы не нашли вашу оплату {amount} по записи на {when}. "
+        "Проверьте перевод или свяжитесь с салоном.",
+        "ky": "⚠️ {when} жазылуусу боюнча {amount} төлөмүңүз табылган жок. "
+        "Которууну текшериңиз же салон менен байланышыңыз.",
+        "en": "⚠️ We couldn't find your payment of {amount} for the booking on {when}. "
+        "Please check the transfer or contact the salon.",
+    },
     "booking_cancelled_client": {
         "ru": "❌ Запись на {when} отменена.",
         "ky": "❌ {when} жазылуу жокко чыгарылды.",

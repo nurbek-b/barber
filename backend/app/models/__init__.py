@@ -15,6 +15,7 @@ from app.models.catalog import (
     ServiceCategory,
 )
 from app.models.notification import Notification, NotificationRead, TelegramOutbox
+from app.models.payment import Payment
 from app.models.promo import PromoCode
 from app.models.staff import AdminRefreshToken, AdminUser
 from app.models.user import Client, User
@@ -41,6 +42,7 @@ __all__ = [
     "LoyaltyLevel",
     "Notification",
     "NotificationRead",
+    "Payment",
     "PromoCode",
     "SalonSettings",
     "Service",

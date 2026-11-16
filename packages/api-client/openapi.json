@@ -2227,6 +2227,254 @@
         }
       }
     },
+    "/api/v1/miniapp/bookings/{booking_id}/payment": {
+      "get": {
+        "tags": [
+          "miniapp-bookings"
+        ],
+        "summary": "Get Payment",
+        "description": "The QR to pay by (the barber's, else the salon's) and what is left to pay.",
+        "operationId": "miniapp_get_payment",
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentInfoOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "slot_conflict → details.alternatives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "miniapp-bookings"
+        ],
+        "summary": "Claim Payment",
+        "description": "'I paid': the salon is alerted and confirms after checking its bank app.",
+        "operationId": "miniapp_claim_payment",
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentClaimIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentInfoOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "slot_conflict → details.alternatives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/api/v1/miniapp/bonus": {
       "get": {
         "tags": [
@@ -6856,6 +7104,687 @@
         }
       }
     },
+    "/api/v1/admin/bookings/{booking_id}/payments": {
+      "get": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "List Payments",
+        "operationId": "admin_list_payments",
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentOut"
+                  },
+                  "title": "Response Admin List Payments"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "Add Payment",
+        "description": "Money the salon received itself (cash deposit, a transfer it saw). Counts at once.",
+        "operationId": "admin_add_payment",
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Booking Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPaymentIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/payments/{payment_id}/confirm": {
+      "post": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "Confirm Payment",
+        "description": "The money arrived (optionally a different amount). A prepaid PENDING booking becomes\nCONFIRMED once the required prepayment is covered.",
+        "operationId": "admin_confirm_payment",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentDecisionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/payments/{payment_id}/reject": {
+      "post": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "Reject Payment",
+        "operationId": "admin_reject_payment",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/salon/payment-qr": {
+      "post": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "Upload Salon Qr",
+        "operationId": "admin_upload_salon_qr",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_salon_qr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalonSettingsOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "Delete Salon Qr",
+        "operationId": "admin_delete_salon_qr",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalonSettingsOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/barbers/{barber_id}/payment-qr": {
+      "post": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "Upload Barber Qr",
+        "description": "The barber's own bank QR (set by the owner); clients of this barber pay by it.",
+        "operationId": "admin_upload_barber_qr",
+        "parameters": [
+          {
+            "name": "barber_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Barber Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_admin_upload_barber_qr"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarberOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin-payments"
+        ],
+        "summary": "Delete Barber Qr",
+        "operationId": "admin_delete_barber_qr",
+        "parameters": [
+          {
+            "name": "barber_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Barber Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarberOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
     "/api/v1/admin/broadcasts/preview": {
       "post": {
         "tags": [
@@ -10450,6 +11379,27 @@
             ],
             "title": "Client Confirmed At",
             "description": "The client tapped 'I'll come' in a reminder"
+          },
+          "prepaid_amount": {
+            "type": "integer",
+            "title": "Prepaid Amount",
+            "default": 0
+          },
+          "prepay_due": {
+            "type": "integer",
+            "title": "Prepay Due",
+            "default": 0
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unpaid",
+              "claimed",
+              "partial",
+              "paid"
+            ],
+            "title": "Payment Status",
+            "default": "unpaid"
           }
         },
         "type": "object",
@@ -10681,6 +11631,37 @@
           "permissions"
         ],
         "title": "AdminMe"
+      },
+      "AdminPaymentIn": {
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "maximum": 100000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Amount"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "default": "transfer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "title": "AdminPaymentIn"
       },
       "AdminReviewOut": {
         "properties": {
@@ -11112,6 +12093,18 @@
             "title": "Has Schedule",
             "description": "false: no weekly hours, clients cannot book"
           },
+          "payment_qr_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Qr Url",
+            "description": "Bank QR for client payments"
+          },
           "services": {
             "items": {
               "$ref": "#/components/schemas/BarberServiceOut"
@@ -11355,6 +12348,18 @@
             "type": "boolean",
             "title": "Has Schedule",
             "description": "false: no weekly hours, clients cannot book"
+          },
+          "payment_qr_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Qr Url",
+            "description": "Bank QR for client payments"
           }
         },
         "type": "object",
@@ -11643,6 +12648,21 @@
         ],
         "title": "Body_admin_add_portfolio_photo"
       },
+      "Body_admin_upload_barber_qr": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "JPEG, PNG or WebP, up to 5 MB"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_barber_qr"
+      },
       "Body_admin_upload_logo": {
         "properties": {
           "file": {
@@ -11672,6 +12692,21 @@
           "file"
         ],
         "title": "Body_admin_upload_photo"
+      },
+      "Body_admin_upload_salon_qr": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "JPEG, PNG or WebP, up to 5 MB"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_admin_upload_salon_qr"
       },
       "BonusSettingsIn": {
         "properties": {
@@ -12209,6 +13244,34 @@
             "title": "Can Review",
             "description": "Completed within 30 days, not moderated",
             "default": false
+          },
+          "prepaid_amount": {
+            "type": "integer",
+            "title": "Prepaid Amount",
+            "default": 0
+          },
+          "prepay_due": {
+            "type": "integer",
+            "title": "Prepay Due",
+            "description": "Required before the booking is confirmed",
+            "default": 0
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unpaid",
+              "claimed",
+              "partial",
+              "paid"
+            ],
+            "title": "Payment Status",
+            "default": "unpaid"
+          },
+          "can_pay": {
+            "type": "boolean",
+            "title": "Can Pay",
+            "description": "A QR is set up and something is unpaid",
+            "default": false
           }
         },
         "type": "object",
@@ -12591,6 +13654,11 @@
             "format": "date-time",
             "title": "Created At"
           },
+          "prepay_required": {
+            "type": "boolean",
+            "title": "Prepay Required",
+            "default": false
+          },
           "birthday": {
             "anyOf": [
               {
@@ -12944,6 +14012,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "prepay_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepay Required",
+            "description": "Ask this client to prepay online bookings"
           }
         },
         "type": "object",
@@ -13041,6 +14121,11 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "prepay_required": {
+            "type": "boolean",
+            "title": "Prepay Required",
+            "default": false
           }
         },
         "type": "object",
@@ -13880,7 +14965,8 @@
           "booking_cancelled",
           "booking_rescheduled",
           "booking_status_changed",
-          "client_registered"
+          "client_registered",
+          "payment_claimed"
         ],
         "title": "NotificationType"
       },
@@ -13977,6 +15063,123 @@
         ],
         "title": "Page[ServiceOut]"
       },
+      "PaymentClaimIn": {
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "maximum": 100000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Amount",
+            "description": "Tyiyn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "title": "PaymentClaimIn"
+      },
+      "PaymentDecisionIn": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "Amount actually received"
+          }
+        },
+        "type": "object",
+        "title": "PaymentDecisionIn"
+      },
+      "PaymentInfoOut": {
+        "properties": {
+          "booking_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Booking Id"
+          },
+          "qr_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qr Url"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "total_due": {
+            "type": "integer",
+            "title": "Total Due"
+          },
+          "prepaid_amount": {
+            "type": "integer",
+            "title": "Prepaid Amount"
+          },
+          "prepay_due": {
+            "type": "integer",
+            "title": "Prepay Due"
+          },
+          "amount_left": {
+            "type": "integer",
+            "title": "Amount Left",
+            "description": "Suggested amount: the prepayment, else the rest"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unpaid",
+              "claimed",
+              "partial",
+              "paid"
+            ],
+            "title": "Payment Status"
+          },
+          "claimed": {
+            "type": "boolean",
+            "title": "Claimed",
+            "description": "An 'I paid' waits for the salon to check"
+          }
+        },
+        "type": "object",
+        "required": [
+          "booking_id",
+          "qr_url",
+          "note",
+          "currency",
+          "total_due",
+          "prepaid_amount",
+          "prepay_due",
+          "amount_left",
+          "payment_status",
+          "claimed"
+        ],
+        "title": "PaymentInfoOut"
+      },
       "PaymentMethod": {
         "type": "string",
         "enum": [
@@ -13986,6 +15189,91 @@
           "mixed"
         ],
         "title": "PaymentMethod"
+      },
+      "PaymentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "booking_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Booking Id"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "by_client": {
+            "type": "boolean",
+            "title": "By Client"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "booking_id",
+          "amount",
+          "method",
+          "status",
+          "by_client",
+          "note",
+          "created_at",
+          "decided_at"
+        ],
+        "title": "PaymentOut"
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "claimed",
+          "confirmed",
+          "rejected"
+        ],
+        "title": "PaymentStatus"
       },
       "PhoneIn": {
         "properties": {
@@ -14632,6 +15920,12 @@
               }
             ],
             "title": "Promo Code"
+          },
+          "prepay_percent": {
+            "type": "integer",
+            "title": "Prepay Percent",
+            "description": "This client must prepay this % of the total to be confirmed",
+            "default": 0
           }
         },
         "type": "object",
@@ -15120,6 +16414,42 @@
             "title": "Review Links",
             "description": "Map review pages: {\"2gis\": url, \"google\": url}"
           },
+          "payment_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Note",
+            "description": "Shown next to the QR: bank, recipient name"
+          },
+          "prepay_percent": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Prepay Percent",
+            "description": "0 = no prepayment",
+            "default": 0
+          },
+          "prepay_after_no_shows": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Prepay After No Shows",
+            "default": 1
+          },
+          "prepay_timeout_min": {
+            "type": "integer",
+            "maximum": 10080.0,
+            "minimum": 0.0,
+            "title": "Prepay Timeout Min",
+            "description": "Cancel unpaid bookings after; 0 = never",
+            "default": 120
+          },
           "revisit_after_days": {
             "type": "integer",
             "maximum": 365.0,
@@ -15259,6 +16589,43 @@
             },
             "type": "object",
             "title": "Review Links"
+          },
+          "payment_qr_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Qr Url"
+          },
+          "payment_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Note"
+          },
+          "prepay_percent": {
+            "type": "integer",
+            "title": "Prepay Percent",
+            "default": 0
+          },
+          "prepay_after_no_shows": {
+            "type": "integer",
+            "title": "Prepay After No Shows",
+            "default": 1
+          },
+          "prepay_timeout_min": {
+            "type": "integer",
+            "title": "Prepay Timeout Min",
+            "default": 120
           }
         },
         "type": "object",

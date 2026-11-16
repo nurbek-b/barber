@@ -26,6 +26,7 @@ const MyBookings = lazy(() => import("./pages/MyBookings"));
 const Bonus = lazy(() => import("./pages/Bonus"));
 const BarberProfile = lazy(() => import("./pages/BarberProfile"));
 const ReviewForm = lazy(() => import("./pages/ReviewForm"));
+const Payment = lazy(() => import("./pages/Payment"));
 
 function Lazy({ children }: { children: ReactNode }) {
   return (
@@ -112,6 +113,14 @@ export const routes: RouteObject[] = [
         element: (
           <Lazy>
             <ReviewForm />
+          </Lazy>
+        ),
+      },
+      {
+        path: "/pay/:bookingId",
+        element: (
+          <Lazy>
+            <Payment />
           </Lazy>
         ),
       },

@@ -11,6 +11,7 @@ import { Badge, Button, Input, NativeSelect } from "@/components/ui";
 import { BookingDetailsDialog, CreateBookingDialog } from "@/features/BookingDialogs";
 import { PageHeader } from "@/features/Layout";
 import { pickName, STATUS_VARIANT, useBarbersList } from "@/features/queries";
+import { PaymentBadge } from "@/features/Payments";
 import { ADMIN, api, call } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { useFormat } from "@/lib/format";
@@ -73,9 +74,12 @@ export default function Bookings() {
       {
         header: t("booking.status"),
         cell: ({ row }) => (
-          <Badge variant={STATUS_VARIANT[row.original.status]}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
+          <div className="flex flex-wrap gap-1">
+            <Badge variant={STATUS_VARIANT[row.original.status]}>
+              {t(`status.${row.original.status}`)}
+            </Badge>
+            <PaymentBadge state={row.original.payment_status} />
+          </div>
         ),
       },
       {

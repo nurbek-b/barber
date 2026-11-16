@@ -87,45 +87,56 @@ export default function MyBookings() {
             key={booking.id}
             booking={booking}
             actions={
-              scope === "upcoming" && booking.status !== "cancelled" ? (
-                booking.can_cancel || booking.can_reschedule ? (
-                  <div className="flex gap-2">
-                    {booking.can_reschedule && (
+              <>
+                {scope === "upcoming" && booking.can_pay && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/pay/${booking.id}`)}
+                    className="w-full rounded-xl bg-button py-2 text-sm font-medium text-button-text"
+                  >
+                    {t("pay.button")}
+                  </button>
+                )}
+                {scope === "upcoming" && booking.status !== "cancelled" ? (
+                  booking.can_cancel || booking.can_reschedule ? (
+                    <div className="flex gap-2">
+                      {booking.can_reschedule && (
+                        <button
+                          type="button"
+                          onClick={() => onReschedule(booking)}
+                          className="flex-1 rounded-xl bg-bg-secondary py-2 text-sm font-medium"
+                        >
+                          {t("button.reschedule")}
+                        </button>
+                      )}
+                      {booking.can_cancel && (
+                        <button
+                          type="button"
+                          onClick={() => void onCancel(booking)}
+                          className="flex-1 rounded-xl bg-destructive/10 py-2 text-sm font-medium text-destructive"
+                        >
+                          {t("button.cancel")}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-hint">{t("bookings.tooLate")}</p>
+                  )
+                ) : booking.status === "completed" && (booking.can_review || booking.rating) ? (
+                  <div className="flex items-center justify-between gap-2">
+                    {booking.rating ? <Stars value={booking.rating} /> : <span />}
+                    {booking.can_review && (
                       <button
                         type="button"
-                        onClick={() => onReschedule(booking)}
-                        className="flex-1 rounded-xl bg-bg-secondary py-2 text-sm font-medium"
+                        onClick={() => navigate(`/review/${booking.id}`)}
+                        className="rounded-xl bg-button/10 px-3 py-2 text-sm font-medium text-button"
                       >
-                        {t("button.reschedule")}
-                      </button>
-                    )}
-                    {booking.can_cancel && (
-                      <button
-                        type="button"
-                        onClick={() => void onCancel(booking)}
-                        className="flex-1 rounded-xl bg-destructive/10 py-2 text-sm font-medium text-destructive"
-                      >
-                        {t("button.cancel")}
+                        {t(booking.rating ? "review.edit" : "review.leave")}
                       </button>
                     )}
                   </div>
-                ) : (
-                  <p className="text-xs text-hint">{t("bookings.tooLate")}</p>
-                )
-              ) : booking.status === "completed" && (booking.can_review || booking.rating) ? (
-                <div className="flex items-center justify-between gap-2">
-                  {booking.rating ? <Stars value={booking.rating} /> : <span />}
-                  {booking.can_review && (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/review/${booking.id}`)}
-                      className="rounded-xl bg-button/10 px-3 py-2 text-sm font-medium text-button"
-                    >
-                      {t(booking.rating ? "review.edit" : "review.leave")}
-                    </button>
-                  )}
-                </div>
-              ) : null
+                ) : null}
+              </>
             }
           />
         ))}

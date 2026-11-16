@@ -41,6 +41,7 @@ class SalonSettings(TimestampMixin, Base):
         CheckConstraint("reschedule_min_hours >= 0", name="reschedule_hours"),
         CheckConstraint("max_active_bookings_per_client >= 1", name="max_active"),
         CheckConstraint("revisit_after_days BETWEEN 0 AND 365", name="revisit_days"),
+        CheckConstraint("prepay_percent BETWEEN 0 AND 100", name="prepay_percent"),
     )
 
     branch_id: Mapped[uuid.UUID] = mapped_column(
@@ -72,6 +73,14 @@ class SalonSettings(TimestampMixin, Base):
     review_links: Mapped[dict[str, Any]] = mapped_column(
         JSONB, default=dict, server_default=text("'{}'::jsonb")
     )
+    # payments: the salon's bank QR and a hint shown next to it (bank, recipient)
+    payment_qr_url: Mapped[str | None] = mapped_column(String(512))
+    payment_note: Mapped[str | None] = mapped_column(String(300))
+    # prepayment for unreliable clients: % of the total (0 = off), required after N no-shows
+    # or when the client is flagged; unpaid bookings are cancelled after prepay_timeout_min
+    prepay_percent: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
+    prepay_after_no_shows: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")
+    prepay_timeout_min: Mapped[int] = mapped_column(SmallInteger, default=120, server_default="120")
     # days after a visit to remind the client to come again; 0 = off
     revisit_after_days: Mapped[int] = mapped_column(SmallInteger, default=30, server_default="30")
     # branding for the Mini App: /media/salon/... URLs

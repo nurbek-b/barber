@@ -47,6 +47,11 @@ def to_out(salon: SalonSettings) -> SalonSettingsOut:
         logo_url=salon.logo_url,
         gallery=list(salon.gallery or []),
         review_links={str(k): str(v) for k, v in (salon.review_links or {}).items()},
+        payment_qr_url=salon.payment_qr_url,
+        payment_note=salon.payment_note,
+        prepay_percent=salon.prepay_percent,
+        prepay_after_no_shows=salon.prepay_after_no_shows,
+        prepay_timeout_min=salon.prepay_timeout_min,
         revisit_after_days=salon.revisit_after_days,
     )
 

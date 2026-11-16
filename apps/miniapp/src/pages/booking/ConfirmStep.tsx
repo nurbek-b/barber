@@ -66,13 +66,19 @@ export default function ConfirmStep() {
           holdId: hold.hold_id,
         });
       } else {
-        await create.mutateAsync({
+        const created = await create.mutateAsync({
           holdId: hold.hold_id,
           comment: draft.comment.trim() || null,
           bonusToSpend: bonusToSpend(promoQuote ?? hold.quote, draft.useBonus),
           idempotencyKey: draft.ensureIdempotencyKey(newIdempotencyKey),
           promoCode: promoQuote?.promo_code ?? null,
         });
+        if (created.prepay_due > 0) {
+          haptic.success();
+          // the booking waits for a prepayment: straight to the QR
+          navigate(`/pay/${created.id}`, { replace: true });
+          return;
+        }
       }
       haptic.success();
       navigate("/book/done", { replace: true, state: { rescheduled: isReschedule } });
@@ -155,6 +161,11 @@ export default function ConfirmStep() {
                 <div className="mt-1 font-semibold">{formatDateTime(hold.start_at, tz, lang)}</div>
               </div>
             </Card>
+            {(hold.quote.prepay_percent ?? 0) > 0 && !isReschedule && (
+              <p className="rounded-xl bg-amber-500/15 px-3 py-2 text-sm">
+                💳 {t("pay.prepayNotice", { percent: hold.quote.prepay_percent })}
+              </p>
+            )}
             <Card>
               <PriceSummary
                 quote={promoQuote ?? hold.quote}

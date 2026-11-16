@@ -22,6 +22,7 @@ import { useCan } from "@/lib/auth";
 import { useFormat } from "@/lib/format";
 import { fromWallClock, toWallClock, wallDayKey } from "@/lib/zoned";
 
+import { BookingPayments, PaymentBadge } from "./Payments";
 import { pickName, STATUS_VARIANT, useBarbersList } from "./queries";
 
 export function invalidateBookings(client: ReturnType<typeof useQueryClient>): void {
@@ -436,6 +437,7 @@ export function BookingDetailsDialog({
             {booking.client_confirmed_at && (
               <Badge variant="success">✓ {t("booking.clientConfirmed")}</Badge>
             )}
+            <PaymentBadge state={booking.payment_status} />
             <span className="text-muted-foreground">{booking.source}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -496,6 +498,7 @@ export function BookingDetailsDialog({
               </div>
             )}
           </div>
+          {canWrite && booking.kind === "appointment" && <BookingPayments booking={booking} />}
           {booking.comment && <p className="rounded-md bg-muted p-2">💬 {booking.comment}</p>}
           {canWrite && (
             <Field label={t("booking.adminNote")} htmlFor="note">

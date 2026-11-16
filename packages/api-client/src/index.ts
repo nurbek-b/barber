@@ -30,6 +30,7 @@ export type Review = Schemas["ReviewOut"];
 export type ReviewPage = Schemas["ReviewPage"];
 export type AdminReview = Schemas["AdminReviewOut"];
 export type AdminBooking = Schemas["AdminBookingOut"];
+export type PaymentInfo = Schemas["PaymentInfoOut"];
 
 export interface ErrorBody {
   code: string;

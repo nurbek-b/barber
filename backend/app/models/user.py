@@ -67,6 +67,8 @@ class Client(TimestampMixin, Base):
     total_spent: Mapped[int] = money()
     visits_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     no_show_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # the salon asks this client to prepay online bookings (whatever the no-show count)
+    prepay_required: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     referral_code: Mapped[str] = mapped_column(String(16), unique=True)
     referred_by_client_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("clients.id", ondelete="SET NULL")

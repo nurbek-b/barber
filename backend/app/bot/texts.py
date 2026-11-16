@@ -116,6 +116,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "ky": "⭐ Google Картада пикир",
         "en": "⭐ Review on Google Maps",
     },
+    "pay_now": {"ru": "💳 Оплатить", "ky": "💳 Төлөө", "en": "💳 Pay"},
     "write_review": {
         "ru": "✍️ Написать отзыв",
         "ky": "✍️ Пикир жазуу",

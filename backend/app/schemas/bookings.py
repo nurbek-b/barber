@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
@@ -10,6 +11,7 @@ from app.models.enums import (
     BookingSource,
     BookingStatus,
     PaymentMethod,
+    PaymentStatus,
 )
 from app.schemas.catalog import PublicBarberOut
 from app.schemas.common import ApiModel, Money
@@ -41,6 +43,9 @@ class QuoteLineOut(ApiModel):
     price: int
 
 
+PaymentState = Literal["unpaid", "claimed", "partial", "paid"]
+
+
 class QuoteOut(ApiModel):
     lines: list[QuoteLineOut]
     subtotal: int
@@ -49,6 +54,9 @@ class QuoteOut(ApiModel):
     max_bonus_spend: int = Field(description="Limit after the promo discount")
     discount: int = Field(default=0, description="Promo code discount")
     promo_code: str | None = None
+    prepay_percent: int = Field(
+        default=0, description="This client must prepay this % of the total to be confirmed"
+    )
 
 
 class PromoCheckIn(ApiModel):
@@ -113,6 +121,10 @@ class BookingOut(ApiModel):
     rating: int | None = None
     review_text: str | None = None
     can_review: bool = Field(default=False, description="Completed within 30 days, not moderated")
+    prepaid_amount: int = 0
+    prepay_due: int = Field(default=0, description="Required before the booking is confirmed")
+    payment_status: PaymentState = "unpaid"
+    can_pay: bool = Field(default=False, description="A QR is set up and something is unpaid")
 
 
 class BookingPage(ApiModel):
@@ -244,6 +256,9 @@ class AdminBookingOut(ApiModel):
     client_confirmed_at: datetime | None = Field(
         default=None, description="The client tapped 'I'll come' in a reminder"
     )
+    prepaid_amount: int = 0
+    prepay_due: int = 0
+    payment_status: PaymentState = "unpaid"
 
 
 class AdminBookingPage(ApiModel):
@@ -294,3 +309,44 @@ class WebBookingOut(ApiModel):
     subtotal: int
     discount: int
     total_due: int
+
+
+class PaymentInfoOut(ApiModel):
+    booking_id: uuid.UUID
+    qr_url: str | None
+    note: str | None
+    currency: str
+    total_due: int
+    prepaid_amount: int
+    prepay_due: int
+    amount_left: int = Field(description="Suggested amount: the prepayment, else the rest")
+    payment_status: PaymentState
+    claimed: bool = Field(description="An 'I paid' waits for the salon to check")
+
+
+class PaymentClaimIn(ApiModel):
+    amount: int = Field(gt=0, le=100_000_000, description="Tyiyn")
+
+
+class PaymentOut(ApiModel):
+    id: uuid.UUID
+    booking_id: uuid.UUID | None
+    amount: int
+    method: PaymentMethod
+    status: PaymentStatus
+    by_client: bool
+    note: str | None
+    created_at: datetime
+    decided_at: datetime | None
+
+
+class AdminPaymentIn(ApiModel):
+    amount: int = Field(gt=0, le=100_000_000)
+    method: PaymentMethod = PaymentMethod.TRANSFER
+    note: str | None = Field(default=None, max_length=300)
+
+
+class PaymentDecisionIn(ApiModel):
+    amount: int | None = Field(
+        default=None, gt=0, le=100_000_000, description="Amount actually received"
+    )

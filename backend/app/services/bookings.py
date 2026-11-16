@@ -56,6 +56,7 @@ from app.services.booking_common import (
 from app.services.branches import BranchService
 from app.services.events import BookingEvents, publish
 from app.services.holds import HOLD_TTL, Hold, HoldStore, HoldUnavailableError
+from app.services.payments import prepay_amount, request_prepayment, requires_prepay
 from app.services.promo import PromoService
 from app.services.slot_cache import SlotCache
 
@@ -355,18 +356,26 @@ class ClientBookingService:
                 details={"max_bonus_spend": quote.max_bonus_spend},
             )
 
+        total_due = quote.total_due(bonus_to_spend)
+        prepay = 0
+        if source is BookingSource.MINIAPP and requires_prepay(salon, client):
+            # unreliable client: the slot is held, confirmed once the prepayment arrives
+            prepay = prepay_amount(salon, total_due)
+            if prepay > 0:
+                status = BookingStatus.PENDING
         booking = Booking(
             branch_id=branch_id,
             client_id=client.id,
             barber_id=hold.barber_id,
             kind=BookingKind.APPOINTMENT,
             status=status,  # Mini App: the slot was free → confirmed immediately
+            prepay_due=prepay,
             source=source,
             subtotal=quote.subtotal,
             bonus_spent=bonus_to_spend,
             discount=quote.discount,
             promo_code_id=promo.id if promo else None,
-            total_due=quote.total_due(bonus_to_spend),
+            total_due=total_due,
             comment=comment,
             idempotency_key=idempotency_key,
             services=snapshot_services(quote),
@@ -394,8 +403,13 @@ class ClientBookingService:
             await BonusService(self.session).spend_for_booking(booking, bonus_to_spend, now)
         self.audit.record(actor, "booking.create", "booking", booking.id, after=snapshot(booking))
         notification = await self.events.emit(
-            NotificationType.BOOKING_CREATED, booking, salon, notify_client=notify_client
+            NotificationType.BOOKING_CREATED,
+            booking,
+            salon,
+            notify_client=notify_client and prepay == 0,
         )
+        if prepay > 0:
+            await request_prepayment(self.session, booking, salon, client)
         await self.session.commit()
 
         await self.holds.release(hold)

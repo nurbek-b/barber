@@ -91,7 +91,20 @@ export default function Home() {
         {next && (
           <section>
             <h2 className="mb-2 px-1 text-sm font-medium uppercase text-hint">{t("home.next")}</h2>
-            <BookingCard booking={next} />
+            <BookingCard
+              booking={next}
+              actions={
+                next.can_pay ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/pay/${next.id}`)}
+                    className="w-full rounded-xl bg-button py-2 text-sm font-medium text-button-text"
+                  >
+                    {t("pay.button")}
+                  </button>
+                ) : undefined
+              }
+            />
           </section>
         )}
 

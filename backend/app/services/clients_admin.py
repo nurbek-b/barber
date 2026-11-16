@@ -176,7 +176,7 @@ class ClientAdminService:
             if await self._phone_taken(branch_id, changes["phone"], exclude=client.id):
                 raise ConflictError("A client with this phone already exists", code="phone_taken")
         for key, value in changes.items():
-            if value is None and key in ("name", "language", "tags"):
+            if value is None and key in ("name", "language", "tags", "prepay_required"):
                 continue
             setattr(client, key, value)
         await self.session.flush()

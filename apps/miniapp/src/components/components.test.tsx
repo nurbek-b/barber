@@ -83,6 +83,7 @@ const quote: Quote = {
   bonus_balance: 60_000,
   max_bonus_spend: 45_000,
   discount: 0,
+  prepay_percent: 0,
 };
 
 function Harness({ value }: { value: Quote }) {

@@ -18,6 +18,7 @@ import {
   Field,
   Input,
   Skeleton,
+  Switch,
   Textarea,
 } from "@/components/ui";
 import { BookingDetailsDialog } from "@/features/BookingDialogs";
@@ -65,6 +66,7 @@ export default function ClientCard() {
   const [birthday, setBirthday] = useState("");
   const [tags, setTags] = useState("");
   const [notes, setNotes] = useState("");
+  const [prepay, setPrepay] = useState(false);
   useEffect(() => {
     if (!card.data) return;
     setName(card.data.name);
@@ -72,6 +74,7 @@ export default function ClientCard() {
     setBirthday(card.data.birthday ?? "");
     setTags(card.data.tags.join(", "));
     setNotes(card.data.notes ?? "");
+    setPrepay(card.data.prepay_required ?? false);
   }, [card.data]);
 
   const refresh = () => void client.invalidateQueries({ queryKey: ["clients"] });
@@ -89,6 +92,7 @@ export default function ClientCard() {
               .map((x) => x.trim())
               .filter(Boolean),
             notes: notes || null,
+            prepay_required: prepay,
           },
         }),
       ),
@@ -154,6 +158,7 @@ export default function ClientCard() {
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {c.is_blocked && <Badge variant="destructive">{t("clients.blocked")}</Badge>}
+              {c.prepay_required && <Badge variant="warning">💳 {t("pay.prepayRequired")}</Badge>}
               {level && (
                 <Badge>
                   {t("clients.level")}: {pickName(level.name_i18n, i18n.language)}
@@ -181,6 +186,15 @@ export default function ClientCard() {
             <Field label={t("clients.notes")} htmlFor="c-notes">
               <Textarea id="c-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Field>
+            <label className="flex items-start justify-between gap-3 text-sm">
+              <span>
+                {t("pay.prepayRequired")}
+                <span className="block text-xs text-muted-foreground">
+                  {t("pay.prepayRequiredHint")}
+                </span>
+              </span>
+              <Switch checked={prepay} onCheckedChange={setPrepay} />
+            </label>
             <Can perm="clients:write">
               <Button loading={save.isPending} onClick={() => save.mutate()}>
                 {t("common.save")}

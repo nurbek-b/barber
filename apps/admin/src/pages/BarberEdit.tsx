@@ -31,6 +31,7 @@ import { ScheduleEditor, overlappingDays, type Interval } from "@/features/Sched
 import { ADMIN, api, call, errorMessage } from "@/lib/api";
 import { useAuth, useCan } from "@/lib/auth";
 import { useFormat } from "@/lib/format";
+import { BarberQr } from "@/features/Payments";
 
 const hhmm = (value: string) => value.slice(0, 5);
 
@@ -266,6 +267,12 @@ function ProfileTab({ barberId, writable }: { barberId: string; writable: boolea
               <p className="text-xs text-muted-foreground">{t("barbers.photoHint")}</p>
             </div>
           </div>
+          <BarberQr
+            barberId={barberId}
+            url={barber.payment_qr_url}
+            writable={isOwner}
+            onChanged={refresh}
+          />
           {(isOwner || can("finance:read")) && (
             <Field label={t("barbers.commission")} htmlFor="b-commission">
               <div className="flex items-center gap-2">

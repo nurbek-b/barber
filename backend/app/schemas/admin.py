@@ -31,6 +31,7 @@ class ClientRow(ApiModel):
     no_show_count: int
     last_visit_at: datetime | None
     created_at: datetime
+    prepay_required: bool = False
 
 
 class ClientPage(ApiModel):
@@ -77,6 +78,9 @@ class ClientPatch(ApiModel):
     language: str | None = None
     tags: list[str] | None = Field(default=None, max_length=20)
     notes: str | None = Field(default=None, max_length=5000)
+    prepay_required: bool | None = Field(
+        default=None, description="Ask this client to prepay online bookings"
+    )
 
     @field_validator("tags")
     @classmethod
@@ -123,6 +127,11 @@ class SalonSettingsOut(ApiModel):
     gallery: list[str]
     revisit_after_days: int
     review_links: dict[str, str] = Field(default_factory=dict)
+    payment_qr_url: str | None = None
+    payment_note: str | None = None
+    prepay_percent: int = 0
+    prepay_after_no_shows: int = 1
+    prepay_timeout_min: int = 120
 
 
 class GalleryPut(ApiModel):
@@ -150,6 +159,14 @@ class SalonSettingsIn(ApiModel):
     contacts: dict[str, str] = Field(default_factory=dict)
     review_links: dict[str, str] = Field(
         default_factory=dict, description='Map review pages: {"2gis": url, "google": url}'
+    )
+    payment_note: str | None = Field(
+        default=None, max_length=300, description="Shown next to the QR: bank, recipient name"
+    )
+    prepay_percent: int = Field(default=0, ge=0, le=100, description="0 = no prepayment")
+    prepay_after_no_shows: int = Field(default=1, ge=1, le=20)
+    prepay_timeout_min: int = Field(
+        default=120, ge=0, le=7 * 24 * 60, description="Cancel unpaid bookings after; 0 = never"
     )
 
     @field_validator("review_links")

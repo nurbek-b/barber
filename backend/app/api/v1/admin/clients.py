@@ -43,6 +43,7 @@ def to_row(item: ClientListItem) -> ClientRow:
         no_show_count=client.no_show_count,
         last_visit_at=item.last_visit_at,
         created_at=client.created_at,
+        prepay_required=client.prepay_required,
     )
 
 

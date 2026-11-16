@@ -37,6 +37,8 @@ class Barber(TimestampMixin, Base):
     # master's share of the services price, basis points (4000 = 40 %); set by the owner
     commission_bp: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
     photo_url: Mapped[str | None] = mapped_column(String(512))
+    # the barber's bank QR for client transfers; falls back to the salon's
+    payment_qr_url: Mapped[str | None] = mapped_column(String(512))
     # works catalogue shown on the barber's Mini App profile: /media/portfolio/... URLs
     portfolio: Mapped[list[str]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")

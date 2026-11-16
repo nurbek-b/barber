@@ -45,6 +45,12 @@ class PaymentMethod(StrEnum):
     MIXED = "mixed"
 
 
+class PaymentStatus(StrEnum):
+    CLAIMED = "claimed"  # the client says they paid; the salon has not checked yet
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+
+
 class ActorType(StrEnum):
     ADMIN = "admin"
     CLIENT = "client"
@@ -86,6 +92,7 @@ class NotificationType(StrEnum):
     BOOKING_RESCHEDULED = "booking_rescheduled"
     BOOKING_STATUS_CHANGED = "booking_status_changed"
     CLIENT_REGISTERED = "client_registered"
+    PAYMENT_CLAIMED = "payment_claimed"
 
 
 class PromoKind(StrEnum):

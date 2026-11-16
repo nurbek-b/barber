@@ -37,6 +37,15 @@ export function BookingCard({ booking, actions }: { booking: Booking; actions?: 
         <span className="text-hint">{t("confirm.toPay")}</span>
         <span className="font-medium tabular-nums">{money(booking.total_due)}</span>
       </div>
+      {booking.payment_status && booking.payment_status !== "unpaid" && (
+        <div className="text-sm text-hint">
+          💳 {t(`pay.status.${booking.payment_status}` as MessageKey)}
+          {booking.prepaid_amount > 0 && ` · ${money(booking.prepaid_amount)}`}
+        </div>
+      )}
+      {booking.status === "pending" && booking.prepay_due > booking.prepaid_amount && (
+        <div className="text-sm text-hint">⏳ {t("pay.prepayWait")}</div>
+      )}
       {actions}
     </Card>
   );

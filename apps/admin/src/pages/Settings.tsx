@@ -21,6 +21,7 @@ import {
 } from "@/components/ui";
 import { BrandingCard } from "@/features/Branding";
 import { PageHeader } from "@/features/Layout";
+import { PaymentSettingsCard } from "@/features/Payments";
 import { ADMIN, api, call, errorMessage } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { salonKey, useSalonSettings } from "@/lib/format";
@@ -117,9 +118,15 @@ export default function SettingsPage() {
           <TabsTrigger value="salon">{t("settings.salon")}</TabsTrigger>
           <TabsTrigger value="branding">{t("settings.branding")}</TabsTrigger>
           <TabsTrigger value="booking">{t("settings.booking")}</TabsTrigger>
+          <TabsTrigger value="payments">{t("pay.settingsTitle")}</TabsTrigger>
           <TabsTrigger value="notifications">{t("settings.notifications")}</TabsTrigger>
           <TabsTrigger value="templates">{t("settings.templates")}</TabsTrigger>
         </TabsList>
+        <TabsContent value="payments">
+          {salon.data && (
+            <PaymentSettingsCard salon={salon.data} form={form} writable={writable} set={set} />
+          )}
+        </TabsContent>
         <TabsContent value="branding">
           {salon.data && <BrandingCard salon={salon.data} writable={writable} />}
         </TabsContent>

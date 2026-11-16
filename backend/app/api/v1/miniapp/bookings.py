@@ -18,6 +18,8 @@ from app.schemas.bookings import (
     CancelIn,
     HoldIn,
     HoldOut,
+    PaymentClaimIn,
+    PaymentInfoOut,
     PromoCheckIn,
     QuoteOut,
     RepeatDraftOut,
@@ -26,6 +28,8 @@ from app.schemas.bookings import (
 from app.schemas.catalog import ReviewIn
 from app.services.bookings import ClientBookingService
 from app.services.branches import BranchService
+from app.services.events import publish
+from app.services.payments import PaymentInfo, PaymentService, payment_status, requires_prepay
 from app.services.reviews import ReviewService
 
 router = APIRouter(tags=["miniapp-bookings"])
@@ -47,6 +51,11 @@ async def _one(
     salon = await BranchService(session).settings(ctx.branch_id)
     (item,) = await client_bookings_out(session, [booking], salon, now)
     return item
+
+
+async def _prepay_percent(ctx: MiniappContext, session: SessionDep) -> int:
+    salon = await BranchService(session).settings(ctx.branch_id)
+    return salon.prepay_percent if requires_prepay(salon, ctx.identity.client) else 0
 
 
 @router.post("/holds", response_model=HoldOut, status_code=201, responses=ERRORS)
@@ -75,7 +84,9 @@ async def create_hold(
         barber=to_public_barber(placed.barber),
         start_at=placed.hold.start_at,
         end_at=placed.hold.end_at,
-        quote=quote_out(placed.quote),
+        quote=quote_out(placed.quote).model_copy(
+            update={"prepay_percent": await _prepay_percent(ctx, session)}
+        ),
     )
 
 
@@ -93,7 +104,9 @@ async def check_promo(
     quote, code = await ClientBookingService(session, redis, cache).check_promo(
         ctx.branch_id, ctx.identity.client, hold_id, body.code, now
     )
-    return quote_out(quote, code)
+    return quote_out(quote, code).model_copy(
+        update={"prepay_percent": await _prepay_percent(ctx, session)}
+    )
 
 
 @router.delete("/holds/{hold_id}", status_code=status.HTTP_204_NO_CONTENT, responses=ERRORS)
@@ -240,3 +253,45 @@ async def review_booking(
     )
     booking = await ClientBookingService(session, redis, cache).get(ctx.identity.client, booking_id)
     return await _one(ctx, session, booking, now)
+
+
+def payment_info_out(info: PaymentInfo) -> PaymentInfoOut:
+    booking = info.booking
+    return PaymentInfoOut(
+        booking_id=booking.id,
+        qr_url=info.qr_url,
+        note=info.note,
+        currency=info.currency,
+        total_due=booking.total_due,
+        prepaid_amount=booking.prepaid_amount,
+        prepay_due=booking.prepay_due,
+        amount_left=info.amount_left,
+        payment_status=payment_status(booking),
+        claimed=info.claimed,
+    )
+
+
+@router.get("/bookings/{booking_id}/payment", response_model=PaymentInfoOut, responses=ERRORS)
+async def get_payment(
+    booking_id: uuid.UUID, ctx: MiniappDep, session: SessionDep
+) -> PaymentInfoOut:
+    """The QR to pay by (the barber's, else the salon's) and what is left to pay."""
+    info = await PaymentService(session).info(ctx.identity.client, booking_id)
+    return payment_info_out(info)
+
+
+@router.post("/bookings/{booking_id}/payment", response_model=PaymentInfoOut, responses=ERRORS)
+async def claim_payment(
+    booking_id: uuid.UUID,
+    body: PaymentClaimIn,
+    ctx: MiniappDep,
+    session: SessionDep,
+    redis: RedisDep,
+    now: NowDep,
+) -> PaymentInfoOut:
+    """'I paid': the salon is alerted and confirms after checking its bank app."""
+    info, notification = await PaymentService(session).claim(
+        ctx.identity.client, booking_id, body.amount, now
+    )
+    await publish(redis, notification)
+    return payment_info_out(info)

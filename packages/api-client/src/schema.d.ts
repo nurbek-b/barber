@@ -385,6 +385,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/miniapp/bookings/{booking_id}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Payment
+         * @description The QR to pay by (the barber's, else the salon's) and what is left to pay.
+         */
+        get: operations["miniapp_get_payment"];
+        put?: never;
+        /**
+         * Claim Payment
+         * @description 'I paid': the salon is alerted and confirms after checking its bank app.
+         */
+        post: operations["miniapp_claim_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/miniapp/bonus": {
         parameters: {
             query?: never;
@@ -1113,6 +1137,104 @@ export interface paths {
         patch: operations["admin_update_promo_code"];
         trace?: never;
     };
+    "/api/v1/admin/bookings/{booking_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Payments */
+        get: operations["admin_list_payments"];
+        put?: never;
+        /**
+         * Add Payment
+         * @description Money the salon received itself (cash deposit, a transfer it saw). Counts at once.
+         */
+        post: operations["admin_add_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payments/{payment_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Payment
+         * @description The money arrived (optionally a different amount). A prepaid PENDING booking becomes
+         *     CONFIRMED once the required prepayment is covered.
+         */
+        post: operations["admin_confirm_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payments/{payment_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Payment */
+        post: operations["admin_reject_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/settings/salon/payment-qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Salon Qr */
+        post: operations["admin_upload_salon_qr"];
+        /** Delete Salon Qr */
+        delete: operations["admin_delete_salon_qr"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/barbers/{barber_id}/payment-qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Barber Qr
+         * @description The barber's own bank QR (set by the owner); clients of this barber pay by it.
+         */
+        post: operations["admin_upload_barber_qr"];
+        /** Delete Barber Qr */
+        delete: operations["admin_delete_barber_qr"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/broadcasts/preview": {
         parameters: {
             query?: never;
@@ -1783,6 +1905,22 @@ export interface components {
              * @description The client tapped 'I'll come' in a reminder
              */
             client_confirmed_at?: string | null;
+            /**
+             * Prepaid Amount
+             * @default 0
+             */
+            prepaid_amount: number;
+            /**
+             * Prepay Due
+             * @default 0
+             */
+            prepay_due: number;
+            /**
+             * Payment Status
+             * @default unpaid
+             * @enum {string}
+             */
+            payment_status: "unpaid" | "claimed" | "partial" | "paid";
         };
         /** AdminBookingPage */
         AdminBookingPage: {
@@ -1841,6 +1979,15 @@ export interface components {
             language: string;
             /** Permissions */
             permissions: string[];
+        };
+        /** AdminPaymentIn */
+        AdminPaymentIn: {
+            /** Amount */
+            amount: number;
+            /** @default transfer */
+            method: components["schemas"]["PaymentMethod"];
+            /** Note */
+            note?: string | null;
         };
         /** AdminReviewOut */
         AdminReviewOut: {
@@ -2019,6 +2166,11 @@ export interface components {
              * @description false: no weekly hours, clients cannot book
              */
             has_schedule: boolean;
+            /**
+             * Payment Qr Url
+             * @description Bank QR for client payments
+             */
+            payment_qr_url?: string | null;
             /** Services */
             services: components["schemas"]["BarberServiceOut"][];
         };
@@ -2135,6 +2287,11 @@ export interface components {
              * @description false: no weekly hours, clients cannot book
              */
             has_schedule: boolean;
+            /**
+             * Payment Qr Url
+             * @description Bank QR for client payments
+             */
+            payment_qr_url?: string | null;
         };
         /** BarberPatch */
         BarberPatch: {
@@ -2221,6 +2378,14 @@ export interface components {
              */
             file: string;
         };
+        /** Body_admin_upload_barber_qr */
+        Body_admin_upload_barber_qr: {
+            /**
+             * File
+             * @description JPEG, PNG or WebP, up to 5 MB
+             */
+            file: string;
+        };
         /** Body_admin_upload_logo */
         Body_admin_upload_logo: {
             /**
@@ -2231,6 +2396,14 @@ export interface components {
         };
         /** Body_admin_upload_photo */
         Body_admin_upload_photo: {
+            /**
+             * File
+             * @description JPEG, PNG or WebP, up to 5 MB
+             */
+            file: string;
+        };
+        /** Body_admin_upload_salon_qr */
+        Body_admin_upload_salon_qr: {
             /**
              * File
              * @description JPEG, PNG or WebP, up to 5 MB
@@ -2478,6 +2651,29 @@ export interface components {
              * @default false
              */
             can_review: boolean;
+            /**
+             * Prepaid Amount
+             * @default 0
+             */
+            prepaid_amount: number;
+            /**
+             * Prepay Due
+             * @description Required before the booking is confirmed
+             * @default 0
+             */
+            prepay_due: number;
+            /**
+             * Payment Status
+             * @default unpaid
+             * @enum {string}
+             */
+            payment_status: "unpaid" | "claimed" | "partial" | "paid";
+            /**
+             * Can Pay
+             * @description A QR is set up and something is unpaid
+             * @default false
+             */
+            can_pay: boolean;
         };
         /** BookingPage */
         BookingPage: {
@@ -2628,6 +2824,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Prepay Required
+             * @default false
+             */
+            prepay_required: boolean;
             /** Birthday */
             birthday: string | null;
             /** Notes */
@@ -2723,6 +2924,11 @@ export interface components {
             tags?: string[] | null;
             /** Notes */
             notes?: string | null;
+            /**
+             * Prepay Required
+             * @description Ask this client to prepay online bookings
+             */
+            prepay_required?: boolean | null;
         };
         /** ClientRow */
         ClientRow: {
@@ -2760,6 +2966,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Prepay Required
+             * @default false
+             */
+            prepay_required: boolean;
         };
         /** DashboardOut */
         DashboardOut: {
@@ -3131,7 +3342,7 @@ export interface components {
          * NotificationType
          * @enum {string}
          */
-        NotificationType: "booking_created" | "booking_cancelled" | "booking_rescheduled" | "booking_status_changed" | "client_registered";
+        NotificationType: "booking_created" | "booking_cancelled" | "booking_rescheduled" | "booking_status_changed" | "client_registered" | "payment_claimed";
         /** Page[AdminReviewOut] */
         Page_AdminReviewOut_: {
             /** Items */
@@ -3165,11 +3376,92 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** PaymentClaimIn */
+        PaymentClaimIn: {
+            /**
+             * Amount
+             * @description Tyiyn
+             */
+            amount: number;
+        };
+        /** PaymentDecisionIn */
+        PaymentDecisionIn: {
+            /**
+             * Amount
+             * @description Amount actually received
+             */
+            amount?: number | null;
+        };
+        /** PaymentInfoOut */
+        PaymentInfoOut: {
+            /**
+             * Booking Id
+             * Format: uuid
+             */
+            booking_id: string;
+            /** Qr Url */
+            qr_url: string | null;
+            /** Note */
+            note: string | null;
+            /** Currency */
+            currency: string;
+            /** Total Due */
+            total_due: number;
+            /** Prepaid Amount */
+            prepaid_amount: number;
+            /** Prepay Due */
+            prepay_due: number;
+            /**
+             * Amount Left
+             * @description Suggested amount: the prepayment, else the rest
+             */
+            amount_left: number;
+            /**
+             * Payment Status
+             * @enum {string}
+             */
+            payment_status: "unpaid" | "claimed" | "partial" | "paid";
+            /**
+             * Claimed
+             * @description An 'I paid' waits for the salon to check
+             */
+            claimed: boolean;
+        };
         /**
          * PaymentMethod
          * @enum {string}
          */
         PaymentMethod: "cash" | "card" | "transfer" | "mixed";
+        /** PaymentOut */
+        PaymentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Booking Id */
+            booking_id: string | null;
+            /** Amount */
+            amount: number;
+            method: components["schemas"]["PaymentMethod"];
+            status: components["schemas"]["PaymentStatus"];
+            /** By Client */
+            by_client: boolean;
+            /** Note */
+            note: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at: string | null;
+        };
+        /**
+         * PaymentStatus
+         * @enum {string}
+         */
+        PaymentStatus: "claimed" | "confirmed" | "rejected";
         /** PhoneIn */
         PhoneIn: {
             /**
@@ -3424,6 +3716,12 @@ export interface components {
             discount: number;
             /** Promo Code */
             promo_code?: string | null;
+            /**
+             * Prepay Percent
+             * @description This client must prepay this % of the total to be confirmed
+             * @default 0
+             */
+            prepay_percent: number;
         };
         /** ReadAllOut */
         ReadAllOut: {
@@ -3624,6 +3922,28 @@ export interface components {
                 [key: string]: string;
             };
             /**
+             * Payment Note
+             * @description Shown next to the QR: bank, recipient name
+             */
+            payment_note?: string | null;
+            /**
+             * Prepay Percent
+             * @description 0 = no prepayment
+             * @default 0
+             */
+            prepay_percent: number;
+            /**
+             * Prepay After No Shows
+             * @default 1
+             */
+            prepay_after_no_shows: number;
+            /**
+             * Prepay Timeout Min
+             * @description Cancel unpaid bookings after; 0 = never
+             * @default 120
+             */
+            prepay_timeout_min: number;
+            /**
              * Revisit After Days
              * @description 0 = off
              * @default 30
@@ -3680,6 +4000,25 @@ export interface components {
             review_links?: {
                 [key: string]: string;
             };
+            /** Payment Qr Url */
+            payment_qr_url?: string | null;
+            /** Payment Note */
+            payment_note?: string | null;
+            /**
+             * Prepay Percent
+             * @default 0
+             */
+            prepay_percent: number;
+            /**
+             * Prepay After No Shows
+             * @default 1
+             */
+            prepay_after_no_shows: number;
+            /**
+             * Prepay Timeout Min
+             * @default 120
+             */
+            prepay_timeout_min: number;
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {
@@ -5636,6 +5975,184 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description slot_conflict → details.alternatives */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    miniapp_get_payment: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentInfoOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description slot_conflict → details.alternatives */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    miniapp_claim_payment: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentClaimIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentInfoOut"];
                 };
             };
             /** @description Unauthorized */
@@ -9063,6 +9580,554 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromoCodeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_payments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_add_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminPaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_confirm_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentDecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_reject_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_upload_salon_qr: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_admin_upload_salon_qr"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalonSettingsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_salon_qr: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalonSettingsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_upload_barber_qr: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barber_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_admin_upload_barber_qr"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_barber_qr: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barber_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberOut"];
                 };
             };
             /** @description Unauthorized */

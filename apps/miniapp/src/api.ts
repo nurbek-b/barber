@@ -4,6 +4,7 @@ import {
   createApi,
   newIdempotencyKey,
   type Booking,
+  type PaymentInfo,
   type BookingPage,
   type ClientMe,
   type Hold,
@@ -395,4 +396,35 @@ export function checkPromo(holdId: string, code: string): Promise<Quote> {
       body: { code },
     }),
   );
+}
+
+export function usePaymentInfo(bookingId: string) {
+  return useQuery({
+    queryKey: ["payment", bookingId],
+    queryFn: () =>
+      call(
+        api.GET(`${BASE}/bookings/{booking_id}/payment`, {
+          params: { path: { booking_id: bookingId } },
+        }),
+      ),
+    enabled: Boolean(bookingId),
+  });
+}
+
+/** "I paid": the salon checks its bank app and confirms. */
+export function useClaimPayment() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { bookingId: string; amount: number }) =>
+      call(
+        api.POST(`${BASE}/bookings/{booking_id}/payment`, {
+          params: { path: { booking_id: input.bookingId } },
+          body: { amount: input.amount },
+        }),
+      ),
+    onSuccess: (info: PaymentInfo) => {
+      client.setQueryData(["payment", info.booking_id], info);
+      void client.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
 }

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.pricing import Quote
 from app.models import Barber, Booking, Client, SalonSettings
+from app.models.enums import BookingStatus
 from app.repositories.bookings import BookingRepository
 from app.schemas.bookings import (
     AdminBookingOut,
@@ -21,6 +22,7 @@ from app.schemas.bookings import (
     QuoteOut,
 )
 from app.services.bookings import can_change
+from app.services.payments import amount_left, payment_status
 from app.services.reviews import can_review
 
 
@@ -62,6 +64,16 @@ def _services(booking: Booking) -> list[BookingServiceOut]:
     ]
 
 
+def _can_pay(booking: Booking, barber: Barber | None, salon: SalonSettings) -> bool:
+    has_qr = bool((barber.payment_qr_url if barber else None) or salon.payment_qr_url)
+    return (
+        has_qr
+        and booking.status in (BookingStatus.PENDING, BookingStatus.CONFIRMED)
+        and booking.total_due > booking.prepaid_amount
+        and amount_left(booking) > 0
+    )
+
+
 async def client_bookings_out(
     session: AsyncSession, bookings: Sequence[Booking], salon: SalonSettings, now: datetime
 ) -> list[BookingOut]:
@@ -85,6 +97,10 @@ async def client_bookings_out(
             rating=booking.rating,
             review_text=None if booking.review_hidden else booking.review_text,
             can_review=can_review(booking, now),
+            prepaid_amount=booking.prepaid_amount,
+            prepay_due=booking.prepay_due,
+            payment_status=payment_status(booking),
+            can_pay=_can_pay(booking, barbers.get(booking.barber_id), salon),
         )
         for booking in bookings
     ]
@@ -126,6 +142,9 @@ async def admin_bookings_out(
                 version=booking.version,
                 created_at=booking.created_at,
                 client_confirmed_at=booking.client_confirmed_at,
+                prepaid_amount=booking.prepaid_amount,
+                prepay_due=booking.prepay_due,
+                payment_status=payment_status(booking),
             )
         )
     return result

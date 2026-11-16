@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.core.errors import ValidationAppError
 from app.core.media import get_media_storage, key_from_url, url_for
-from app.models import SalonSettings
+from app.models import Barber, SalonSettings
 from app.services.audit import Actor, AuditService
 from app.services.barbers import PayloadTooLargeError, detect_image_type
 from app.services.branches import BranchService
@@ -108,3 +108,37 @@ class BrandingService:
         await self.session.commit()
         await self._drop(removed)
         return salon
+
+    # ---- bank QR for payments (the salon's, or a barber's own) --------------------------
+
+    async def set_payment_qr(
+        self, branch_id: uuid.UUID, content: bytes, actor: Actor, barber: Barber | None = None
+    ) -> None:
+        url = await self._store(content)
+        if barber is not None:
+            old, barber.payment_qr_url = barber.payment_qr_url, url
+            entity, entity_id = "barber", barber.id
+        else:
+            salon = await self._salon(branch_id)
+            old, salon.payment_qr_url = salon.payment_qr_url, url
+            entity, entity_id = "branch", branch_id
+        self.audit.record(
+            actor, "payment_qr.set", entity, entity_id, before={"url": old}, after={"url": url}
+        )
+        await self.session.commit()
+        await self._drop([old])
+
+    async def remove_payment_qr(
+        self, branch_id: uuid.UUID, actor: Actor, barber: Barber | None = None
+    ) -> None:
+        if barber is not None:
+            old, barber.payment_qr_url = barber.payment_qr_url, None
+            entity, entity_id = "barber", barber.id
+        else:
+            salon = await self._salon(branch_id)
+            old, salon.payment_qr_url = salon.payment_qr_url, None
+            entity, entity_id = "branch", branch_id
+        if old:
+            self.audit.record(actor, "payment_qr.remove", entity, entity_id, before={"url": old})
+            await self.session.commit()
+            await self._drop([old])

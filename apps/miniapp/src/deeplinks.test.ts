@@ -8,6 +8,7 @@ describe("pathForStartParam", () => {
     expect(pathForStartParam("book")).toBe("/book/barber");
     expect(pathForStartParam(`review_${id}`)).toBe(`/review/${id}`);
     expect(pathForStartParam(`barber_${id}`)).toBe(`/barber/${id}`);
+    expect(pathForStartParam(`pay_${id}`)).toBe(`/pay/${id}`);
   });
   it("falls back to home for referrals and garbage", () => {
     expect(pathForStartParam("ref_ABC123")).toBe("/");

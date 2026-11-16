@@ -142,6 +142,7 @@ class BarberOut(ApiModel):
     portfolio: list[str] = Field(default_factory=list)
     commission_bp: int
     has_schedule: bool = Field(description="false: no weekly hours, clients cannot book")
+    payment_qr_url: str | None = Field(default=None, description="Bank QR for client payments")
 
 
 class BarberDetailOut(BarberOut):

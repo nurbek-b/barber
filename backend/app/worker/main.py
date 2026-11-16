@@ -17,10 +17,12 @@ from arq.connections import RedisSettings
 from app.core.config import get_settings
 from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
+from app.core.redis import create_redis
 from app.notify.sender import AiogramSender
 from app.worker.barber_digest import send_barber_digests
 from app.worker.bonus_jobs import run_bonus_jobs
 from app.worker.outbox import drain_outbox
+from app.worker.prepay import cancel_unpaid
 from app.worker.reminders import scan_reminders
 from app.worker.revisits import scan_revisits
 
@@ -36,10 +38,13 @@ async def startup(ctx: dict[str, Any]) -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     ctx["sender"] = AiogramSender(ctx["bot"])
+    ctx["redis"] = create_redis(settings)
 
 
 async def shutdown(ctx: dict[str, Any]) -> None:
     await ctx["bot"].session.close()
+    if ctx.get("redis") is not None:
+        await ctx["redis"].aclose()
     await ctx["engine"].dispose()
 
 
@@ -49,7 +54,10 @@ async def send_outbox(ctx: dict[str, Any]) -> int:
 
 
 async def queue_reminders(ctx: dict[str, Any]) -> int:
-    return await scan_reminders(ctx["maker"], datetime.now(UTC))
+    """Every minute: reminders, plus releasing slots of bookings whose prepayment never came."""
+    now = datetime.now(UTC)
+    await cancel_unpaid(ctx["maker"], ctx.get("redis"), now)
+    return await scan_reminders(ctx["maker"], now)
 
 
 async def bonus_jobs(ctx: dict[str, Any]) -> dict[str, int]:

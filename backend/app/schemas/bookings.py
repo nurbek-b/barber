@@ -232,6 +232,9 @@ class AdminBookingOut(ApiModel):
     cancel_reason: str | None
     version: int
     created_at: datetime
+    client_confirmed_at: datetime | None = Field(
+        default=None, description="The client tapped 'I'll come' in a reminder"
+    )
 
 
 class AdminBookingPage(ApiModel):

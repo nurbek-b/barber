@@ -121,6 +121,7 @@ async def admin_bookings_out(
                 cancel_reason=booking.cancel_reason,
                 version=booking.version,
                 created_at=booking.created_at,
+                client_confirmed_at=booking.client_confirmed_at,
             )
         )
     return result

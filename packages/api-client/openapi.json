@@ -8698,6 +8698,19 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "client_confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Confirmed At",
+            "description": "The client tapped 'I'll come' in a reminder"
           }
         },
         "type": "object",
@@ -12898,6 +12911,14 @@
             },
             "type": "object",
             "title": "Contacts"
+          },
+          "revisit_after_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 0.0,
+            "title": "Revisit After Days",
+            "description": "0 = off",
+            "default": 30
           }
         },
         "type": "object",
@@ -13019,6 +13040,10 @@
             },
             "type": "array",
             "title": "Gallery"
+          },
+          "revisit_after_days": {
+            "type": "integer",
+            "title": "Revisit After Days"
           }
         },
         "type": "object",
@@ -13040,7 +13065,8 @@
           "notification_templates",
           "contacts",
           "logo_url",
-          "gallery"
+          "gallery",
+          "revisit_after_days"
         ],
         "title": "SalonSettingsOut"
       },

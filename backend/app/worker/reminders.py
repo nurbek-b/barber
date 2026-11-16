@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
+from app.bot.texts import t
 from app.models import (
     Barber,
     Booking,
@@ -28,9 +29,30 @@ from app.models import (
     User,
 )
 from app.models.enums import BookingKind, BookingStatus
+from app.services.bookings import can_change
 from app.services.events import format_when
 
 logger = structlog.get_logger(__name__)
+
+
+def _button(key: str, lang: str, data: str) -> dict[str, str]:
+    return {"text": t(key, lang), "callback_data": data}
+
+
+def reminder_buttons(
+    booking: Booking, lang: str, salon: SalonSettings, now: datetime
+) -> list[list[dict[str, str]]] | None:
+    """'I'll come' until the client confirms; 'Cancel' only while online cancelling is allowed."""
+    row = []
+    if booking.client_confirmed_at is None:
+        row.append(
+            {"text": t("visit_confirm_btn", lang), "callback_data": f"visit:ok:{booking.id}"}
+        )
+    if can_change(booking, now, salon.cancel_min_hours):
+        row.append(
+            {"text": t("visit_cancel_btn", lang), "callback_data": f"visit:ask:{booking.id}"}
+        )
+    return [row] if row else None
 
 
 async def scan_reminders(maker: async_sessionmaker[AsyncSession], now: datetime) -> int:
@@ -111,6 +133,7 @@ async def scan_reminders(maker: async_sessionmaker[AsyncSession], now: datetime)
                             "services": services,
                             "salon": salon.name,
                             "offset_min": offset,
+                            "buttons": reminder_buttons(booking, client.language, salon, now),
                         },
                         dedupe_key=f"reminder:{booking.id}:{offset}:{int(now.timestamp())}",
                     )

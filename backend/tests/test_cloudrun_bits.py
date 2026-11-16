@@ -88,3 +88,22 @@ async def test_worker_http_tasks(monkeypatch: pytest.MonkeyPatch) -> None:
     assert calls == ["outbox", "reminders", "outbox"]
     assert bonus_resp.json() == {"ok": True, "burned": 0}
     assert live.status_code == 200
+
+
+def test_logs_carry_google_cloud_fields() -> None:
+    from app.core.logging import google_cloud_fields
+
+    info = google_cloud_fields(None, "info", {"event": "request", "level": "info"})
+    assert info["severity"] == "INFO"
+    assert info["message"] == "request"
+    assert "@type" not in info
+
+    error = google_cloud_fields(
+        None,
+        "error",
+        {"event": "boom", "level": "error", "exception": "Traceback (most recent call last):\n  x"},
+    )
+    assert error["severity"] == "ERROR"
+    assert error["@type"].endswith("ReportedErrorEvent")
+    assert error["stack_trace"].startswith("Traceback")
+    assert error["message"].startswith("boom\nTraceback")

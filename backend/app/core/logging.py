@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import time
 import uuid
@@ -8,6 +9,41 @@ import uuid
 import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+_SEVERITY = {
+    "debug": "DEBUG",
+    "info": "INFO",
+    "warning": "WARNING",
+    "error": "ERROR",
+    "exception": "ERROR",
+    "critical": "CRITICAL",
+}
+_ERROR_EVENT = "type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent"
+
+
+def google_cloud_fields(
+    _logger: object, method: str, event: structlog.types.EventDict
+) -> structlog.types.EventDict:
+    """Fields Google Cloud understands in JSON logs (Cloud Run writes stdout to Cloud Logging).
+
+    * severity - without it every line is DEFAULT and errors can't be filtered or alerted on;
+    * message  - the text shown in the log viewer;
+    * an exception becomes a ReportedErrorEvent with its traceback, so Error Reporting groups
+      it and can notify (``@type`` + ``stack_trace``; ``serviceContext`` names the service).
+    """
+    level = str(event.get("level", method)).lower()
+    event["severity"] = _SEVERITY.get(level, "DEFAULT")
+    event.setdefault("message", str(event.get("event", "")))
+    traceback = event.get("exception")
+    if traceback:
+        event["@type"] = _ERROR_EVENT
+        event["stack_trace"] = traceback
+        event["message"] = f"{event['message']}\n{traceback}"
+        event["serviceContext"] = {
+            "service": os.environ.get("K_SERVICE", "barber"),
+            "version": os.environ.get("K_REVISION", ""),
+        }
+    return event
 
 
 def configure_logging(level: str = "INFO", json: bool = True) -> None:
@@ -21,8 +57,9 @@ def configure_logging(level: str = "INFO", json: bool = True) -> None:
     renderer: structlog.types.Processor = (
         structlog.processors.JSONRenderer() if json else structlog.dev.ConsoleRenderer()
     )
+    cloud: list[structlog.types.Processor] = [google_cloud_fields] if json else []
     structlog.configure(
-        processors=[*shared, renderer],
+        processors=[*shared, *cloud, renderer],
         wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelName(level)),
         logger_factory=structlog.PrintLoggerFactory(sys.stdout),
         cache_logger_on_first_use=True,

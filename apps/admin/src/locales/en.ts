@@ -120,6 +120,7 @@ export const en: Messages = {
     slots: "Free time",
     pickSlot: "Choose a barber, services and a date",
     searchClient: "Client name or phone",
+    clientConfirmed: "Client confirmed",
   },
   clients: {
     title: "Clients",
@@ -260,6 +261,9 @@ export const en: Messages = {
     addPhoto: "Add photo",
     moveLeft: "Move left",
     moveRight: "Move right",
+    revisitDays: '"Time for a haircut" after, days',
+    revisitHint:
+      "The bot reminds the client to book again if they have nothing booked. 0 = off. Sent 10:00–20:00.",
   },
   bonus: {
     title: "Bonus program",

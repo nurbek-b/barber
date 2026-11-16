@@ -29,6 +29,7 @@ from app.core.logging import configure_logging
 from app.worker.bonus_jobs import run_bonus_jobs
 from app.worker.outbox import RecipientBlockedError, RetryAfterError, SendError, drain_outbox
 from app.worker.reminders import scan_reminders
+from app.worker.revisits import scan_revisits
 
 
 class AiogramSender:
@@ -85,7 +86,11 @@ async def queue_reminders(ctx: dict[str, Any]) -> int:
 
 
 async def bonus_jobs(ctx: dict[str, Any]) -> dict[str, int]:
-    return await run_bonus_jobs(ctx["maker"], datetime.now(UTC))
+    """Hourly: bonus expiry/birthdays/warnings and 'time for a haircut' messages."""
+    now = datetime.now(UTC)
+    result = await run_bonus_jobs(ctx["maker"], now)
+    result["revisits"] = await scan_revisits(ctx["maker"], get_settings(), now)
+    return result
 
 
 class WorkerSettings:

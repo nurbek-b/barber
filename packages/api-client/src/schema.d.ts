@@ -1469,6 +1469,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Client Confirmed At
+             * @description The client tapped 'I'll come' in a reminder
+             */
+            client_confirmed_at?: string | null;
         };
         /** AdminBookingPage */
         AdminBookingPage: {
@@ -3112,6 +3117,12 @@ export interface components {
             contacts?: {
                 [key: string]: string;
             };
+            /**
+             * Revisit After Days
+             * @description 0 = off
+             * @default 30
+             */
+            revisit_after_days: number;
         };
         /** SalonSettingsOut */
         SalonSettingsOut: {
@@ -3157,6 +3168,8 @@ export interface components {
             logo_url: string | null;
             /** Gallery */
             gallery: string[];
+            /** Revisit After Days */
+            revisit_after_days: number;
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {

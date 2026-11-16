@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.config import Settings
 from app.models import (
     Barber,
     Booking,
@@ -28,6 +29,7 @@ from app.worker.outbox import (
     drain_outbox,
 )
 from app.worker.reminders import scan_reminders
+from app.worker.revisits import scan_revisits
 
 TZ = ZoneInfo("Asia/Bishkek")
 NOW = datetime(2026, 12, 7, 4, 0, tzinfo=UTC)  # 10:00 Bishkek
@@ -298,3 +300,113 @@ async def test_outbox_passes_buttons(
     sender = FakeSender()
     await drain_outbox(maker, sender, NOW)
     assert sender.buttons == [buttons]
+
+
+async def test_reminder_buttons(
+    maker: async_sessionmaker[AsyncSession], session: AsyncSession, branch: Branch
+) -> None:
+    start = datetime.combine(date(2026, 12, 8), time(12), tzinfo=TZ).astimezone(UTC)
+    booking = await _booking(
+        session, branch, start, created=start - timedelta(days=3), telegram_id=121
+    )
+    await scan_reminders(maker, start - timedelta(hours=23, minutes=59))
+    await scan_reminders(maker, start - timedelta(hours=1, minutes=59))
+    rows = sorted(await _reminders(session), key=lambda row: -row.payload["offset_min"])
+    day_before, two_hours = (row.payload["buttons"] for row in rows)
+    # 24 h: confirm + cancel (client language: ky)
+    assert [b["callback_data"] for b in day_before[0]] == [
+        f"visit:ok:{booking.id}",
+        f"visit:ask:{booking.id}",
+    ]
+    assert day_before[0][0]["text"] == "✅ Келем"
+    # 2 h: online cancelling closed (cancel_min_hours = 2) -> only confirm
+    assert [b["callback_data"] for b in two_hours[0]] == [f"visit:ok:{booking.id}"]
+
+
+# "time for a haircut"
+# ---------------------------------------------------------------------------
+
+
+async def _visit(
+    session: AsyncSession,
+    branch: Branch,
+    telegram_id: int,
+    days_ago: int,
+    *,
+    upcoming: bool = False,
+) -> Booking:
+    now = datetime.now(UTC)
+    old = await _booking(
+        session,
+        branch,
+        now - timedelta(days=days_ago),
+        created=now - timedelta(days=days_ago + 1),
+        telegram_id=telegram_id,
+    )
+    old.status = BookingStatus.COMPLETED
+    if upcoming:
+        session.add(
+            Booking(
+                branch_id=branch.id,
+                client_id=old.client_id,
+                barber_id=old.barber_id,
+                status=BookingStatus.CONFIRMED,
+                start_at=now + timedelta(days=2),
+                end_at=now + timedelta(days=2, hours=1),
+                blocked_until=now + timedelta(days=2, hours=1),
+                subtotal=1,
+                bonus_spent=0,
+                total_due=1,
+            )
+        )
+    await session.commit()
+    return old
+
+
+def _local(hour: int) -> datetime:
+    return datetime.combine(datetime.now(TZ).date(), time(hour), tzinfo=TZ).astimezone(UTC)
+
+
+async def test_revisit_nudges(
+    maker: async_sessionmaker[AsyncSession],
+    session: AsyncSession,
+    branch: Branch,
+    settings: Settings,
+) -> None:
+    due = await _visit(session, branch, 201, days_ago=31)
+    await _visit(session, branch, 202, days_ago=31, upcoming=True)  # already booked again
+    await _visit(session, branch, 203, days_ago=90)  # too old: no mass message on enable
+    await _visit(session, branch, 204, days_ago=10)  # too early
+
+    assert await scan_revisits(maker, settings, _local(22)) == 0, "quiet hours"
+    assert await scan_revisits(maker, settings, _local(12)) == 1
+    assert await scan_revisits(maker, settings, _local(13)) == 0, "once per visit"
+
+    rows = (
+        (
+            await session.execute(
+                select(TelegramOutbox).where(TelegramOutbox.template_key == "revisit_client")
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert [row.chat_id for row in rows] == [201]
+    assert rows[0].booking_id == due.id
+    assert rows[0].payload["days"] == 30
+    assert rows[0].payload["buttons"][0][0]["text"] == "✂️ Жазылуу"
+    text = render("revisit_client", "ru", rows[0].payload, None)
+    assert "30 дн." in text
+
+
+async def test_revisit_disabled(
+    maker: async_sessionmaker[AsyncSession],
+    session: AsyncSession,
+    branch: Branch,
+    settings: Settings,
+) -> None:
+    await _visit(session, branch, 211, days_ago=31)
+    salon = (await session.execute(select(SalonSettings))).scalar_one()
+    salon.revisit_after_days = 0
+    await session.commit()
+    assert await scan_revisits(maker, settings, _local(12)) == 0

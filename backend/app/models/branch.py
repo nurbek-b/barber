@@ -40,6 +40,7 @@ class SalonSettings(TimestampMixin, Base):
         CheckConstraint("cancel_min_hours >= 0", name="cancel_hours"),
         CheckConstraint("reschedule_min_hours >= 0", name="reschedule_hours"),
         CheckConstraint("max_active_bookings_per_client >= 1", name="max_active"),
+        CheckConstraint("revisit_after_days BETWEEN 0 AND 365", name="revisit_days"),
     )
 
     branch_id: Mapped[uuid.UUID] = mapped_column(
@@ -67,6 +68,8 @@ class SalonSettings(TimestampMixin, Base):
     contacts: Mapped[dict[str, Any]] = mapped_column(
         default=dict, server_default=text("'{}'::jsonb")
     )
+    # days after a visit to remind the client to come again; 0 = off
+    revisit_after_days: Mapped[int] = mapped_column(SmallInteger, default=30, server_default="30")
     # branding for the Mini App: /media/salon/... URLs
     logo_url: Mapped[str | None] = mapped_column(String(512))
     gallery: Mapped[list[str]] = mapped_column(

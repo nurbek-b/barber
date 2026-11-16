@@ -94,6 +94,20 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "ky": "{barber} устатка болгон визит кандай болду? Баалап коюңузчу 🙏",
         "en": "How was your visit to {barber}? Please rate it 🙏",
     },
+    "revisit_client": {
+        "ru": (
+            "Здравствуйте, {name}! С последнего визита к мастеру {barber} прошло {days} дн. ✂️\n"
+            "Записаться снова — пара нажатий."
+        ),
+        "ky": (
+            "Саламатсызбы, {name}! {barber} устатка акыркы келгениңизден бери {days} күн өттү. ✂️\n"
+            "Кайра жазылуу — бир нече басуу."
+        ),
+        "en": (
+            "Hi {name}! It's been {days} days since your visit to {barber}. ✂️\n"
+            "Booking again takes a couple of taps."
+        ),
+    },
     "reminder_client": {
         "ru": "⏰ Напоминаем: {when}\nМастер: {barber}\nУслуги: {services}\n\n{salon}",
         "ky": "⏰ Эскертүү: {when}\nУстат: {barber}\nКызматтар: {services}\n\n{salon}",

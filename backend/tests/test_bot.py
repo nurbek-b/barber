@@ -12,6 +12,7 @@ from aiogram import Bot
 from aiogram.client.session.base import BaseSession
 from aiogram.methods import (
     AnswerCallbackQuery,
+    EditMessageReplyMarkup,
     EditMessageText,
     SendMessage,
     SetChatMenuButton,
@@ -503,3 +504,84 @@ async def test_configure_bot(bot_settings: Settings) -> None:
     assert menu.menu_button.web_app.url == "https://barber.example/app/"  # type: ignore[union-attr]
     with pytest.raises(ValueError, match="https"):
         await configure_bot(bot, bot_settings, "http://insecure")
+
+
+# reminder buttons: "I'll come" / two-step cancel
+# ---------------------------------------------------------------------------
+
+
+async def _upcoming(session: AsyncSession, branch: Branch, client: Client, hours: float) -> Booking:
+    barber = Barber(branch_id=branch.id, name="Мастер")
+    session.add(barber)
+    await session.flush()
+    start = NOW + timedelta(hours=hours)
+    booking = Booking(
+        branch_id=branch.id,
+        client_id=client.id,
+        barber_id=barber.id,
+        status=BookingStatus.CONFIRMED,
+        start_at=start,
+        end_at=start + timedelta(hours=1),
+        blocked_until=start + timedelta(hours=1),
+        subtotal=1,
+        bonus_spent=0,
+        total_due=1,
+        services=[BookingService(name_snapshot={"ru": "С"}, duration_min=60, price=1)],
+    )
+    session.add(booking)
+    await session.commit()
+    return booking
+
+
+async def test_reminder_confirm_and_cancel(
+    hook: httpx.AsyncClient, tg: MockedSession, session: AsyncSession, branch: Branch
+) -> None:
+    await send(hook, message("/start", user_id=600))
+    await send(hook, message("/start", user_id=601))
+    client = await client_of(session, 600)
+    first = await _upcoming(session, branch, client, hours=24)
+    second = await _upcoming(session, branch, client, hours=48)
+    late = await _upcoming(session, branch, client, hours=1)
+    tg.calls.clear()
+
+    # someone else's booking
+    await send(hook, callback(f"visit:ok:{first.id}", user_id=601))
+    await send(hook, callback(f"visit:ok:{first.id}", user_id=600))
+    await session.refresh(first)
+    assert first.client_confirmed_at is not None
+    edits = [call for call in tg.calls if isinstance(call, EditMessageText)]
+    assert edits[-1].text is not None
+    assert "Спасибо, ждём вас" in edits[-1].text
+    assert edits[-1].reply_markup is None
+
+    # cancel is two-step: the first tap only swaps the buttons
+    tg.calls.clear()
+    await send(hook, callback(f"visit:ask:{second.id}", user_id=600))
+    await session.refresh(second)
+    assert second.status is BookingStatus.CONFIRMED
+    swapped = [call for call in tg.calls if isinstance(call, EditMessageReplyMarkup)]
+    assert swapped
+    labels = [b.callback_data for row in swapped[0].reply_markup.inline_keyboard for b in row]  # type: ignore[union-attr]
+    assert labels == [f"visit:cancel:{second.id}", f"visit:keep:{second.id}"]
+
+    await send(hook, callback(f"visit:cancel:{second.id}", user_id=600))
+    await session.refresh(second)
+    assert second.status is BookingStatus.CANCELLED
+    assert second.cancel_reason == "Отменено из напоминания в Telegram"
+    edits = [call for call in tg.calls if isinstance(call, EditMessageText)]
+    assert "Запись отменена" in (edits[-1].text or "")
+
+    # too late to cancel online: the booking stays, the client is told to call
+    tg.calls.clear()
+    await send(hook, callback(f"visit:cancel:{late.id}", user_id=600))
+    await session.refresh(late)
+    assert late.status is BookingStatus.CONFIRMED
+    answers = [c for c in tg.calls if isinstance(c, AnswerCallbackQuery)]
+    assert answers[0].text is not None
+    assert "позвоните" in answers[0].text
+    assert answers[0].show_alert is True
+
+    # "No, I'll come" after asking confirms the visit
+    await send(hook, callback(f"visit:keep:{late.id}", user_id=600))
+    await session.refresh(late)
+    assert late.client_confirmed_at is not None

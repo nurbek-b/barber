@@ -433,6 +433,9 @@ export function BookingDetailsDialog({
         <div className="space-y-3 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={STATUS_VARIANT[booking.status]}>{t(`status.${booking.status}`)}</Badge>
+            {booking.client_confirmed_at && (
+              <Badge variant="success">✓ {t("booking.clientConfirmed")}</Badge>
+            )}
             <span className="text-muted-foreground">{booking.source}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">

@@ -118,6 +118,7 @@ class SalonSettingsOut(ApiModel):
     contacts: dict[str, str]
     logo_url: str | None
     gallery: list[str]
+    revisit_after_days: int
 
 
 class GalleryPut(ApiModel):
@@ -183,6 +184,8 @@ class SalonSettingsIn(ApiModel):
             if any(len(text) > 2000 for text in variants.values()):
                 raise ValueError("template is too long")
         return {key: {k: v for k, v in item.items() if v.strip()} for key, item in value.items()}
+
+    revisit_after_days: int = Field(default=30, ge=0, le=365, description="0 = off")
 
 
 class TemplateDefaultsOut(ApiModel):

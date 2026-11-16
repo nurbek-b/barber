@@ -47,7 +47,7 @@ def create_bot_app(
         maker = create_sessionmaker(engine)
         app.state.redis = redis or create_redis(settings)
         app.state.bot = bot or create_bot(settings)
-        app.state.dispatcher = create_dispatcher(maker, settings)
+        app.state.dispatcher = create_dispatcher(maker, settings, app.state.redis)
         try:
             yield
         finally:

@@ -93,7 +93,7 @@ export default function CalendarPage() {
         title:
           booking.kind === "block"
             ? `⛔ ${booking.admin_note ?? t("calendar.block")}`
-            : `${booking.client?.name ?? ""} · ${booking.services.map((s) => s.name_i18n[i18n.language] ?? s.name_i18n.ru).join(", ")}`,
+            : `${booking.client_confirmed_at ? "✓ " : ""}${booking.client?.name ?? ""} · ${booking.services.map((s) => s.name_i18n[i18n.language] ?? s.name_i18n.ru).join(", ")}`,
         start: toWallClock(booking.start_at, tz),
         end: toWallClock(booking.end_at, tz),
         resourceId: booking.barber.id,

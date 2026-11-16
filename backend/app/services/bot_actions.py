@@ -7,18 +7,21 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 
+from redis.asyncio import Redis
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
-from app.core.errors import ValidationAppError
+from app.core.errors import AppError, ValidationAppError
 from app.core.security.initdata import TelegramUser
 from app.models import AdminUser, Barber, Booking, Client, SalonSettings, User
 from app.models.enums import ACTIVE_BOOKING_STATUSES, ActorType, BookingKind, BookingStatus
 from app.services.audit import Actor, AuditService
+from app.services.bookings import ClientBookingService
 from app.services.branches import BranchService
 from app.services.client_registry import ClientRegistry, normalize_phone
 from app.services.reviews import recompute_barber_rating
+from app.services.slot_cache import SlotCache
 from app.services.staff_link import PREFIX as STAFF_PREFIX
 from app.services.staff_link import parse_token
 
@@ -34,6 +37,13 @@ class StartResult:
 class RateOutcome(StrEnum):
     OK = "ok"
     ALREADY = "already"
+    UNAVAILABLE = "unavailable"
+
+
+class VisitOutcome(StrEnum):
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    TOO_LATE = "too_late"
     UNAVAILABLE = "unavailable"
 
 
@@ -194,3 +204,58 @@ class BotActions:
     @staticmethod
     def is_staff_link(args: str | None) -> bool:
         return bool(args and args.startswith(STAFF_PREFIX))
+
+    async def confirm_visit(
+        self, telegram_id: int, booking_id: uuid.UUID, now: datetime
+    ) -> VisitOutcome:
+        """'I'll come' from a reminder: marks the booking, the admin calendar shows a check."""
+        found = await self._client_of(telegram_id)
+        if found is None:
+            return VisitOutcome.UNAVAILABLE
+        client, _ = found
+        booking = await self.session.scalar(
+            select(Booking)
+            .where(Booking.id == booking_id, Booking.client_id == client.id)
+            .with_for_update()
+        )
+        if booking is None or booking.status not in ACTIVE_BOOKING_STATUSES:
+            return VisitOutcome.UNAVAILABLE
+        if booking.client_confirmed_at is None:
+            booking.client_confirmed_at = now
+            self.audit.record(
+                Actor(type=ActorType.CLIENT, id=client.id),
+                "booking.client_confirm",
+                "booking",
+                booking.id,
+                after={"client_confirmed_at": now.isoformat()},
+            )
+            await self.session.commit()
+        return VisitOutcome.CONFIRMED
+
+    async def cancel_visit(
+        self, telegram_id: int, booking_id: uuid.UUID, now: datetime, redis: Redis
+    ) -> VisitOutcome:
+        """Cancel from a reminder: the same rules, refunds and notifications as the Mini App."""
+        found = await self._client_of(telegram_id)
+        if found is None:
+            return VisitOutcome.UNAVAILABLE
+        client, salon = found
+        service = ClientBookingService(self.session, redis, SlotCache(redis))
+        try:
+            await service.cancel(
+                salon.branch_id,
+                client,
+                Actor(type=ActorType.CLIENT, id=client.id),
+                booking_id,
+                "Отменено из напоминания в Telegram",
+                now,
+            )
+        except ValidationAppError as exc:
+            await self.session.rollback()
+            return (
+                VisitOutcome.TOO_LATE if exc.code == "cancel_too_late" else VisitOutcome.UNAVAILABLE
+            )
+        except AppError:
+            await self.session.rollback()
+            return VisitOutcome.UNAVAILABLE
+        return VisitOutcome.CANCELLED

@@ -15,13 +15,14 @@ from aiogram.types import (
     ReplyKeyboardRemove,
 )
 from aiogram.types import User as TgUser
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot import keyboards
 from app.bot.texts import t
 from app.core.config import Settings
 from app.core.security.initdata import TelegramUser
-from app.services.bot_actions import BotActions, RateOutcome
+from app.services.bot_actions import BotActions, RateOutcome, VisitOutcome
 from app.services.branches import BranchNotConfiguredError
 from app.services.events import format_when
 
@@ -151,6 +152,51 @@ async def rate(callback: CallbackQuery, session: AsyncSession, settings: Setting
         await callback.answer(t("rate_unavailable", lang), show_alert=False)
 
 
+async def visit(
+    callback: CallbackQuery, session: AsyncSession, settings: Settings, redis: Redis | None = None
+) -> None:
+    """Reminder buttons: visit:ok / visit:ask (two-step cancel) / visit:keep / visit:cancel."""
+    try:
+        _, action, booking_raw = (callback.data or "").split(":")
+        booking_id = uuid.UUID(booking_raw)
+    except ValueError:
+        await callback.answer()
+        return
+    actions = BotActions(session, settings)
+    lang = await actions.language_of(callback.from_user.id, callback.from_user.language_code)
+    message = callback.message if isinstance(callback.message, Message) else None
+
+    if action == "ask":
+        await callback.answer(t("visit_cancel_sure", lang))
+        if message is not None:
+            await message.edit_reply_markup(
+                reply_markup=keyboards.cancel_confirmation(lang, booking_id)
+            )
+        return
+
+    if action in ("ok", "keep"):
+        outcome = await actions.confirm_visit(callback.from_user.id, booking_id, _now())
+    elif action == "cancel" and redis is not None:
+        outcome = await actions.cancel_visit(callback.from_user.id, booking_id, _now(), redis)
+    else:
+        await callback.answer()
+        return
+
+    if outcome is VisitOutcome.TOO_LATE:
+        await callback.answer(t("visit_too_late", lang), show_alert=True)
+        return
+    if outcome is VisitOutcome.UNAVAILABLE:
+        await callback.answer(t("visit_unavailable", lang), show_alert=False)
+        if message is not None:
+            await message.edit_reply_markup(reply_markup=None)
+        return
+    await callback.answer()
+    if message is not None:
+        key = "visit_confirmed" if outcome is VisitOutcome.CONFIRMED else "visit_cancelled"
+        # keep the reminder text, drop the buttons, add the result line
+        await message.edit_text(f"{message.html_text}\n\n{t(key, lang)}", reply_markup=None)
+
+
 async def chat_id(message: Message) -> None:
     """Add the bot to the admin group and send /chatid to learn its ID for the settings."""
     lang = message.from_user.language_code if message.from_user else None
@@ -187,6 +233,7 @@ def build_router() -> Router:
     router.message.register(language, Command("language"), private)
     router.callback_query.register(language_chosen, F.data.startswith("lang:"))
     router.callback_query.register(rate, F.data.startswith("rate:"))
+    router.callback_query.register(visit, F.data.startswith("visit:"))
     router.message.register(chat_id, Command("chatid"))
     router.my_chat_member.register(
         bot_blocked, ChatMemberUpdatedFilter(member_status_changed=KICKED)

@@ -124,6 +124,7 @@ export const ky: Messages = {
     slots: "Бош убакыт",
     pickSlot: "Устатты, кызматтарды жана күндү тандаңыз",
     searchClient: "Кардардын аты же телефону",
+    clientConfirmed: "Кардар ырастады",
   },
   clients: {
     title: "Кардарлар",
@@ -266,6 +267,9 @@ export const ky: Messages = {
     addPhoto: "Сүрөт кошуу",
     moveLeft: "Солго",
     moveRight: "Оңго",
+    revisitDays: "«Чач кырктыруу убагы» канча күндөн кийин",
+    revisitHint:
+      "Кардар жазыла элек болсо, бот кайра жазылууну эскертет. 0 — өчүк. Билдирүүлөр 10:00дөн 20:00гө чейин жөнөтүлөт.",
   },
   bonus: {
     title: "Бонус системасы",

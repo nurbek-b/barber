@@ -112,6 +112,10 @@ class Booking(TimestampMixin, Base):
     # written review of this visit (one per completed booking); hidden = moderated by the salon
     review_text: Mapped[str | None] = mapped_column(Text)
     review_hidden: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # the client tapped "I'll come" in a reminder
+    client_confirmed_at: Mapped[datetime | None] = mapped_column()
+    # "time for a haircut" message sent for this (last) visit
+    revisit_nudged_at: Mapped[datetime | None] = mapped_column()
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     services: Mapped[list[BookingService]] = relationship(

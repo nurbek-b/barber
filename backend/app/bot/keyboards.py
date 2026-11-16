@@ -79,3 +79,19 @@ def from_payload(rows: list[list[dict[str, Any]]] | None) -> InlineKeyboardMarku
                 )
         keyboard.append(buttons)
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def cancel_confirmation(lang: str, booking_id: object) -> InlineKeyboardMarkup:
+    """Second step of 'Cancel' in a reminder, so a stray tap does not drop the booking."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=t("visit_cancel_yes", lang), callback_data=f"visit:cancel:{booking_id}"
+                ),
+                InlineKeyboardButton(
+                    text=t("visit_keep", lang), callback_data=f"visit:keep:{booking_id}"
+                ),
+            ]
+        ]
+    )

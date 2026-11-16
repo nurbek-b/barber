@@ -106,6 +106,36 @@ TEXTS: dict[str, dict[str, str]] = {
         "ky": "✍️ Пикир жазуу",
         "en": "✍️ Write a review",
     },
+    "revisit_book": {"ru": "✂️ Записаться", "ky": "✂️ Жазылуу", "en": "✂️ Book now"},
+    "visit_confirm_btn": {"ru": "✅ Приду", "ky": "✅ Келем", "en": "✅ I'll come"},
+    "visit_cancel_btn": {"ru": "❌ Отменить", "ky": "❌ Жокко чыгаруу", "en": "❌ Cancel"},
+    "visit_cancel_sure": {
+        "ru": "Точно отменить запись?",
+        "ky": "Жазылууну чын эле жокко чыгарасызбы?",
+        "en": "Cancel this booking?",
+    },
+    "visit_cancel_yes": {"ru": "Да, отменить", "ky": "Ооба, жокко чыгаруу", "en": "Yes, cancel"},
+    "visit_keep": {"ru": "Нет, приду", "ky": "Жок, келем", "en": "No, I'll come"},
+    "visit_confirmed": {
+        "ru": "✅ Спасибо, ждём вас!",
+        "ky": "✅ Рахмат, сизди күтөбүз!",
+        "en": "✅ Thank you, see you soon!",
+    },
+    "visit_cancelled": {
+        "ru": "Запись отменена. Будем рады видеть вас в другой раз!",
+        "ky": "Жазылуу жокко чыгарылды. Башка жолу күтөбүз!",
+        "en": "The booking is cancelled. Hope to see you another time!",
+    },
+    "visit_too_late": {
+        "ru": "Отменить онлайн уже нельзя — позвоните, пожалуйста, в салон.",
+        "ky": "Онлайн жокко чыгарууга кеч — салонго чалыңыз.",
+        "en": "It's too late to cancel online — please call the salon.",
+    },
+    "visit_unavailable": {
+        "ru": "Эта запись уже неактивна.",
+        "ky": "Бул жазылуу активдүү эмес.",
+        "en": "This booking is no longer active.",
+    },
     "rate_already": {
         "ru": "Вы уже оценили этот визит.",
         "ky": "Бул визитти баалагансыз.",

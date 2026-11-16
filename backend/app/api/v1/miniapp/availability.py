@@ -72,7 +72,8 @@ async def availability_days(
     today = now.astimezone(ZoneInfo(salon.timezone)).date()
     start = date_from or today
     end = date_to or (today + timedelta(days=salon.max_days_ahead))
-    result = await AvailabilityService(session, cache).compute(
+    service = AvailabilityService(session, cache)
+    result = await service.compute(
         ctx.branch_id,
         service_ids=service_ids,
         barber_id=barber_id,
@@ -82,7 +83,10 @@ async def availability_days(
         audience=Audience.CLIENT,
         extra_busy=await _held_by_others(ctx, session, redis, start, end, now),
     )
-    return days_out(result)
+    working = await service.working_days(
+        list(result.durations), [day.day for day in result.days], ZoneInfo(salon.timezone)
+    )
+    return days_out(result, working)
 
 
 @router.get("/slots", response_model=AvailabilitySlotsOut, responses=ERRORS)

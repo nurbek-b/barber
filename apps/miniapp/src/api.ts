@@ -354,3 +354,32 @@ export function useBookingDetails(bookingId: string) {
       ),
   });
 }
+
+export function useWaitlist() {
+  return useQuery({
+    queryKey: ["waitlist"],
+    queryFn: () => call(api.GET(`${BASE}/waitlist`)),
+  });
+}
+
+export function useJoinWaitlist() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { barberId: string | null; day: string; serviceIds: string[] }) =>
+      call(
+        api.POST(`${BASE}/waitlist`, {
+          body: { barber_id: input.barberId, day: input.day, service_ids: input.serviceIds },
+        }),
+      ),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["waitlist"] }),
+  });
+}
+
+export function useLeaveWaitlist() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (entryId: string) =>
+      call(api.DELETE(`${BASE}/waitlist/{entry_id}`, { params: { path: { entry_id: entryId } } })),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["waitlist"] }),
+  });
+}

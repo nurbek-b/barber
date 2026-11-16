@@ -21,6 +21,7 @@ from app.models import (
 )
 from app.models.enums import BookingStatus, OutboxStatus
 from app.notify.templates import format_money, render
+from app.worker.barber_digest import send_barber_digests
 from app.worker.outbox import (
     MAX_ATTEMPTS,
     RecipientBlockedError,
@@ -410,3 +411,31 @@ async def test_revisit_disabled(
     salon.revisit_after_days = 0
     await session.commit()
     assert await scan_revisits(maker, settings, _local(12)) == 0
+
+
+async def test_barber_morning_digest(
+    maker: async_sessionmaker[AsyncSession], session: AsyncSession, branch: Branch
+) -> None:
+    day = datetime.now(TZ).date()
+    at = lambda hour: datetime.combine(day, time(hour), tzinfo=TZ).astimezone(UTC)  # noqa: E731
+    booking = await _booking(session, branch, at(14), created=at(8), telegram_id=131)
+    barber = await session.get(Barber, booking.barber_id)
+    assert barber is not None
+    barber.telegram_chat_id = 7001
+    lonely = Barber(branch_id=branch.id, name="Свободный", telegram_chat_id=7002)
+    session.add(lonely)
+    await session.commit()
+
+    assert await send_barber_digests(maker, at(8)) == 0, "only at 9:00"
+    assert await send_barber_digests(maker, at(9)) == 1, "barbers without bookings get nothing"
+    assert await send_barber_digests(maker, at(9)) == 0, "once a day"
+
+    row = (
+        await session.execute(
+            select(TelegramOutbox).where(TelegramOutbox.template_key == "barber_morning")
+        )
+    ).scalar_one()
+    assert row.chat_id == 7001
+    text = render(row.template_key, row.language, row.payload, None)
+    assert "14:00–15:00 • Клиент · Стрижка" in text
+    assert "/today" in text

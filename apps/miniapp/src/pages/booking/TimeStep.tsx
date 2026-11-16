@@ -4,7 +4,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError, keys, placeHold, releaseHold, useDays, useSlots } from "../../api";
+import {
+  ApiError,
+  keys,
+  placeHold,
+  releaseHold,
+  useDays,
+  useJoinWaitlist,
+  useLeaveWaitlist,
+  useSlots,
+  useWaitlist,
+} from "../../api";
 import { DayStrip, SlotGrid } from "../../components/SlotPicker";
 import { ErrorState, Screen, Skeleton, SkeletonList, useTimezone } from "../../components/ui";
 import { useLang, useT } from "../../i18n";
@@ -72,7 +82,12 @@ export default function TimeStep() {
     }
   };
 
-  const noFreeDays = Boolean(days.data && !days.data.days.some((item) => item.slots_count > 0));
+  const noSlotsAtAll = Boolean(days.data && !days.data.days.some((item) => item.slots_count > 0));
+  // fully booked working days still have a waitlist; only "nothing works" is a dead end
+  const fullDays = Boolean(days.data?.days.some((item) => item.working !== false));
+  const noFreeDays = noSlotsAtAll && !fullDays;
+  const selectedDay = days.data?.days.find((item) => item.date === day);
+  const dayIsFull = Boolean(selectedDay && selectedDay.slots_count === 0);
   const step = rescheduleBookingId ? 1 : 3;
   const total = rescheduleBookingId ? 2 : 4;
 
@@ -98,6 +113,9 @@ export default function TimeStep() {
           )}
         </div>
       )}
+      {noSlotsAtAll && !noFreeDays && !rescheduleBookingId && (
+        <p className="mb-3 text-center text-sm text-hint">{t("time.onlyWaitlist")}</p>
+      )}
       {days.data && !noFreeDays && (
         <DayStrip days={days.data.days} selected={day} onSelect={setDay} />
       )}
@@ -115,7 +133,10 @@ export default function TimeStep() {
       )}
       {day && slots.isPending && <SkeletonList rows={3} height="h-11" />}
       {slots.isError && <ErrorState error={slots.error} onRetry={() => void slots.refetch()} />}
-      {slots.data && (
+      {day && dayIsFull && !rescheduleBookingId && (
+        <WaitlistBox barberId={barberId} day={day} serviceIds={serviceIds} />
+      )}
+      {slots.data && !dayIsFull && (
         <SlotGrid
           slots={slots.data.slots}
           timezone={tz}
@@ -128,5 +149,59 @@ export default function TimeStep() {
         <p className="py-8 text-center text-hint">{t("time.pickDay")}</p>
       )}
     </Screen>
+  );
+}
+
+/** "Tell me if a slot opens" for a fully booked day (one per barber/day). */
+function WaitlistBox({
+  barberId,
+  day,
+  serviceIds,
+}: {
+  barberId: string | null;
+  day: string;
+  serviceIds: string[];
+}) {
+  const t = useT();
+  const waitlist = useWaitlist();
+  const join = useJoinWaitlist();
+  const leave = useLeaveWaitlist();
+  const entry = waitlist.data?.find(
+    (item) => item.day === day && (item.barber_id ?? null) === (barberId ?? null),
+  );
+  return (
+    <div className="space-y-3 py-6 text-center" role="status">
+      <p className="text-hint">{t("time.full")}</p>
+      {entry ? (
+        <>
+          <p className="text-sm font-medium">{t("time.waitlistOn")}</p>
+          <button
+            type="button"
+            disabled={leave.isPending}
+            onClick={() => leave.mutate(entry.id)}
+            className="text-sm text-link"
+          >
+            {t("time.waitlistLeave")}
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          disabled={join.isPending || waitlist.isPending}
+          onClick={() => {
+            haptic.tap();
+            join.mutate({ barberId, day, serviceIds });
+          }}
+          className="rounded-xl bg-button px-4 py-2 text-sm font-medium text-button-text"
+        >
+          {t("time.waitlistJoin")}
+        </button>
+      )}
+      {join.isError && (
+        <p className="text-sm text-destructive">
+          {join.error instanceof ApiError ? join.error.message : t("error.generic")}
+        </p>
+      )}
+    </div>
   );
 }

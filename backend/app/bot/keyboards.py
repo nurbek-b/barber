@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from aiogram.types import (
@@ -93,5 +94,34 @@ def cancel_confirmation(lang: str, booking_id: object) -> InlineKeyboardMarkup:
                     text=t("visit_keep", lang), callback_data=f"visit:keep:{booking_id}"
                 ),
             ]
+        ]
+    )
+
+
+def finish_visits(items: list[tuple[object, datetime, str]]) -> InlineKeyboardMarkup:
+    """One button per visit the barber can finish: '✅ 10:00 Айбек'."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"✅ {start:%H:%M} {name}".strip()[:60], callback_data=f"done:{booking_id}"
+                )
+            ]
+            for booking_id, start, name in items
+        ]
+    )
+
+
+def payment_methods(lang: str | None, booking_id: object) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=t(f"barber_pay_{method}", lang),
+                    callback_data=f"done:{booking_id}:{method}",
+                )
+                for method in ("cash", "card", "transfer")
+            ],
+            [InlineKeyboardButton(text=t("barber_back", lang), callback_data="done:back")],
         ]
     )

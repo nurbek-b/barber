@@ -174,6 +174,33 @@ rewrites выкладывается только через `deploy.sh`, пос�
 той же командой. Для отката выполните `TAG=<sha> SKIP_BOT_SETUP=1 infra/cloudrun/deploy.sh`,
 если образ уже есть в реестре.
 
+### Мониторинг, бэкапы, восстановление (Cloud Run)
+
+- **Ошибки:** логи пишутся с `severity`, исключения попадают в
+  [Error Reporting](https://console.cloud.google.com/errors?project=britva-barber).
+- **Оповещения на почту:** `ALERT_EMAIL=… infra/cloudrun/monitoring.sh` создаёт проверку
+  доступности сайта (каждые 5 минут) и два оповещения: «сайт не отвечает» и «ошибки в логах»
+  (не чаще раза в час). Адрес передаётся при запуске — репозиторий публичный.
+- **Бэкапы:** `infra/cloudrun/backups.sh` — задание `barber-backup` каждую ночь в 03:00
+  (Бишкек) делает `pg_dump` в `gs://britva-barber-backups/db/`, файлы живут 30 дней.
+  Приложение может только добавлять файлы в этот бакет, но не удалять их.
+  Запустить вручную: `gcloud run jobs execute barber-backup --region=europe-west3 --wait`.
+- **Восстановление** (в новую ветку Neon или пустую базу, никогда поверх рабочей):
+
+  ```bash
+  gcloud storage cp gs://britva-barber-backups/db/<файл>.dump ./db.dump
+  docker run --rm -v "$PWD":/bk postgres:18-bookworm \
+    pg_restore --no-owner --no-privileges --dbname '<строка подключения новой базы>' /bk/db.dump
+  ```
+
+  Затем проверьте данные и поменяйте `DATABASE_URL` / `DATABASE_URL_DIRECT` в Secret Manager.
+
+### Мастерам в Telegram
+
+После привязки по ссылке из карточки мастера (админка → мастер → «Ссылка для Telegram»):
+`/today` и `/tomorrow` — записи на день; начавшийся визит завершается кнопкой «✅ 10:00 Имя» с
+выбором способа оплаты. В 9:00 бот сам присылает список записей на сегодня.
+
 ### CI/CD (GitHub Actions)
 
 - **Pull request** (`ci.yml`, запускаются только задачи изменённых частей — `dorny/paths-filter`):

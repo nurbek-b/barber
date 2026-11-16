@@ -51,23 +51,25 @@ describe("SlotGrid", () => {
 });
 
 describe("DayStrip", () => {
-  it("disables days without free slots", async () => {
+  it("disables days off; fully booked working days stay tappable for the waitlist", async () => {
     const onSelect = vi.fn();
     renderWithProviders(
       <DayStrip
         days={[
-          { date: "2026-12-07", slots_count: 5 },
-          { date: "2026-12-08", slots_count: 0 },
+          { date: "2026-12-07", slots_count: 5, working: true },
+          { date: "2026-12-08", slots_count: 0, working: true },
+          { date: "2026-12-13", slots_count: 0, working: false },
         ]}
         selected="2026-12-07"
         onSelect={onSelect}
       />,
     );
-    const [monday, tuesday] = screen.getAllByRole("option");
+    const [monday, tuesday, sunday] = screen.getAllByRole("option");
     expect(monday).toHaveAttribute("aria-selected", "true");
-    expect(tuesday).toBeDisabled();
-    await userEvent.click(monday!);
-    expect(onSelect).toHaveBeenCalledWith("2026-12-07");
+    expect(sunday).toBeDisabled();
+    expect(tuesday).toBeEnabled();
+    await userEvent.click(tuesday!);
+    expect(onSelect).toHaveBeenCalledWith("2026-12-08");
   });
 });
 

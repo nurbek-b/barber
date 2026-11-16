@@ -11,51 +11,18 @@ from typing import Any
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.exceptions import (
-    TelegramBadRequest,
-    TelegramForbiddenError,
-    TelegramNetworkError,
-    TelegramRetryAfter,
-    TelegramServerError,
-)
-from aiogram.types import LinkPreviewOptions
 from arq import cron
 from arq.connections import RedisSettings
 
-from app.bot import keyboards
 from app.core.config import get_settings
 from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
+from app.notify.sender import AiogramSender
+from app.worker.barber_digest import send_barber_digests
 from app.worker.bonus_jobs import run_bonus_jobs
-from app.worker.outbox import RecipientBlockedError, RetryAfterError, SendError, drain_outbox
+from app.worker.outbox import drain_outbox
 from app.worker.reminders import scan_reminders
 from app.worker.revisits import scan_revisits
-
-
-class AiogramSender:
-    def __init__(self, bot: Bot) -> None:
-        self.bot = bot
-
-    async def send(
-        self, chat_id: int, text: str, buttons: list[list[dict[str, Any]]] | None = None
-    ) -> None:
-        try:
-            await self.bot.send_message(
-                chat_id,
-                text,
-                reply_markup=keyboards.from_payload(buttons),
-                link_preview_options=LinkPreviewOptions(is_disabled=True),
-            )
-        except TelegramRetryAfter as exc:
-            raise RetryAfterError(exc.retry_after) from exc
-        except TelegramForbiddenError as exc:
-            raise RecipientBlockedError(str(exc)) from exc
-        except TelegramBadRequest as exc:
-            if "chat not found" in str(exc).lower():
-                raise RecipientBlockedError(str(exc)) from exc
-            raise SendError(str(exc)) from exc
-        except (TelegramNetworkError, TelegramServerError) as exc:
-            raise SendError(str(exc)) from exc
 
 
 async def startup(ctx: dict[str, Any]) -> None:
@@ -90,6 +57,7 @@ async def bonus_jobs(ctx: dict[str, Any]) -> dict[str, int]:
     now = datetime.now(UTC)
     result = await run_bonus_jobs(ctx["maker"], now)
     result["revisits"] = await scan_revisits(ctx["maker"], get_settings(), now)
+    result["barber_digests"] = await send_barber_digests(ctx["maker"], now)
     return result
 
 

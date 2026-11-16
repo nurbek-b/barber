@@ -16,6 +16,7 @@ from app.models.catalog import (
 from app.models.notification import Notification, NotificationRead, TelegramOutbox
 from app.models.staff import AdminRefreshToken, AdminUser
 from app.models.user import Client, User
+from app.models.waitlist import WaitlistEntry
 
 __all__ = [
     "AdminRefreshToken",
@@ -42,4 +43,5 @@ __all__ = [
     "ServiceCategory",
     "TelegramOutbox",
     "User",
+    "WaitlistEntry",
 ]

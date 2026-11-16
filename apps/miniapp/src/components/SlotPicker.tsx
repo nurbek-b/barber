@@ -18,17 +18,19 @@ export function DayStrip({
       {days.map((day) => {
         const active = day.date === selected;
         const empty = day.slots_count === 0;
+        // a fully booked working day stays tappable: it has a waitlist
+        const off = empty && day.working === false;
         return (
           <button
             key={day.date}
             type="button"
             role="option"
             aria-selected={active}
-            disabled={empty}
+            disabled={off}
             onClick={() => onSelect(day.date)}
             className={`flex w-14 shrink-0 flex-col items-center rounded-xl py-2 text-sm transition ${
               active ? "bg-button text-button-text" : "bg-section"
-            } ${empty ? "opacity-40" : ""}`}
+            } ${off ? "opacity-40" : ""} ${empty && !off && !active ? "line-through decoration-hint" : ""}`}
           >
             <span className="text-xs capitalize">{formatWeekdayNarrow(day.date, lang)}</span>
             <span className="text-lg font-semibold">{dayOfMonth(day.date)}</span>

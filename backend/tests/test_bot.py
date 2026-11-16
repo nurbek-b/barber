@@ -40,7 +40,7 @@ from app.models import (
     TelegramOutbox,
     User,
 )
-from app.models.enums import AdminRole, BookingStatus
+from app.models.enums import AdminRole, BookingStatus, PaymentMethod
 from app.services.staff_link import make_token, parse_token
 from tests.conftest import AdminFactory, login_as
 
@@ -585,3 +585,70 @@ async def test_reminder_confirm_and_cancel(
     await send(hook, callback(f"visit:keep:{late.id}", user_id=600))
     await session.refresh(late)
     assert late.client_confirmed_at is not None
+
+
+# barber side: /today and finishing a visit from Telegram
+# ---------------------------------------------------------------------------
+
+
+async def test_barber_today_and_finish(
+    hook: httpx.AsyncClient, tg: MockedSession, session: AsyncSession, branch: Branch
+) -> None:
+    await send(hook, message("/start", user_id=800))  # a client
+    client = await client_of(session, 800)
+    client.name = "Айбек Асанов"
+    barber = Barber(branch_id=branch.id, name="Мастер", telegram_chat_id=700)
+    other = Barber(branch_id=branch.id, name="Другой", telegram_chat_id=701)
+    session.add_all([barber, other])
+    await session.flush()
+
+    def visit(who: Barber, minutes: int) -> Booking:
+        start = NOW + timedelta(minutes=minutes)
+        return Booking(
+            branch_id=branch.id,
+            client_id=client.id,
+            barber_id=who.id,
+            status=BookingStatus.CONFIRMED,
+            start_at=start,
+            end_at=start + timedelta(minutes=30),
+            blocked_until=start + timedelta(minutes=30),
+            subtotal=50_000,
+            bonus_spent=0,
+            total_due=50_000,
+            services=[BookingService(name_snapshot={"ru": "Стрижка"}, duration_min=30, price=1)],
+        )
+
+    started, later, foreign = visit(barber, -5), visit(barber, 40), visit(other, -5)
+    session.add_all([started, later, foreign])
+    await session.commit()
+    tg.calls.clear()
+
+    await send(hook, message("/today", user_id=900))  # not a barber
+    assert "для мастеров" in (tg.sent()[-1].text or "")
+
+    await send(hook, message("/today", user_id=700))
+    reply = tg.sent()[-1]
+    assert "записей: 2" in (reply.text or "")
+    assert "<b>Айбек Асанов</b>" in (reply.text or "")
+    buttons = [b.callback_data for row in reply.reply_markup.inline_keyboard for b in row]  # type: ignore[union-attr]
+    assert buttons == [f"done:{started.id}"], "only visits that have started"
+
+    await send(hook, callback(f"done:{started.id}", user_id=700))
+    methods = [c for c in tg.calls if isinstance(c, EditMessageReplyMarkup)][-1]
+    data = [b.callback_data for row in methods.reply_markup.inline_keyboard for b in row]  # type: ignore[union-attr]
+    assert data[:3] == [f"done:{started.id}:{m}" for m in ("cash", "card", "transfer")]
+
+    await send(hook, callback(f"done:{started.id}:card", user_id=700))
+    await session.refresh(started)
+    assert started.status is BookingStatus.COMPLETED
+    assert started.payment_method is PaymentMethod.CARD
+    assert started.paid_amount == 50_000
+    answers = [c for c in tg.calls if isinstance(c, AnswerCallbackQuery)]
+    assert "Завершено" in (answers[-1].text or "")
+
+    # someone else's visit cannot be finished
+    await send(hook, callback(f"done:{foreign.id}:cash", user_id=700))
+    await session.refresh(foreign)
+    assert foreign.status is BookingStatus.CONFIRMED
+    answers = [c for c in tg.calls if isinstance(c, AnswerCallbackQuery)]
+    assert answers[-1].show_alert is True

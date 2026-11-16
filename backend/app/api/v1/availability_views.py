@@ -8,10 +8,17 @@ from app.schemas.schedule import AvailabilityDay, AvailabilityDaysOut, Availabil
 from app.services.availability import AvailabilityResult
 
 
-def days_out(result: AvailabilityResult) -> AvailabilityDaysOut:
+def days_out(result: AvailabilityResult, working: set[date] | None = None) -> AvailabilityDaysOut:
     return AvailabilityDaysOut(
         timezone=result.timezone,
-        days=[AvailabilityDay(date=day.day, slots_count=len(day.slots)) for day in result.days],
+        days=[
+            AvailabilityDay(
+                date=day.day,
+                slots_count=len(day.slots),
+                working=True if working is None else day.day in working,
+            )
+            for day in result.days
+        ],
     )
 
 

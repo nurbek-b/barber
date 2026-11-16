@@ -60,3 +60,16 @@ class SalonPublicOut(ApiModel):
     contacts: dict[str, str]
     logo_url: str | None = None
     gallery: list[str] = Field(default_factory=list)
+
+
+class WaitlistIn(ApiModel):
+    barber_id: uuid.UUID | None = Field(default=None, description="NULL = any barber")
+    day: date
+    service_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
+
+
+class WaitlistOut(ApiModel):
+    id: uuid.UUID
+    barber_id: uuid.UUID | None
+    barber_name: str | None
+    day: date

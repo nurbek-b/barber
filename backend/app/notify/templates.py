@@ -94,6 +94,19 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "ky": "{barber} устатка болгон визит кандай болду? Баалап коюңузчу 🙏",
         "en": "How was your visit to {barber}? Please rate it 🙏",
     },
+    "waitlist_client": {
+        "ru": (
+            "🔔 Освободилось время у мастера {barber}: {when}.\n"
+            "Место достанется тому, кто запишется первым."
+        ),
+        "ky": "🔔 {barber} устатта убакыт бошоду: {when}.\nБиринчи жазылган адам алат.",
+        "en": "🔔 A slot opened up with {barber}: {when}.\nIt goes to whoever books first.",
+    },
+    "barber_morning": {
+        "ru": "☀️ Доброе утро! Записи на {date} — {count}:\n{lines}\n\nЗавершать визиты: /today",
+        "ky": "☀️ Кутман таң! {date} жазылуулар — {count}:\n{lines}\n\nВизиттерди аяктоо: /today",
+        "en": "☀️ Good morning! Bookings for {date} — {count}:\n{lines}\n\nFinish visits: /today",
+    },
     "revisit_client": {
         "ru": (
             "Здравствуйте, {name}! С последнего визита к мастеру {barber} прошло {days} дн. ✂️\n"

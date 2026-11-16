@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import uuid
 from collections.abc import Awaitable, Callable
+from types import SimpleNamespace
 from typing import Any
 
 from aiogram import BaseMiddleware, Bot, Dispatcher
@@ -13,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.bot.handlers import build_router
 from app.core.config import Settings
+from app.notify.instant import OUTBOX_IDS, send_now
+from app.notify.sender import AiogramSender
 
 
 class DbSessionMiddleware(BaseMiddleware):
@@ -34,15 +38,23 @@ class DbSessionMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
+        ids: list[uuid.UUID] = []
         async with self.maker() as session:
+            session.sync_session.info[OUTBOX_IDS] = ids
             data["session"] = session
             data["settings"] = self.settings
             data["redis"] = self.redis
             try:
-                return await handler(event, data)
+                result = await handler(event, data)
             except BaseException:
                 await session.rollback()
                 raise
+        bot = data.get("bot")
+        if ids and isinstance(bot, Bot):
+            # e.g. the admin hears about a cancel from a reminder at once, not on the next tick
+            state = SimpleNamespace(outbox_sender=AiogramSender(bot), sessionmaker=self.maker)
+            await send_now(state, ids)
+        return result
 
 
 def create_bot(settings: Settings, session: BaseSession | None = None) -> Bot:

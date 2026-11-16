@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
@@ -62,19 +64,29 @@ async def _overrides(session: AsyncSession) -> dict[str, object]:
 
 
 async def drain_outbox(
-    maker: async_sessionmaker[AsyncSession], sender: Sender, now: datetime, batch: int = BATCH
+    maker: async_sessionmaker[AsyncSession],
+    sender: Sender,
+    now: datetime,
+    batch: int = BATCH,
+    ids: Sequence[uuid.UUID] | None = None,
 ) -> DrainStats:
-    """Send due messages. Rows are locked with SKIP LOCKED, so several workers are safe."""
+    """Send due messages. Rows are locked with SKIP LOCKED, so several workers are safe.
+
+    With `ids`, only those rows (instant sending right after the request that created them).
+    """
     stats = DrainStats()
     async with maker() as session:
+        conditions = [
+            TelegramOutbox.status.in_((OutboxStatus.PENDING, OutboxStatus.FAILED)),
+            TelegramOutbox.send_after <= now,
+        ]
+        if ids is not None:
+            conditions.append(TelegramOutbox.id.in_(ids))
         rows = (
             (
                 await session.execute(
                     select(TelegramOutbox)
-                    .where(
-                        TelegramOutbox.status.in_((OutboxStatus.PENDING, OutboxStatus.FAILED)),
-                        TelegramOutbox.send_after <= now,
-                    )
+                    .where(*conditions)
                     .order_by(TelegramOutbox.send_after)
                     .limit(batch)
                     .with_for_update(skip_locked=True)

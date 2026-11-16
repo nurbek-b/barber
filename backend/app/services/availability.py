@@ -25,6 +25,7 @@ from app.domain.slots import (
     bookable_dates,
     compute_slots,
     local_day_bounds,
+    working_intervals,
 )
 from app.models import Barber, BarberSchedule, BarberScheduleException, SalonSettings
 from app.repositories.catalog import BarberRepository, BarberServiceRepository
@@ -229,3 +230,26 @@ class AvailabilityService:
         if not excluded:
             await self.cache.set_many(computed, versions, durations, fingerprint)
         return {**cached, **computed}
+
+    async def working_days(
+        self, barber_ids: Sequence[uuid.UUID], days: Sequence[date], tz: ZoneInfo
+    ) -> set[date]:
+        """Days on which at least one of the barbers works (weekly hours minus exceptions).
+        Tells a fully booked day apart from a day off — only the former has a waitlist."""
+        if not barber_ids or not days:
+            return set()
+        repo = ScheduleRepository(self.session)
+        weekly = await repo.weekly_for(barber_ids)
+        exceptions = await repo.exceptions_for(barber_ids, min(days), max(days))
+        schedules = [
+            to_domain_schedule(
+                [row for row in weekly if row.barber_id == barber_id],
+                [row for row in exceptions if row.barber_id == barber_id],
+            )
+            for barber_id in barber_ids
+        ]
+        return {
+            day
+            for day in days
+            if any(working_intervals(day, schedule, tz) for schedule in schedules)
+        }

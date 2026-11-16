@@ -142,6 +142,10 @@ class BookingEvents:
                     values,
                     booking,
                 )
+        if event is NotificationType.BOOKING_CANCELLED:
+            from app.services.waitlist import WaitlistService  # avoids an import cycle
+
+            await WaitlistService(self.session).on_slot_freed(booking, salon, datetime.now(UTC))
         await self.session.flush()
         return notification
 

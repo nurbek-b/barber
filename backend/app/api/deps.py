@@ -17,6 +17,7 @@ from app.core.security.cookies import read_session
 from app.core.security.tokens import CSRF_HEADER, AccessClaims, csrf_matches
 from app.models import AdminUser
 from app.models.enums import ActorType, AdminRole
+from app.notify.instant import track_outbox
 from app.services.admin_auth import AdminAuthService
 from app.services.audit import Actor
 from app.services.branches import BranchService
@@ -34,6 +35,7 @@ def get_settings(request: Request) -> Settings:
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     async for session in session_scope(request.app.state.sessionmaker):
+        track_outbox(session.sync_session.info, request.scope.setdefault("state", {}))
         yield session
 
 

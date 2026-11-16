@@ -114,6 +114,9 @@ class ScheduleExceptionUpdateOut(ApiModel):
 class AvailabilityDay(ApiModel):
     date: date
     slots_count: int
+    working: bool = Field(
+        default=True, description="false: day off; true with 0 slots: fully booked (waitlist)"
+    )
 
 
 class AvailabilityDaysOut(ApiModel):

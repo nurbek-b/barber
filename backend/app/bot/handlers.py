@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
@@ -11,6 +11,7 @@ from aiogram.filters.chat_member_updated import KICKED, MEMBER
 from aiogram.types import (
     CallbackQuery,
     ChatMemberUpdated,
+    InlineKeyboardMarkup,
     Message,
     ReplyKeyboardRemove,
 )
@@ -21,9 +22,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bot import keyboards
 from app.bot.texts import t
 from app.core.config import Settings
+from app.core.errors import AppError
 from app.core.security.initdata import TelegramUser
+from app.models.enums import PaymentMethod
+from app.services.barber_bot import Agenda, BarberBot
 from app.services.bot_actions import BotActions, RateOutcome, VisitOutcome
-from app.services.branches import BranchNotConfiguredError
+from app.services.branches import BranchNotConfiguredError, BranchService
 from app.services.events import format_when
 
 private = F.chat.type == ChatType.PRIVATE
@@ -197,6 +201,95 @@ async def visit(
         await message.edit_text(f"{message.html_text}\n\n{t(key, lang)}", reply_markup=None)
 
 
+def _agenda_text(
+    agenda: Agenda, lang: str, now: datetime
+) -> tuple[str, InlineKeyboardMarkup | None]:
+    day = agenda.day.strftime("%d.%m")
+    if not agenda.items:
+        return t("barber_day_empty", lang, date=day), None
+    text = t("barber_day", lang, date=day, count=len(agenda.items)) + "\n\n" + agenda.lines(lang)
+    finishable = agenda.finishable(now)
+    if not finishable:
+        return text, None
+    return text + "\n\n" + t("barber_finish_hint", lang), keyboards.finish_visits(
+        [
+            (item.booking.id, item.booking.start_at.astimezone(agenda.tz), item.client_name)
+            for item in finishable
+        ]
+    )
+
+
+async def barber_day(
+    message: Message, session: AsyncSession, settings: Settings, command: CommandObject
+) -> None:
+    """/today and /tomorrow for barbers linked through the staff link."""
+    bot_barber = BarberBot(session)
+    barber = await bot_barber.barber_of_chat(message.chat.id)
+    lang = message.from_user.language_code if message.from_user else None
+    if barber is None:
+        await message.answer(t("barber_not_linked", lang))
+        return
+    salon_tz = ZoneInfo((await BranchService(session).settings(barber.branch_id)).timezone)
+    now = _now()
+    day = now.astimezone(salon_tz).date()
+    if command.command == "tomorrow":
+        day += timedelta(days=1)
+    agenda = await bot_barber.agenda(barber, day)
+    text, markup = _agenda_text(agenda, lang or agenda.salon.default_language, now)
+    await message.answer(text, reply_markup=markup)
+
+
+async def finish(
+    callback: CallbackQuery, session: AsyncSession, settings: Settings, redis: Redis | None = None
+) -> None:
+    """done:<id> → payment buttons; done:<id>:<method> → finish; done:back → today's list."""
+    parts = (callback.data or "").split(":")
+    message = callback.message if isinstance(callback.message, Message) else None
+    bot_barber = BarberBot(session)
+    barber = await bot_barber.barber_of_chat(callback.from_user.id) if message else None
+    lang = callback.from_user.language_code
+    if barber is None or message is None:
+        await callback.answer(t("barber_not_linked", lang), show_alert=True)
+        return
+    now = _now()
+    salon_tz = ZoneInfo((await BranchService(session).settings(barber.branch_id)).timezone)
+    if parts[1:] == ["back"]:
+        agenda = await bot_barber.agenda(barber, now.astimezone(salon_tz).date())
+        text, markup = _agenda_text(agenda, lang or agenda.salon.default_language, now)
+        await callback.answer()
+        await message.edit_text(text, reply_markup=markup)
+        return
+    try:
+        booking_id = uuid.UUID(parts[1])
+    except (IndexError, ValueError):
+        await callback.answer()
+        return
+    if len(parts) == 2:
+        await callback.answer(t("barber_pay_how", lang))
+        await message.edit_reply_markup(reply_markup=keyboards.payment_methods(lang, booking_id))
+        return
+    try:
+        method = PaymentMethod(parts[2])
+        booking, amount = await bot_barber.complete(barber, booking_id, method, now, redis)
+    except (ValueError, AppError):
+        await session.rollback()
+        await callback.answer(t("barber_cannot_finish", lang), show_alert=True)
+        return
+    agenda = await bot_barber.agenda(barber, now.astimezone(salon_tz).date())
+    client = next((item.client_name for item in agenda.items if item.booking.id == booking.id), "")
+    await callback.answer(
+        t(
+            "barber_done",
+            lang,
+            time=booking.start_at.astimezone(salon_tz).strftime("%H:%M"),
+            client=client,
+            amount=amount,
+        )
+    )
+    text, markup = _agenda_text(agenda, lang or agenda.salon.default_language, now)
+    await message.edit_text(text, reply_markup=markup)
+
+
 async def chat_id(message: Message) -> None:
     """Add the bot to the admin group and send /chatid to learn its ID for the settings."""
     lang = message.from_user.language_code if message.from_user else None
@@ -234,7 +327,9 @@ def build_router() -> Router:
     router.callback_query.register(language_chosen, F.data.startswith("lang:"))
     router.callback_query.register(rate, F.data.startswith("rate:"))
     router.callback_query.register(visit, F.data.startswith("visit:"))
+    router.callback_query.register(finish, F.data.startswith("done:"))
     router.message.register(chat_id, Command("chatid"))
+    router.message.register(barber_day, Command("today", "tomorrow"), private)
     router.my_chat_member.register(
         bot_blocked, ChatMemberUpdatedFilter(member_status_changed=KICKED)
     )

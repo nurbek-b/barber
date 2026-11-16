@@ -4,6 +4,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from aiogram import Bot
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
@@ -17,6 +20,9 @@ from app.core.errors import install_error_handlers
 from app.core.logging import NoSharedCacheMiddleware, RequestContextMiddleware, configure_logging
 from app.core.media import content_type, get_media_storage
 from app.core.redis import create_redis
+from app.notify.instant import InstantOutboxMiddleware
+from app.notify.sender import AiogramSender
+from app.worker.outbox import Sender
 
 
 def _operation_id(route: APIRoute) -> str:
@@ -26,7 +32,11 @@ def _operation_id(route: APIRoute) -> str:
     return f"{area}_{route.name}"
 
 
-def create_app(settings: Settings | None = None, redis: Redis | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    redis: Redis | None = None,
+    outbox_sender: Sender | None = None,
+) -> FastAPI:
     settings = settings or get_settings()
     settings.validate_for_runtime()
     configure_logging(settings.log_level, settings.log_json)
@@ -48,9 +58,21 @@ def create_app(settings: Settings | None = None, redis: Redis | None = None) -> 
         app.state.engine = engine
         app.state.sessionmaker = create_sessionmaker(engine)
         app.state.redis = redis or create_redis(settings)
+        # instant Telegram notifications (production only; tests pass a fake sender)
+        bot: Bot | None = None
+        if outbox_sender is not None:
+            app.state.outbox_sender = outbox_sender
+        elif not settings.is_dev and settings.bot_token.get_secret_value():
+            bot = Bot(
+                settings.bot_token.get_secret_value(),
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+            )
+            app.state.outbox_sender = AiogramSender(bot)
         try:
             yield
         finally:
+            if bot is not None:
+                await bot.session.close()
             if redis is None:
                 await app.state.redis.aclose()
             await engine.dispose()
@@ -86,6 +108,7 @@ def create_app(settings: Settings | None = None, redis: Redis | None = None) -> 
     app.add_middleware(RequestContextMiddleware)
 
     app.add_middleware(NoSharedCacheMiddleware)
+    app.add_middleware(InstantOutboxMiddleware)
     app.include_router(v1_router)
 
     if settings.media_backend == "gcs":

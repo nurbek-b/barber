@@ -144,11 +144,16 @@ async def rate(callback: CallbackQuery, session: AsyncSession, settings: Setting
     if outcome is RateOutcome.OK:
         await callback.answer()
         if callback.message is not None:
+            # only delighted clients are sent to the public maps
+            links = await actions.review_links(booking_id) if value == 5 else {}
+            text = t("rate_thanks", lang, stars="⭐" * value)
+            if links:
+                text += "\n\n" + t("rate_maps", lang)
             await callback.bot.edit_message_text(  # type: ignore[union-attr]
-                text=t("rate_thanks", lang, stars="⭐" * value),
+                text=text,
                 chat_id=callback.message.chat.id,
                 message_id=callback.message.message_id,
-                reply_markup=keyboards.write_review(settings, lang, booking_id),
+                reply_markup=keyboards.write_review(settings, lang, booking_id, links),
             )
     elif outcome is RateOutcome.ALREADY:
         await callback.answer(t("rate_already", lang), show_alert=False)

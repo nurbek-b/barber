@@ -99,6 +99,9 @@ class BlockIn(ApiModel):
 # ---------------- salon settings ----------------
 
 
+REVIEW_SITES = ("2gis", "google")
+
+
 class SalonSettingsOut(ApiModel):
     name: str
     timezone: str
@@ -119,6 +122,7 @@ class SalonSettingsOut(ApiModel):
     logo_url: str | None
     gallery: list[str]
     revisit_after_days: int
+    review_links: dict[str, str] = Field(default_factory=dict)
 
 
 class GalleryPut(ApiModel):
@@ -144,6 +148,19 @@ class SalonSettingsIn(ApiModel):
     notify_barbers: bool = False
     notification_templates: dict[str, dict[str, str]] = Field(default_factory=dict)
     contacts: dict[str, str] = Field(default_factory=dict)
+    review_links: dict[str, str] = Field(
+        default_factory=dict, description='Map review pages: {"2gis": url, "google": url}'
+    )
+
+    @field_validator("review_links")
+    @classmethod
+    def _review_links(cls, value: dict[str, str]) -> dict[str, str]:
+        clean = {key: url.strip() for key, url in value.items() if url and url.strip()}
+        if any(key not in REVIEW_SITES for key in clean):
+            raise ValueError(f"review sites must be among {REVIEW_SITES}")
+        if any(not url.startswith("https://") or len(url) > 500 for url in clean.values()):
+            raise ValueError("review links must be https:// URLs up to 500 characters")
+        return clean
 
     @field_validator("timezone")
     @classmethod

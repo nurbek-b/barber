@@ -3568,6 +3568,10 @@ export interface components {
             logo_url?: string | null;
             /** Gallery */
             gallery?: string[];
+            /** Review Links */
+            review_links?: {
+                [key: string]: string;
+            };
         };
         /** SalonSettingsIn */
         SalonSettingsIn: {
@@ -3610,6 +3614,13 @@ export interface components {
             };
             /** Contacts */
             contacts?: {
+                [key: string]: string;
+            };
+            /**
+             * Review Links
+             * @description Map review pages: {"2gis": url, "google": url}
+             */
+            review_links?: {
                 [key: string]: string;
             };
             /**
@@ -3665,6 +3676,10 @@ export interface components {
             gallery: string[];
             /** Revisit After Days */
             revisit_after_days: number;
+            /** Review Links */
+            review_links?: {
+                [key: string]: string;
+            };
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {

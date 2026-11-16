@@ -250,6 +250,9 @@ export const en: Messages = {
     adminChatHint: "Add the bot to the group and send /chatid",
     notifyBarbers: "Notify barbers",
     address: "Address",
+    review2gis: "2GIS link",
+    reviewGoogle: "Google Maps link",
+    reviewLinksHint: "Clients who rate 5★ are invited to leave a review at these links.",
     templateHint:
       "Empty — default text. Variables: {when}, {barber}, {client}, {services}, {total_due}",
     branding: "Logo and photos",

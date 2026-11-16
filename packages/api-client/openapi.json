@@ -14985,6 +14985,13 @@
             },
             "type": "array",
             "title": "Gallery"
+          },
+          "review_links": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Review Links"
           }
         },
         "type": "object",
@@ -15104,6 +15111,14 @@
             },
             "type": "object",
             "title": "Contacts"
+          },
+          "review_links": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Review Links",
+            "description": "Map review pages: {\"2gis\": url, \"google\": url}"
           },
           "revisit_after_days": {
             "type": "integer",
@@ -15237,6 +15252,13 @@
           "revisit_after_days": {
             "type": "integer",
             "title": "Revisit After Days"
+          },
+          "review_links": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Review Links"
           }
         },
         "type": "object",

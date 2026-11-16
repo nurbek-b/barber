@@ -185,6 +185,33 @@ export default function SettingsPage() {
                   onChange={(e) => set("contacts", { ...form.contacts, phone: e.target.value })}
                 />
               </Field>
+              <Field label={t("settings.review2gis")} htmlFor="review-2gis">
+                <Input
+                  id="review-2gis"
+                  type="url"
+                  placeholder="https://2gis.kg/bishkek/firm/…"
+                  value={form.review_links?.["2gis"] ?? ""}
+                  disabled={!writable}
+                  onChange={(e) =>
+                    set("review_links", { ...form.review_links, "2gis": e.target.value })
+                  }
+                />
+              </Field>
+              <Field label={t("settings.reviewGoogle")} htmlFor="review-google">
+                <Input
+                  id="review-google"
+                  type="url"
+                  placeholder="https://g.page/r/…/review"
+                  value={form.review_links?.google ?? ""}
+                  disabled={!writable}
+                  onChange={(e) =>
+                    set("review_links", { ...form.review_links, google: e.target.value })
+                  }
+                />
+              </Field>
+              <p className="text-sm text-muted-foreground md:col-span-full">
+                {t("settings.reviewLinksHint")}
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

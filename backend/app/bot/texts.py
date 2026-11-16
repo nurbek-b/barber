@@ -101,6 +101,21 @@ TEXTS: dict[str, dict[str, str]] = {
         "ky": "Баалаганыңыз үчүн рахмат! {stars}",
         "en": "Thanks for your rating! {stars}",
     },
+    "rate_maps": {
+        "ru": "Будем очень благодарны, если вы оставите отзыв на карте — это помогает нам расти 🙏",
+        "ky": "Картада пикир калтырсаңыз абдан ыраазы болобуз — бул бизге өсүүгө жардам берет 🙏",
+        "en": "We'd be grateful for a review on the map — it really helps us grow 🙏",
+    },
+    "review_on_2gis": {
+        "ru": "⭐ Отзыв в 2GIS",
+        "ky": "⭐ 2GIS'те пикир",
+        "en": "⭐ Review on 2GIS",
+    },
+    "review_on_google": {
+        "ru": "⭐ Отзыв в Google Картах",
+        "ky": "⭐ Google Картада пикир",
+        "en": "⭐ Review on Google Maps",
+    },
     "write_review": {
         "ru": "✍️ Написать отзыв",
         "ky": "✍️ Пикир жазуу",

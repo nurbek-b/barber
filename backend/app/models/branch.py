@@ -68,6 +68,10 @@ class SalonSettings(TimestampMixin, Base):
     contacts: Mapped[dict[str, Any]] = mapped_column(
         default=dict, server_default=text("'{}'::jsonb")
     )
+    # map pages where happy clients are asked for a public review: {"2gis": url, "google": url}
+    review_links: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, server_default=text("'{}'::jsonb")
+    )
     # days after a visit to remind the client to come again; 0 = off
     revisit_after_days: Mapped[int] = mapped_column(SmallInteger, default=30, server_default="30")
     # branding for the Mini App: /media/salon/... URLs

@@ -168,6 +168,16 @@ class BotActions:
         await self.session.commit()
         return RateOutcome.OK
 
+    async def review_links(self, booking_id: uuid.UUID) -> dict[str, str]:
+        """The salon's map review pages for the branch of this booking."""
+        branch_id = await self.session.scalar(
+            select(Booking.branch_id).where(Booking.id == booking_id)
+        )
+        if branch_id is None:
+            return {}
+        salon = await BranchService(self.session).settings(branch_id)
+        return {str(k): str(v) for k, v in (salon.review_links or {}).items() if v}
+
     async def link_staff(
         self, token: str, chat_id: int, tg: TelegramUser, now: datetime
     ) -> Barber | None:

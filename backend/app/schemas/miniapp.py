@@ -60,6 +60,7 @@ class SalonPublicOut(ApiModel):
     contacts: dict[str, str]
     logo_url: str | None = None
     gallery: list[str] = Field(default_factory=list)
+    review_links: dict[str, str] = Field(default_factory=dict)
 
 
 class WaitlistIn(ApiModel):

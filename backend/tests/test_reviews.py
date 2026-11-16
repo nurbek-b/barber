@@ -193,3 +193,33 @@ async def test_portfolio(
     await session.commit()
     hidden = await client.get(f"{MINI}/barbers/{barber.id}", headers=tma_header())
     assert hidden.status_code == 404
+
+
+async def test_map_review_links(owner_client: httpx.AsyncClient) -> None:
+    current = (await owner_client.get(f"{ADMIN}/settings/salon")).json()
+    assert current["review_links"] == {}
+    links = {"2gis": " https://2gis.kg/bishkek/firm/1 ", "google": ""}
+    saved = await owner_client.put(
+        f"{ADMIN}/settings/salon", json={**current, "review_links": links}
+    )
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["review_links"] == {"2gis": "https://2gis.kg/bishkek/firm/1"}
+    for bad in ({"yandex": "https://ya.ru"}, {"google": "http://maps.google.com"}):
+        response = await owner_client.put(
+            f"{ADMIN}/settings/salon", json={**current, "review_links": bad}
+        )
+        assert response.status_code == 422
+
+    salon = await owner_client.get(f"{MINI}/salon", headers=tma_header(31, first_name="Map"))
+    assert salon.json()["review_links"] == {"2gis": "https://2gis.kg/bishkek/firm/1"}
+
+
+def test_review_keyboard_map_buttons(settings: Settings) -> None:
+    from app.bot.keyboards import write_review
+
+    plain = write_review(settings, "ru", "b1")
+    assert len(plain.inline_keyboard) == 1
+    happy = write_review(settings, "en", "b1", {"google": "https://g.co/x", "2gis": "https://2gis"})
+    urls = [row[0].url for row in happy.inline_keyboard[:2]]
+    assert urls == ["https://2gis", "https://g.co/x"]
+    assert happy.inline_keyboard[0][0].text == "⭐ Review on 2GIS"

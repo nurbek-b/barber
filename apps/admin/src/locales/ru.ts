@@ -249,6 +249,9 @@ export const ru = {
     adminChatHint: "Добавьте бота в группу и отправьте /chatid",
     notifyBarbers: "Уведомлять мастеров",
     address: "Адрес",
+    review2gis: "Ссылка на 2GIS",
+    reviewGoogle: "Ссылка на Google Карты",
+    reviewLinksHint: "Клиентам, поставившим 5★, предложим оставить отзыв по этим ссылкам.",
     templateHint:
       "Пусто — текст по умолчанию. Переменные: {when}, {barber}, {client}, {services}, {total_due}",
     branding: "Логотип и фото",

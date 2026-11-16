@@ -58,6 +58,7 @@ async def get_salon(ctx: MiniappDep, session: SessionDep) -> SalonPublicOut:
         contacts={str(key): str(value) for key, value in salon.contacts.items()},
         logo_url=salon.logo_url,
         gallery=list(salon.gallery or []),
+        review_links={str(k): str(v) for k, v in (salon.review_links or {}).items()},
     )
 
 

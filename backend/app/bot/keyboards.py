@@ -33,10 +33,21 @@ def app_button(
     return InlineKeyboardButton(text=text, url=link)
 
 
-def write_review(settings: Settings, lang: str, booking_id: object) -> InlineKeyboardMarkup:
-    """After a star rating: open the Mini App review form of that visit."""
-    button = app_button(settings, lang, f"review_{booking_id}", text_key="write_review")
-    return InlineKeyboardMarkup(inline_keyboard=[[button]])
+REVIEW_SITES = ("2gis", "google")
+
+
+def write_review(
+    settings: Settings, lang: str, booking_id: object, map_links: dict[str, str] | None = None
+) -> InlineKeyboardMarkup:
+    """After a star rating: map review links (5★ only, passed by the caller), then the Mini App
+    review form of that visit."""
+    rows = [
+        [InlineKeyboardButton(text=t(f"review_on_{site}", lang), url=map_links[site])]
+        for site in REVIEW_SITES
+        if map_links and map_links.get(site)
+    ]
+    rows.append([app_button(settings, lang, f"review_{booking_id}", text_key="write_review")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def open_app(settings: Settings, lang: str) -> InlineKeyboardMarkup:

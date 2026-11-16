@@ -2,11 +2,11 @@ import { formatDateTime } from "@barber/ui";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, useBookingDetails, useSubmitReview } from "../api";
+import { ApiError, useBookingDetails, useSalon, useSubmitReview } from "../api";
 import { StarInput } from "../components/Stars";
 import { Avatar, Card, ErrorState, Screen, Skeleton, useTimezone } from "../components/ui";
 import { pickI18n, useLang, useT } from "../i18n";
-import { haptic } from "../telegram/sdk";
+import { haptic, openLink } from "../telegram/sdk";
 import { useBackButton, useMainButton } from "../telegram/hooks";
 
 export default function ReviewForm() {
@@ -17,6 +17,7 @@ export default function ReviewForm() {
   const navigate = useNavigate();
   const booking = useBookingDetails(bookingId);
   const submit = useSubmitReview();
+  const salon = useSalon();
   const [rating, setRating] = useState(0);
   const [text, setText] = useState("");
   const [done, setDone] = useState(false);
@@ -49,6 +50,14 @@ export default function ReviewForm() {
   });
 
   const data = booking.data;
+  // only delighted clients are sent to the public maps
+  const links = rating === 5 ? (salon.data?.review_links ?? {}) : {};
+  const maps = (
+    [
+      ["2gis", "review.on2gis"],
+      ["google", "review.onGoogle"],
+    ] as const
+  ).filter(([site]) => links[site]);
   return (
     <Screen title={t("review.title")} withMainButton back>
       {booking.isPending && <Skeleton className="h-40" />}
@@ -72,6 +81,21 @@ export default function ReviewForm() {
             <div className="space-y-3 py-6 text-center">
               <div className="text-4xl">🙏</div>
               <p className="font-medium">{t("review.thanks")}</p>
+              {maps.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-sm text-hint">{t("review.maps")}</p>
+                  {maps.map(([site, label]) => (
+                    <button
+                      key={site}
+                      type="button"
+                      onClick={() => openLink(links[site]!)}
+                      className="w-full rounded-xl bg-button py-3 font-medium text-button-text"
+                    >
+                      ⭐ {t(label)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => navigate(`/barber/${data.barber.id}`)}

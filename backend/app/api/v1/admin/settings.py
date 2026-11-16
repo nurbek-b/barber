@@ -46,6 +46,7 @@ def to_out(salon: SalonSettings) -> SalonSettingsOut:
         contacts={str(k): str(v) for k, v in (salon.contacts or {}).items()},
         logo_url=salon.logo_url,
         gallery=list(salon.gallery or []),
+        review_links={str(k): str(v) for k, v in (salon.review_links or {}).items()},
         revisit_after_days=salon.revisit_after_days,
     )
 

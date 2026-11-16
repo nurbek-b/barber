@@ -256,6 +256,9 @@ export const ky: Messages = {
     adminChatHint: "Ботту топко кошуп, /chatid жөнөтүңүз",
     notifyBarbers: "Устаттарга билдирүү",
     address: "Дарек",
+    review2gis: "2GIS шилтемеси",
+    reviewGoogle: "Google Карта шилтемеси",
+    reviewLinksHint: "5★ койгон кардарларга ушул шилтемелер боюнча пикир калтырууну сунуштайбыз.",
     templateHint:
       "Бош болсо — демейки текст. Өзгөрмөлөр: {when}, {barber}, {client}, {services}, {total_due}",
     branding: "Логотип жана сүрөттөр",

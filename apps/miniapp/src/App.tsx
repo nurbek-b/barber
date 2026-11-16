@@ -27,6 +27,8 @@ const Bonus = lazy(() => import("./pages/Bonus"));
 const BarberProfile = lazy(() => import("./pages/BarberProfile"));
 const ReviewForm = lazy(() => import("./pages/ReviewForm"));
 const Payment = lazy(() => import("./pages/Payment"));
+const Shop = lazy(() => import("./pages/Shop"));
+const Order = lazy(() => import("./pages/Order"));
 
 function Lazy({ children }: { children: ReactNode }) {
   return (
@@ -121,6 +123,22 @@ export const routes: RouteObject[] = [
         element: (
           <Lazy>
             <Payment />
+          </Lazy>
+        ),
+      },
+      {
+        path: "/shop",
+        element: (
+          <Lazy>
+            <Shop />
+          </Lazy>
+        ),
+      },
+      {
+        path: "/order/:orderId",
+        element: (
+          <Lazy>
+            <Order />
           </Lazy>
         ),
       },

@@ -17,6 +17,7 @@ from app.api.v1.admin import (
     schedule,
     services,
     settings,
+    shop,
     staff,
     vouchers,
     ws,
@@ -35,6 +36,7 @@ router.include_router(promo.router)
 router.include_router(payments.router)
 router.include_router(payouts.router)
 router.include_router(vouchers.router)
+router.include_router(shop.router)
 router.include_router(broadcasts.router)
 router.include_router(bonus.router)
 router.include_router(clients.router)

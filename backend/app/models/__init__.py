@@ -19,6 +19,7 @@ from app.models.notification import Notification, NotificationRead, TelegramOutb
 from app.models.payment import Payment
 from app.models.payout import BarberPayout
 from app.models.promo import PromoCode
+from app.models.shop import Order, OrderItem, OrderStatus, Product
 from app.models.staff import AdminRefreshToken, AdminUser
 from app.models.user import Client, User
 from app.models.voucher import ClientSubscription, GiftCertificate, SubscriptionPlan, VoucherUse
@@ -49,7 +50,11 @@ __all__ = [
     "LoyaltyLevel",
     "Notification",
     "NotificationRead",
+    "Order",
+    "OrderItem",
+    "OrderStatus",
     "Payment",
+    "Product",
     "PromoCode",
     "SalonSettings",
     "Service",

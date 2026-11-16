@@ -83,6 +83,46 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "ky": "💰 {date} күнкү төлөм: {amount}\n{note}",
         "en": "💰 Payout of {amount} on {date}\n{note}",
     },
+    "order_created_admin": {
+        "ru": "🛍 <b>Заказ №{number}</b>\n{items}\nСумма: {total}\nКлиент: {client} {phone}\n"
+        "Ждёт оплаты по QR.",
+        "ky": "🛍 <b>№{number} буйрутма</b>\n{items}\nСумма: {total}\nКардар: {client} {phone}\n"
+        "QR аркылуу төлөмдү күтөт.",
+        "en": "🛍 <b>Order #{number}</b>\n{items}\nTotal: {total}\nClient: {client} {phone}\n"
+        "Waiting for QR payment.",
+    },
+    "order_paid_claimed_admin": {
+        "ru": "💳 <b>Заказ №{number}: клиент сообщил об оплате</b> {total}\n{client} {phone}\n"
+        "Проверьте поступление и подтвердите в админке.",
+        "ky": "💳 <b>№{number} буйрутма: кардар төлөгөнүн билдирди</b> {total}\n{client} {phone}\n"
+        "Түшкөнүн текшерип, админкада ырастаңыз.",
+        "en": "💳 <b>Order #{number}: the client reports a payment</b> {total}\n{client} {phone}\n"
+        "Check your bank and confirm it in the admin panel.",
+    },
+    "order_paid_client": {
+        "ru": "✅ Оплата заказа №{number} получена ({total}). "
+        "Сообщим, когда он будет готов к выдаче.",
+        "ky": "✅ №{number} буйрутманын төлөмү алынды ({total}). Даяр болгондо билдиребиз.",
+        "en": "✅ Payment for order #{number} received ({total}). We'll tell you when it's ready.",
+    },
+    "order_ready_client": {
+        "ru": "🛍 Заказ №{number} готов — заберите его в салоне.\n{items}\n\n{salon}",
+        "ky": "🛍 №{number} буйрутма даяр — салондон алып кетиңиз.\n{items}\n\n{salon}",
+        "en": "🛍 Order #{number} is ready — pick it up at the salon.\n{items}\n\n{salon}",
+    },
+    "order_cancelled_client": {
+        "ru": "❌ Заказ №{number} отменён.",
+        "ky": "❌ №{number} буйрутма жокко чыгарылды.",
+        "en": "❌ Order #{number} was cancelled.",
+    },
+    "order_payment_rejected_client": {
+        "ru": "⚠️ Мы не нашли оплату заказа №{number} ({total}). "
+        "Проверьте перевод и нажмите «Я оплатил» снова.",
+        "ky": "⚠️ №{number} буйрутманын төлөмү ({total}) табылган жок. "
+        "Которууну текшерип, «Төлөдүм» баскычын кайра басыңыз.",
+        "en": "⚠️ We couldn't find the payment for order #{number} ({total}). "
+        "Check the transfer and tap \u201cI paid\u201d again.",
+    },
     "booking_cancelled_client": {
         "ru": "❌ Запись на {when} отменена.",
         "ky": "❌ {when} жазылуу жокко чыгарылды.",

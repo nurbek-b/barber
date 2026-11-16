@@ -439,3 +439,69 @@ export function useClaimPayment() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// shop
+// ---------------------------------------------------------------------------
+
+export function useProducts() {
+  return useQuery({ queryKey: ["products"], queryFn: () => call(api.GET(`${BASE}/products`)) });
+}
+
+export function useMyOrders() {
+  return useQuery({ queryKey: ["orders"], queryFn: () => call(api.GET(`${BASE}/orders`)) });
+}
+
+export function usePlaceOrder() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      items: { product_id: string; quantity: number }[];
+      idempotencyKey: string;
+    }) =>
+      call(
+        api.POST(`${BASE}/orders`, {
+          params: { header: { "Idempotency-Key": input.idempotencyKey } },
+          body: { items: input.items },
+        }),
+      ),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["orders"] });
+      void client.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export function useOrderPayment(orderId: string) {
+  return useQuery({
+    queryKey: ["order-payment", orderId],
+    queryFn: () =>
+      call(
+        api.GET(`${BASE}/orders/{order_id}/payment`, { params: { path: { order_id: orderId } } }),
+      ),
+    enabled: Boolean(orderId),
+  });
+}
+
+export function useOrderAction(action: "payment" | "cancel") {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string): Promise<unknown> =>
+      action === "payment"
+        ? call(
+            api.POST(`${BASE}/orders/{order_id}/payment`, {
+              params: { path: { order_id: orderId } },
+            }),
+          )
+        : call(
+            api.POST(`${BASE}/orders/{order_id}/cancel`, {
+              params: { path: { order_id: orderId } },
+            }),
+          ),
+    onSuccess: (_data, orderId) => {
+      void client.invalidateQueries({ queryKey: ["orders"] });
+      void client.invalidateQueries({ queryKey: ["order-payment", orderId] });
+      void client.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}

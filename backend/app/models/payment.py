@@ -29,6 +29,9 @@ class Payment(Base):
     booking_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("bookings.id", ondelete="CASCADE")
     )
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
     amount: Mapped[int] = money(default=None)
     method: Mapped[PaymentMethod] = mapped_column(str_enum(PaymentMethod, "payment_method"))
     status: Mapped[PaymentStatus] = mapped_column(str_enum(PaymentStatus, "payment_status"))

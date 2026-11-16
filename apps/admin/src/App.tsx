@@ -23,6 +23,7 @@ const Staff = lazy(() => import("@/pages/Staff"));
 const Audit = lazy(() => import("@/pages/Audit"));
 const Marketing = lazy(() => import("@/pages/Marketing"));
 const Vouchers = lazy(() => import("@/pages/Vouchers"));
+const Shop = lazy(() => import("@/pages/Shop"));
 
 const guard = (perm: Permission | Permission[], element: ReactNode) => (
   <RequirePermission perm={perm}>{element}</RequirePermission>
@@ -64,6 +65,7 @@ const router = createBrowserRouter(
         { path: "/audit", element: guard("audit:read", <Audit />) },
         { path: "/marketing", element: guard("settings:read", <Marketing />) },
         { path: "/vouchers", element: guard("clients:read", <Vouchers />) },
+        { path: "/shop", element: guard("bookings:read", <Shop />) },
         { path: "*", element: <Navigate to="/" replace /> },
       ],
     },

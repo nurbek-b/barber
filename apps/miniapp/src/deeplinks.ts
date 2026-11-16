@@ -5,6 +5,7 @@ export function pathForStartParam(param: string | null | undefined): string {
   if (review) return `/review/${review[1]}`;
   const pay = /^pay_([0-9a-f-]{36})$/.exec(param ?? "");
   if (pay) return `/pay/${pay[1]}`;
+  if (param === "shop") return "/shop";
   const barber = /^barber_([0-9a-f-]{36})$/.exec(param ?? "");
   if (barber) return `/barber/${barber[1]}`;
   return "/"; // the referral payload (ref_...) is handled by the backend

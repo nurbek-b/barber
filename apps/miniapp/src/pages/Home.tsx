@@ -108,6 +108,13 @@ export default function Home() {
           </section>
         )}
 
+        <button type="button" onClick={() => navigate("/shop")} className="block w-full text-left">
+          <Card className="flex items-center justify-between">
+            <span>{t("shop.home")}</span>
+            <span className="text-hint">›</span>
+          </Card>
+        </button>
+
         <button type="button" onClick={() => navigate("/bonus")} className="block w-full text-left">
           <Card className="flex items-center justify-between">
             <span>{t("home.bonus")}</span>

@@ -28,6 +28,10 @@ class Actor:
     def system(cls) -> Actor:
         return cls(type=ActorType.SYSTEM, id=None)
 
+    @classmethod
+    def client(cls, client_id: uuid.UUID) -> Actor:
+        return cls(type=ActorType.CLIENT, id=client_id)
+
 
 def _jsonable(value: Any) -> Any:
     if isinstance(value, uuid.UUID):

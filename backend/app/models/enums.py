@@ -93,6 +93,7 @@ class NotificationType(StrEnum):
     BOOKING_STATUS_CHANGED = "booking_status_changed"
     CLIENT_REGISTERED = "client_registered"
     PAYMENT_CLAIMED = "payment_claimed"
+    ORDER_CREATED = "order_created"
 
 
 class PromoKind(StrEnum):

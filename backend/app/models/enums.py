@@ -35,6 +35,7 @@ class BookingSource(StrEnum):
     MINIAPP = "miniapp"
     ADMIN = "admin"
     BOT = "bot"
+    WEB = "web"  # public booking page (no Telegram): pending until the salon confirms
 
 
 class PaymentMethod(StrEnum):

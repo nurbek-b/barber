@@ -256,3 +256,41 @@ class AdminBookingPage(ApiModel):
 class CalendarQuery(ApiModel):
     date_from: date
     date_to: date
+
+
+# ---------------- public web booking ----------------
+
+
+class WebHoldIn(HoldIn):
+    name: str = Field(min_length=1, max_length=200)
+    phone: str = Field(min_length=7, max_length=32)
+    website: str | None = Field(default=None, description="Honeypot: must stay empty")
+
+
+class WebHoldOut(HoldOut):
+    token: str = Field(description="Pass to /promo and /confirm; valid for 10 minutes")
+
+
+class WebPromoIn(ApiModel):
+    token: str
+    code: str = Field(min_length=1, max_length=32)
+
+
+class WebConfirmIn(ApiModel):
+    token: str
+    comment: str | None = Field(default=None, max_length=500)
+    promo_code: str | None = Field(default=None, max_length=32)
+
+
+class WebBookingOut(ApiModel):
+    """Only what the visitor entered themselves: nothing else about the phone's client."""
+
+    id: uuid.UUID
+    status: BookingStatus
+    barber: BookingBarberOut
+    services: list[BookingServiceOut]
+    start_at: datetime
+    end_at: datetime
+    subtotal: int
+    discount: int
+    total_due: int

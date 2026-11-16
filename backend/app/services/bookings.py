@@ -302,6 +302,9 @@ class ClientBookingService:
         idempotency_key: str,
         now: datetime,
         promo_code: str | None = None,
+        status: BookingStatus = BookingStatus.CONFIRMED,
+        source: BookingSource = BookingSource.MINIAPP,
+        notify_client: bool = True,
     ) -> CreatedBooking:
         if not idempotency_key or len(idempotency_key) > 64:
             raise ValidationAppError(
@@ -357,8 +360,8 @@ class ClientBookingService:
             client_id=client.id,
             barber_id=hold.barber_id,
             kind=BookingKind.APPOINTMENT,
-            status=BookingStatus.CONFIRMED,  # the slot was free → confirmed immediately
-            source=BookingSource.MINIAPP,
+            status=status,  # Mini App: the slot was free → confirmed immediately
+            source=source,
             subtotal=quote.subtotal,
             bonus_spent=bonus_to_spend,
             discount=quote.discount,
@@ -390,7 +393,9 @@ class ClientBookingService:
         if bonus_to_spend > 0:
             await BonusService(self.session).spend_for_booking(booking, bonus_to_spend, now)
         self.audit.record(actor, "booking.create", "booking", booking.id, after=snapshot(booking))
-        notification = await self.events.emit(NotificationType.BOOKING_CREATED, booking, salon)
+        notification = await self.events.emit(
+            NotificationType.BOOKING_CREATED, booking, salon, notify_client=notify_client
+        )
         await self.session.commit()
 
         await self.holds.release(hold)

@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 245 244 241;
+  --card: 255 255 255;
+  --text: 24 22 20;
+  --hint: 120 114 108;
+  --brand: 28 25 23;
+  --brand-text: 255 255 255;
+  --line: 228 225 220;
+  --danger: 200 40 40;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 18 17 16;
+    --card: 30 28 26;
+    --text: 240 238 234;
+    --hint: 160 154 146;
+    --brand: 232 196 140;
+    --brand-text: 24 22 20;
+    --line: 52 49 46;
+    --danger: 240 100 100;
+    color-scheme: dark;
+  }
+}
+
+html,
+body {
+  @apply bg-bg text-text antialiased;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}

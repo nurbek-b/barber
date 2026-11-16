@@ -20,6 +20,7 @@ from app.models.payout import BarberPayout
 from app.models.promo import PromoCode
 from app.models.staff import AdminRefreshToken, AdminUser
 from app.models.user import Client, User
+from app.models.voucher import ClientSubscription, GiftCertificate, SubscriptionPlan, VoucherUse
 from app.models.waitlist import WaitlistEntry
 
 __all__ = [
@@ -41,6 +42,8 @@ __all__ = [
     "Branch",
     "Broadcast",
     "Client",
+    "ClientSubscription",
+    "GiftCertificate",
     "LoyaltyLevel",
     "Notification",
     "NotificationRead",
@@ -49,7 +52,9 @@ __all__ = [
     "SalonSettings",
     "Service",
     "ServiceCategory",
+    "SubscriptionPlan",
     "TelegramOutbox",
     "User",
+    "VoucherUse",
     "WaitlistEntry",
 ]

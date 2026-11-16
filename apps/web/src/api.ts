@@ -110,3 +110,7 @@ export async function book(input: BookInput, idempotencyKey: string) {
     }),
   );
 }
+
+export function checkCertificate(code: string) {
+  return call(api.GET(`${P}/certificates/{code}`, { params: { path: { code: code.trim() } } }));
+}

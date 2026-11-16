@@ -145,6 +145,13 @@ export function useBonus() {
   return useQuery({ queryKey: keys.bonus, queryFn: () => call(api.GET(`${BASE}/bonus`)) });
 }
 
+export function useMySubscriptions() {
+  return useQuery({
+    queryKey: ["subscriptions"],
+    queryFn: () => call(api.GET(`${BASE}/subscriptions`)),
+  });
+}
+
 export function useBonusHistory() {
   return useInfiniteQuery({
     queryKey: keys.bonusHistory,

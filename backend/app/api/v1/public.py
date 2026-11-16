@@ -10,6 +10,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date
 from typing import Annotated, cast
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 
@@ -26,7 +27,8 @@ from app.api.v1 import booking_views
 from app.api.v1.miniapp import availability as mini_availability
 from app.api.v1.miniapp import catalog as mini_catalog
 from app.api.v1.miniapp.catalog import to_public_barber
-from app.core.errors import ErrorResponse, ValidationAppError
+from app.core.errors import ErrorResponse, RateLimitedError, ValidationAppError
+from app.core.redis import hit_rate_limit
 from app.models import Barber
 from app.schemas.bookings import (
     BookingBarberOut,
@@ -46,8 +48,10 @@ from app.schemas.catalog import (
 )
 from app.schemas.miniapp import SalonPublicOut
 from app.schemas.schedule import AvailabilityDaysOut, AvailabilitySlotsOut
+from app.schemas.vouchers import CertificateBalanceOut
 from app.services.branches import BranchService
 from app.services.public_booking import PublicBookingService
+from app.services.vouchers import VoucherService, certificate_state
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -249,4 +253,28 @@ async def confirm(
         subtotal=booking.subtotal,
         discount=booking.discount,
         total_due=booking.total_due,
+    )
+
+
+@router.get("/certificates/{code}", response_model=CertificateBalanceOut, responses=ERRORS)
+async def certificate_balance(
+    code: str,
+    request: Request,
+    ctx: PublicDep,
+    session: SessionDep,
+    redis: RedisDep,
+    now: NowDep,
+) -> CertificateBalanceOut:
+    """Balance of a gift certificate by its code (rate limited: codes must not be guessable)."""
+    ip = client_ip(request) or "unknown"
+    if await hit_rate_limit(redis, f"pub:cert:{ip}", 20, 3600):
+        raise RateLimitedError("Too many attempts, try later", headers={"Retry-After": "600"})
+    cert = await VoucherService(session).find_certificate(ctx.branch_id, code)
+    salon = await BranchService(session).settings(ctx.branch_id)
+    today = now.astimezone(ZoneInfo(salon.timezone)).date()
+    return CertificateBalanceOut(
+        code=cert.code,
+        balance=cert.balance,
+        expires_on=cert.expires_on,
+        state=certificate_state(cert, today),
     )

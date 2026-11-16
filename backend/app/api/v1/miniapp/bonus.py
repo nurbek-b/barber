@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Query
 
@@ -8,8 +9,11 @@ from app.api.deps import MiniappDep, NowDep, SessionDep, SettingsDep
 from app.api.v1.bonus_views import decode_tx_cursor, encode_tx_cursor, level_out, tx_out
 from app.core.errors import ErrorResponse
 from app.schemas.bonus import BonusSummaryOut, ExpiringOut, ReferralOut, TransactionPage
+from app.schemas.vouchers import MySubscriptionOut
 from app.services.bonus import BonusService
+from app.services.branches import BranchService
 from app.services.miniapp_auth import REFERRAL_PREFIX
+from app.services.vouchers import VoucherService, subscription_state
 
 router = APIRouter(tags=["miniapp-bonus"])
 
@@ -71,3 +75,26 @@ async def referral(ctx: MiniappDep, session: SessionDep, settings: SettingsDep) 
         referee_amount=bonus.referee_amount,
         enabled=bonus.enabled and bonus.referral_enabled,
     )
+
+
+@router.get("/subscriptions", response_model=list[MySubscriptionOut], responses=ERRORS)
+async def my_subscriptions(
+    ctx: MiniappDep, session: SessionDep, now: NowDep
+) -> list[MySubscriptionOut]:
+    """The client's subscriptions (visits left), newest first."""
+    salon = await BranchService(session).settings(ctx.branch_id)
+    today = now.astimezone(ZoneInfo(salon.timezone)).date()
+    rows = await VoucherService(session).client_subscriptions(
+        ctx.branch_id, ctx.identity.client.id, limit=20
+    )
+    return [
+        MySubscriptionOut(
+            id=sub.id,
+            name=sub.name,
+            visits_total=sub.visits_total,
+            visits_left=sub.visits_left,
+            expires_on=sub.expires_on,
+            state=subscription_state(sub, today),
+        )
+        for sub, _ in rows
+    ]

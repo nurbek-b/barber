@@ -3,6 +3,13 @@ import { createContext, useContext } from "react";
 export type Lang = "ru" | "ky" | "en";
 
 const ru = {
+  cert_check: "Проверить подарочный сертификат",
+  cert_code: "Код сертификата",
+  cert_balance: "Остаток: {amount}",
+  cert_until: "до {date}",
+  cert_inactive: "Сертификат не действует",
+  cert_not_found: "Сертификат не найден",
+  check: "Проверить",
   title: "Онлайн-запись",
   step_barber: "Выберите мастера",
   step_services: "Выберите услуги",
@@ -57,6 +64,13 @@ export type Key = keyof typeof ru;
 type Dict = Record<Key, string>;
 
 const ky: Dict = {
+  cert_check: "Белек сертификатын текшерүү",
+  cert_code: "Сертификат коду",
+  cert_balance: "Калдык: {amount}",
+  cert_until: "{date} чейин",
+  cert_inactive: "Сертификат жараксыз",
+  cert_not_found: "Сертификат табылган жок",
+  check: "Текшерүү",
   title: "Онлайн жазылуу",
   step_barber: "Устатты тандаңыз",
   step_services: "Кызматтарды тандаңыз",
@@ -108,6 +122,13 @@ const ky: Dict = {
 };
 
 const en: Dict = {
+  cert_check: "Check a gift certificate",
+  cert_code: "Certificate code",
+  cert_balance: "Balance: {amount}",
+  cert_until: "until {date}",
+  cert_inactive: "The certificate is not valid",
+  cert_not_found: "Certificate not found",
+  check: "Check",
   title: "Book online",
   step_barber: "Choose a barber",
   step_services: "Choose services",

@@ -259,6 +259,7 @@ class AdminBookingOut(ApiModel):
     prepaid_amount: int = 0
     prepay_due: int = 0
     payment_status: PaymentState = "unpaid"
+    voucher_amount: int = Field(default=0, description="Covered by certificates / subscription")
 
 
 class AdminBookingPage(ApiModel):

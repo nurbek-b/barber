@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ApiError,
   book,
+  checkCertificate,
   newIdempotencyKey,
   useBarbers,
   useDays,
@@ -105,6 +106,7 @@ function Booking({ lang, onLang }: { lang: Lang; onLang: (lang: Lang) => void })
         </div>
       ) : null}
 
+      {step === "barber" && <CertificateCheck money={money} />}
       {step === "barber" && (
         <BarberStep
           selected={barber}
@@ -757,5 +759,65 @@ function ProfileSheet(props: {
         )}
       </div>
     </div>
+  );
+}
+
+function CertificateCheck({ money }: { money: (n: number) => string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [result, setResult] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    try {
+      const cert = await checkCertificate(code);
+      setResult(
+        cert.state === "active"
+          ? `${t("cert_balance", { amount: money(cert.balance) })}${cert.expires_on ? ` · ${t("cert_until", { date: cert.expires_on })}` : ""}`
+          : t("cert_inactive"),
+      );
+    } catch (error) {
+      setResult(
+        error instanceof ApiError && error.status === 404
+          ? t("cert_not_found")
+          : errorText(error, t),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mb-3 text-sm text-hint underline"
+      >
+        🎁 {t("cert_check")}
+      </button>
+    );
+  }
+  return (
+    <Card className="mb-3 space-y-2">
+      <div className="flex gap-2">
+        <input
+          aria-label={t("cert_code")}
+          placeholder="GIFT-XXXX-XXXX"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          className="min-w-0 flex-1 rounded-xl border border-line bg-bg px-3 py-2 font-mono uppercase"
+        />
+        <button
+          type="button"
+          disabled={busy || code.trim().length < 4}
+          onClick={() => void run()}
+          className="rounded-xl bg-brand px-4 py-2 font-medium text-brand-text disabled:opacity-50"
+        >
+          {t("check")}
+        </button>
+      </div>
+      {result && <p className="text-sm">{result}</p>}
+    </Card>
   );
 }

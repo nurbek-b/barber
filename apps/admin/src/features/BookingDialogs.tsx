@@ -23,6 +23,7 @@ import { useFormat } from "@/lib/format";
 import { fromWallClock, toWallClock, wallDayKey } from "@/lib/zoned";
 
 import { BookingPayments, PaymentBadge } from "./Payments";
+import { BookingVouchers } from "./Vouchers";
 import { pickName, STATUS_VARIANT, useBarbersList } from "./queries";
 
 export function invalidateBookings(client: ReturnType<typeof useQueryClient>): void {
@@ -369,7 +370,8 @@ export function BookingDetailsDialog({
 
   useEffect(() => {
     if (!booking) return;
-    setPaid(booking.total_due);
+    // certificates / subscription visits are not money paid today
+    setPaid(Math.max(0, booking.total_due - (booking.voucher_amount ?? 0)));
     setMethod((booking.payment_method as PaymentMethod | null) ?? "cash");
     setReason("");
     setNote(booking.admin_note ?? "");
@@ -499,6 +501,7 @@ export function BookingDetailsDialog({
             )}
           </div>
           {canWrite && booking.kind === "appointment" && <BookingPayments booking={booking} />}
+          {canWrite && booking.kind === "appointment" && <BookingVouchers booking={booking} />}
           {booking.comment && <p className="rounded-md bg-muted p-2">💬 {booking.comment}</p>}
           {canWrite && (
             <Field label={t("booking.adminNote")} htmlFor="note">

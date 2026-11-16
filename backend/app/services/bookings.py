@@ -59,6 +59,7 @@ from app.services.holds import HOLD_TTL, Hold, HoldStore, HoldUnavailableError
 from app.services.payments import prepay_amount, request_prepayment, requires_prepay
 from app.services.promo import PromoService
 from app.services.slot_cache import SlotCache
+from app.services.vouchers import VoucherService
 
 HOLD_RATE = (20, 60)
 BOOKING_RATE_MINUTE = (5, 60)
@@ -495,6 +496,7 @@ class ClientBookingService:
         booking.cancel_reason = reason
         await self.session.flush()
         await BonusService(self.session).refund_for_booking(booking, now)
+        await VoucherService(self.session).release_for_booking(booking)
         self.audit.record(
             actor,
             "booking.cancel",

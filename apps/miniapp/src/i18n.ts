@@ -58,6 +58,9 @@ const ru = {
   "review.send": "Отправить отзыв",
   "review.thanks": "Спасибо за отзыв!",
   "pay.title": "Оплата",
+  "subs.title": "Абонемент",
+  "subs.left": "Осталось визитов: {left} из {total}",
+  "subs.until": "до {date}",
   "pay.total": "Сумма записи",
   "pay.prepayNotice":
     "Для подтверждения записи нужна предоплата {percent}% — оплата по QR после записи.",
@@ -210,6 +213,9 @@ const ky: Dictionary = {
   "review.send": "Пикир жөнөтүү",
   "review.thanks": "Пикириңиз үчүн рахмат!",
   "pay.title": "Төлөм",
+  "subs.title": "Абонемент",
+  "subs.left": "Калган визиттер: {left} / {total}",
+  "subs.until": "{date} чейин",
   "pay.total": "Жазылуунун суммасы",
   "pay.prepayNotice":
     "Жазылууну ырастоо үчүн {percent}% алдын ала төлөм керек — жазылгандан кийин QR аркылуу.",
@@ -359,6 +365,9 @@ const en: Dictionary = {
   "review.send": "Send review",
   "review.thanks": "Thanks for your review!",
   "pay.title": "Payment",
+  "subs.title": "Subscription",
+  "subs.left": "Visits left: {left} of {total}",
+  "subs.until": "until {date}",
   "pay.total": "Booking total",
   "pay.prepayNotice":
     "A {percent}% prepayment is needed to confirm this booking — pay by QR after booking.",

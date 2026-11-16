@@ -22,6 +22,7 @@ from app.services.audit import Actor, AuditService
 from app.services.bonus import BonusService
 from app.services.events import BookingEvents, publish
 from app.services.slot_cache import SlotCache
+from app.services.vouchers import VoucherService
 
 logger = structlog.get_logger(__name__)
 
@@ -57,6 +58,7 @@ async def cancel_unpaid(
             booking.version += 1
             await session.flush()
             await BonusService(session).refund_for_booking(booking, now)
+            await VoucherService(session).release_for_booking(booking)
             AuditService(session).record(
                 Actor(type=ActorType.SYSTEM, id=None),
                 "booking.cancel_unpaid",

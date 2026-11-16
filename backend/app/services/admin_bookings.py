@@ -58,6 +58,7 @@ from app.services.branches import BranchService
 from app.services.events import BookingEvents, publish, request_rating
 from app.services.miniapp_auth import new_referral_code, normalize_phone
 from app.services.slot_cache import SlotCache
+from app.services.vouchers import VoucherService
 
 TRANSITIONS: dict[BookingStatus, frozenset[BookingStatus]] = {
     BookingStatus.PENDING: frozenset({BookingStatus.CONFIRMED, BookingStatus.CANCELLED}),
@@ -376,8 +377,11 @@ class AdminBookingService:
         extra: dict[str, Any] = {}
         if data.status is BookingStatus.COMPLETED:
             booking.payment_method = data.payment_method or booking.payment_method
+            # certificates / subscription visits are not money paid today
             booking.paid_amount = (
-                data.paid_amount if data.paid_amount is not None else booking.total_due
+                data.paid_amount
+                if data.paid_amount is not None
+                else max(0, booking.total_due - booking.voucher_amount)
             )
             booking.completed_at = now
             barber = await self.session.get(Barber, booking.barber_id)
@@ -409,6 +413,7 @@ class AdminBookingService:
         bonuses = BonusService(self.session)
         if data.status in (BookingStatus.CANCELLED, BookingStatus.NO_SHOW):
             await bonuses.refund_for_booking(booking, now)
+            await VoucherService(self.session).release_for_booking(booking)
         elif data.status is BookingStatus.COMPLETED:
             await bonuses.on_completed(booking, now)
             await request_rating(self.session, booking, now)

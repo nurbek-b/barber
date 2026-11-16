@@ -2,7 +2,7 @@ import type { BonusSummary } from "@barber/api-client";
 import { formatDate, formatPercentBp } from "@barber/ui";
 import { useNavigate } from "react-router-dom";
 
-import { useBonus, useBonusHistory, useReferral } from "../api";
+import { useBonus, useBonusHistory, useMySubscriptions, useReferral } from "../api";
 import {
   Card,
   ErrorState,
@@ -59,6 +59,7 @@ export default function Bonus() {
   const navigate = useNavigate();
   const { money } = useMoney();
   const bonus = useBonus();
+  const subscriptions = useMySubscriptions();
   const history = useBonusHistory();
   const referral = useReferral();
 
@@ -107,6 +108,20 @@ export default function Bonus() {
             ))}
           </Card>
         )}
+        {subscriptions.data
+          ?.filter((sub) => sub.state === "active")
+          .map((sub) => (
+            <Card key={sub.id} className="space-y-1">
+              <div className="text-sm text-hint">🎟 {t("subs.title")}</div>
+              <div className="font-semibold">{sub.name}</div>
+              <div className="flex justify-between text-sm">
+                <span>{t("subs.left", { left: sub.visits_left, total: sub.visits_total })}</span>
+                <span className="text-hint">
+                  {t("subs.until", { date: formatDate(sub.expires_on, tz, lang) })}
+                </span>
+              </div>
+            </Card>
+          ))}
 
         {referral.data?.enabled && (
           <Card className="space-y-2">

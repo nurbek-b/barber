@@ -145,6 +145,7 @@ async def admin_bookings_out(
                 prepaid_amount=booking.prepaid_amount,
                 prepay_due=booking.prepay_due,
                 payment_status=payment_status(booking),
+                voucher_amount=booking.voucher_amount,
             )
         )
     return result

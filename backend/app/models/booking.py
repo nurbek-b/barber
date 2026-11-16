@@ -52,6 +52,7 @@ class Booking(TimestampMixin, Base):
         CheckConstraint("bonus_spent + discount <= subtotal", name="bonus_le_subtotal"),
         CheckConstraint("discount >= 0", name="discount"),
         CheckConstraint("prepaid_amount >= 0 AND prepay_due >= 0", name="prepaid"),
+        CheckConstraint("voucher_amount >= 0", name="voucher_amount"),
         CheckConstraint("rating IS NULL OR rating BETWEEN 1 AND 5", name="rating"),
         Index("ix_bookings_barber_start", "barber_id", "start_at"),
         Index("ix_bookings_branch_start", "branch_id", "start_at"),
@@ -106,6 +107,8 @@ class Booking(TimestampMixin, Base):
     prepaid_amount: Mapped[int] = money()
     # prepayment the client must make before the booking is confirmed; 0 = none
     prepay_due: Mapped[int] = money()
+    # part of the bill covered by gift certificates / subscription visits (not money today)
+    voucher_amount: Mapped[int] = money()
     # the client tapped "I paid" and the salon has not checked it yet
     payment_claimed_at: Mapped[datetime | None] = mapped_column()
     comment: Mapped[str | None] = mapped_column(Text)

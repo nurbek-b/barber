@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from typing import Any
 
 import httpx
@@ -592,8 +592,15 @@ async def test_reminder_confirm_and_cancel(
 
 
 async def test_barber_today_and_finish(
-    hook: httpx.AsyncClient, tg: MockedSession, session: AsyncSession, branch: Branch
+    hook: httpx.AsyncClient,
+    tg: MockedSession,
+    session: AsyncSession,
+    branch: Branch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # midday in Bishkek: the visits below must fall on the same local day at any wall time
+    now = datetime.combine(NOW.date(), time(6, 0), tzinfo=UTC)
+    monkeypatch.setattr("app.bot.handlers._now", lambda: now)
     await send(hook, message("/start", user_id=800))  # a client
     client = await client_of(session, 800)
     client.name = "Айбек Асанов"
@@ -603,7 +610,7 @@ async def test_barber_today_and_finish(
     await session.flush()
 
     def visit(who: Barber, minutes: int) -> Booking:
-        start = NOW + timedelta(minutes=minutes)
+        start = now + timedelta(minutes=minutes)
         return Booking(
             branch_id=branch.id,
             client_id=client.id,

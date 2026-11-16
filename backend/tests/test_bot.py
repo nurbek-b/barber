@@ -652,3 +652,16 @@ async def test_barber_today_and_finish(
     assert foreign.status is BookingStatus.CONFIRMED
     answers = [c for c in tg.calls if isinstance(c, AnswerCallbackQuery)]
     assert answers[-1].show_alert is True
+
+
+async def test_unsubscribe_button(
+    hook: httpx.AsyncClient, tg: MockedSession, session: AsyncSession
+) -> None:
+    await send(hook, message("/start", user_id=950))
+    tg.calls.clear()
+    await send(hook, callback("unsub", user_id=950))
+    client = await client_of(session, 950)
+    await session.refresh(client)
+    assert client.marketing_opt_out is True
+    answers = [c for c in tg.calls if isinstance(c, AnswerCallbackQuery)]
+    assert "отписались" in (answers[0].text or "")

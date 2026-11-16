@@ -85,3 +85,8 @@ class NotificationType(StrEnum):
     BOOKING_RESCHEDULED = "booking_rescheduled"
     BOOKING_STATUS_CHANGED = "booking_status_changed"
     CLIENT_REGISTERED = "client_registered"
+
+
+class PromoKind(StrEnum):
+    PERCENT = "percent"
+    FIXED = "fixed"

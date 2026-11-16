@@ -259,3 +259,20 @@ class BotActions:
             await self.session.rollback()
             return VisitOutcome.UNAVAILABLE
         return VisitOutcome.CANCELLED
+
+    async def unsubscribe(self, telegram_id: int) -> bool:
+        found = await self._client_of(telegram_id)
+        if found is None:
+            return False
+        client, _ = found
+        if not client.marketing_opt_out:
+            client.marketing_opt_out = True
+            self.audit.record(
+                Actor(type=ActorType.CLIENT, id=client.id),
+                "client.unsubscribe",
+                "client",
+                client.id,
+                after={"marketing_opt_out": True},
+            )
+            await self.session.commit()
+        return True

@@ -1,5 +1,6 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import {
+  Megaphone,
   BarChart3,
   CalendarDays,
   ClipboardList,
@@ -58,6 +59,7 @@ const NAV: NavItem[] = [
   { to: "/services", label: "nav.services", icon: Coins, perm: ["services:write"] },
   { to: "/finance", label: "nav.finance", icon: BarChart3, perm: ["finance:read"] },
   { to: "/bonus", label: "nav.bonus", icon: Gift, perm: ["settings:read"] },
+  { to: "/marketing", label: "nav.marketing", icon: Megaphone, perm: ["settings:read"] },
   { to: "/settings", label: "nav.settings", icon: Settings, perm: ["settings:read"] },
   { to: "/staff", label: "nav.staff", icon: UserCog, perm: ["staff:manage"] },
   { to: "/audit", label: "nav.audit", icon: Shield, perm: ["audit:read"] },

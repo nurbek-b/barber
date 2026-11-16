@@ -34,6 +34,7 @@ class Totals:
     bookings: int = 0
     subtotal: int = 0
     bonus_spent: int = 0
+    discount: int = 0
     total_due: int = 0
     paid: int = 0
     master_share: int = 0
@@ -42,6 +43,7 @@ class Totals:
         self.bookings += 1
         self.subtotal += booking.subtotal
         self.bonus_spent += booking.bonus_spent
+        self.discount += booking.discount
         self.total_due += booking.total_due
         self.paid += booking.paid_amount or 0
         self.master_share += master_share
@@ -310,6 +312,7 @@ class ReportService:
                         "phone": client_phone or "",
                         "subtotal": booking.subtotal,
                         "bonus_spent": booking.bonus_spent,
+                        "discount": booking.discount,
                         "total_due": booking.total_due,
                         "paid": booking.paid_amount or 0,
                         "master_share": share,
@@ -360,13 +363,14 @@ EXPORT_COLUMNS = [
     ("phone", "Телефон"),
     ("subtotal", "Сумма"),
     ("bonus_spent", "Бонусами"),
+    ("discount", "Скидка (промокод)"),
     ("total_due", "К оплате"),
     ("paid", "Оплачено"),
     ("master_share", "Мастеру"),
     ("payment_method", "Способ оплаты"),
     ("booking_id", "ID записи"),
 ]
-MONEY_COLUMNS = {"subtotal", "bonus_spent", "total_due", "paid", "master_share"}
+MONEY_COLUMNS = {"subtotal", "bonus_spent", "discount", "total_due", "paid", "master_share"}
 
 
 def _major(amount: int) -> str:

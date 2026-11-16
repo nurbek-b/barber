@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from app.models.enums import ActorType, AdminRole
-from app.schemas.common import SUPPORTED_LANGUAGES, ApiModel
+from app.models.enums import ActorType, AdminRole, PromoKind
+from app.schemas.common import SUPPORTED_LANGUAGES, ApiModel, Money
 
 # ---------------- clients ----------------
 
@@ -296,6 +296,7 @@ class FinanceTotals(ApiModel):
     bookings: int
     subtotal: int
     bonus_spent: int
+    discount: int = Field(default=0, description="Promo code discounts")
     total_due: int
     paid: int
     master_share: int = Field(description="Barbers' commission: % of subtotal, see commission_bp")
@@ -329,3 +330,80 @@ class FinanceReportOut(ApiModel):
     by_service: list[FinanceByService]
     by_payment_method: list[FinanceByMethod]
     daily: list[RevenuePoint]
+
+
+PROMO_CODE_PATTERN = r"^[A-Za-z0-9_-]{3,32}$"
+
+
+class PromoCodeIn(ApiModel):
+    code: str = Field(pattern=PROMO_CODE_PATTERN, description="Letters, digits, - and _")
+    kind: PromoKind
+    value: int = Field(gt=0, description="percent: basis points (2000 = 20 %); fixed: tyiyn")
+    max_discount: Money | None = Field(default=None, description="Cap for percent codes")
+    min_subtotal: Money = 0
+    valid_from: date | None = None
+    valid_to: date | None = None
+    max_uses: int | None = Field(default=None, gt=0)
+    max_uses_per_client: int = Field(default=1, gt=0, le=1000)
+    first_visit_only: bool = False
+    is_active: bool = True
+    description: str | None = Field(default=None, max_length=200)
+
+    @model_validator(mode="after")
+    def _check(self) -> PromoCodeIn:
+        if self.kind is PromoKind.PERCENT and self.value > 10_000:
+            raise ValueError("percent value is at most 10000 (100 %)")
+        if self.valid_from and self.valid_to and self.valid_to < self.valid_from:
+            raise ValueError("valid_to is before valid_from")
+        return self
+
+
+class PromoCodePatch(ApiModel):
+    is_active: bool | None = None
+    valid_to: date | None = None
+    max_uses: int | None = Field(default=None, gt=0)
+    description: str | None = Field(default=None, max_length=200)
+
+
+class PromoCodeOut(ApiModel):
+    id: uuid.UUID
+    code: str
+    kind: PromoKind
+    value: int
+    max_discount: int | None
+    min_subtotal: int
+    valid_from: date | None
+    valid_to: date | None
+    max_uses: int | None
+    max_uses_per_client: int
+    first_visit_only: bool
+    is_active: bool
+    description: str | None
+    uses: int
+    created_at: datetime
+
+
+class SegmentIn(ApiModel):
+    kind: Literal["all", "inactive", "never_visited", "birthday_month", "tag"]
+    days: int | None = Field(default=None, ge=1, le=3650, description="inactive: N+ days")
+    tag: str | None = Field(default=None, max_length=50)
+
+
+class BroadcastIn(ApiModel):
+    segment: SegmentIn
+    texts: dict[str, str] = Field(description="{'ru': required, 'ky', 'en'}")
+    promo_code_id: uuid.UUID | None = None
+    book_button: bool = True
+
+
+class SegmentCountOut(ApiModel):
+    recipients: int
+
+
+class BroadcastOut(ApiModel):
+    id: uuid.UUID
+    texts: dict[str, str]
+    segment: dict[str, Any]
+    promo_code: str | None
+    recipients: int
+    created_at: datetime

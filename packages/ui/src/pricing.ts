@@ -13,9 +13,16 @@ export function clampBonus(requested: number, maxBonus: number): number {
   return Math.min(Math.trunc(requested), maxBonus);
 }
 
-export function computeTotals(subtotal: number, maxBonus: number, requestedBonus: number): Totals {
-  const bonusSpent = clampBonus(requestedBonus, Math.min(maxBonus, subtotal));
-  return { subtotal, bonusSpent, totalDue: subtotal - bonusSpent, maxBonus };
+/** Same as the backend: total = subtotal − promo discount − bonuses (bonus limit after discount). */
+export function computeTotals(
+  subtotal: number,
+  maxBonus: number,
+  requestedBonus: number,
+  discount = 0,
+): Totals {
+  const afterDiscount = subtotal - Math.min(Math.max(discount, 0), subtotal);
+  const bonusSpent = clampBonus(requestedBonus, Math.min(maxBonus, afterDiscount));
+  return { subtotal, bonusSpent, totalDue: afterDiscount - bonusSpent, maxBonus };
 }
 
 /** Same formula as the backend: amount * bp // 10000 (floor). */

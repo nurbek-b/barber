@@ -24,7 +24,7 @@ from app.services.bookings import can_change
 from app.services.reviews import can_review
 
 
-def quote_out(quote: Quote) -> QuoteOut:
+def quote_out(quote: Quote, promo_code: str | None = None) -> QuoteOut:
     return QuoteOut(
         lines=[
             QuoteLineOut(
@@ -39,6 +39,8 @@ def quote_out(quote: Quote) -> QuoteOut:
         duration_min=quote.duration_min,
         bonus_balance=quote.bonus_balance,
         max_bonus_spend=quote.max_bonus_spend,
+        discount=quote.discount,
+        promo_code=promo_code,
     )
 
 
@@ -74,6 +76,7 @@ async def client_bookings_out(
             end_at=booking.end_at,
             subtotal=booking.subtotal,
             bonus_spent=booking.bonus_spent,
+            discount=booking.discount,
             total_due=booking.total_due,
             comment=booking.comment,
             can_cancel=can_change(booking, now, salon.cancel_min_hours),
@@ -113,6 +116,7 @@ async def admin_bookings_out(
                 end_at=booking.end_at,
                 subtotal=booking.subtotal,
                 bonus_spent=booking.bonus_spent,
+                discount=booking.discount,
                 total_due=booking.total_due,
                 paid_amount=booking.paid_amount,
                 payment_method=booking.payment_method,

@@ -7,6 +7,7 @@ import {
   type BookingPage,
   type ClientMe,
   type Hold,
+  type Quote,
   type ReviewPage,
 } from "@barber/api-client";
 import {
@@ -195,6 +196,7 @@ export function useCreateBooking() {
       comment: string | null;
       bonusToSpend: number;
       idempotencyKey: string;
+      promoCode?: string | null;
     }) =>
       call(
         api.POST(`${BASE}/bookings`, {
@@ -203,6 +205,7 @@ export function useCreateBooking() {
             hold_id: input.holdId,
             comment: input.comment,
             bonus_to_spend: input.bonusToSpend,
+            promo_code: input.promoCode ?? null,
           },
         }),
       ),
@@ -382,4 +385,14 @@ export function useLeaveWaitlist() {
       call(api.DELETE(`${BASE}/waitlist/{entry_id}`, { params: { path: { entry_id: entryId } } })),
     onSuccess: () => void client.invalidateQueries({ queryKey: ["waitlist"] }),
   });
+}
+
+/** Apply a promo code to the held slot; throws ApiError with promo_* codes. */
+export function checkPromo(holdId: string, code: string): Promise<Quote> {
+  return call(
+    api.POST(`${BASE}/holds/{hold_id}/promo`, {
+      params: { path: { hold_id: holdId } },
+      body: { code },
+    }),
+  );
 }

@@ -290,6 +290,15 @@ async def finish(
     await message.edit_text(text, reply_markup=markup)
 
 
+async def unsubscribe(callback: CallbackQuery, session: AsyncSession, settings: Settings) -> None:
+    actions = BotActions(session, settings)
+    await actions.unsubscribe(callback.from_user.id)
+    lang = await actions.language_of(callback.from_user.id, callback.from_user.language_code)
+    await callback.answer(t("unsubscribed", lang), show_alert=True)
+    if isinstance(callback.message, Message):
+        await callback.message.edit_reply_markup(reply_markup=None)
+
+
 async def chat_id(message: Message) -> None:
     """Add the bot to the admin group and send /chatid to learn its ID for the settings."""
     lang = message.from_user.language_code if message.from_user else None
@@ -328,6 +337,7 @@ def build_router() -> Router:
     router.callback_query.register(rate, F.data.startswith("rate:"))
     router.callback_query.register(visit, F.data.startswith("visit:"))
     router.callback_query.register(finish, F.data.startswith("done:"))
+    router.callback_query.register(unsubscribe, F.data == "unsub")
     router.message.register(chat_id, Command("chatid"))
     router.message.register(barber_day, Command("today", "tomorrow"), private)
     router.my_chat_member.register(

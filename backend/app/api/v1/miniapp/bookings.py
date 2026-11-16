@@ -18,6 +18,8 @@ from app.schemas.bookings import (
     CancelIn,
     HoldIn,
     HoldOut,
+    PromoCheckIn,
+    QuoteOut,
     RepeatDraftOut,
     RescheduleIn,
 )
@@ -77,6 +79,23 @@ async def create_hold(
     )
 
 
+@router.post("/holds/{hold_id}/promo", response_model=QuoteOut, responses=ERRORS)
+async def check_promo(
+    hold_id: str,
+    body: PromoCheckIn,
+    ctx: MiniappDep,
+    session: SessionDep,
+    redis: RedisDep,
+    cache: SlotCacheDep,
+    now: NowDep,
+) -> QuoteOut:
+    """Apply a promo code to the held slot's price; the code is re-checked on booking."""
+    quote, code = await ClientBookingService(session, redis, cache).check_promo(
+        ctx.branch_id, ctx.identity.client, hold_id, body.code, now
+    )
+    return quote_out(quote, code)
+
+
 @router.delete("/holds/{hold_id}", status_code=status.HTTP_204_NO_CONTENT, responses=ERRORS)
 async def release_hold(
     hold_id: str, ctx: MiniappDep, session: SessionDep, redis: RedisDep, cache: SlotCacheDep
@@ -105,6 +124,7 @@ async def create_booking(
         bonus_to_spend=body.bonus_to_spend,
         idempotency_key=idempotency_key,
         now=now,
+        promo_code=body.promo_code,
     )
     if not result.created:
         response.status_code = status.HTTP_200_OK

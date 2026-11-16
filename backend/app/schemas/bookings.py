@@ -46,7 +46,13 @@ class QuoteOut(ApiModel):
     subtotal: int
     duration_min: int
     bonus_balance: int
-    max_bonus_spend: int
+    max_bonus_spend: int = Field(description="Limit after the promo discount")
+    discount: int = Field(default=0, description="Promo code discount")
+    promo_code: str | None = None
+
+
+class PromoCheckIn(ApiModel):
+    code: str = Field(min_length=1, max_length=32)
 
 
 class HoldOut(ApiModel):
@@ -65,6 +71,7 @@ class BookingCreateIn(ApiModel):
     hold_id: str = Field(min_length=8, max_length=64)
     comment: str | None = Field(default=None, max_length=500)
     bonus_to_spend: Money = Field(default=0, description="Bonus units to pay with (≤ max)")
+    promo_code: str | None = Field(default=None, max_length=32)
 
 
 class RescheduleIn(ApiModel):
@@ -97,6 +104,7 @@ class BookingOut(ApiModel):
     end_at: datetime
     subtotal: int
     bonus_spent: int
+    discount: int = 0
     total_due: int
     comment: str | None
     can_cancel: bool
@@ -224,6 +232,7 @@ class AdminBookingOut(ApiModel):
     end_at: datetime
     subtotal: int
     bonus_spent: int
+    discount: int = 0
     total_due: int
     paid_amount: int | None
     payment_method: PaymentMethod | None

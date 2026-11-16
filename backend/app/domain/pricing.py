@@ -31,9 +31,10 @@ class Quote:
     duration_min: int
     bonus_balance: int
     max_bonus_spend: int
+    discount: int = 0  # promo code
 
     def total_due(self, bonus_spent: int) -> int:
-        return self.subtotal - bonus_spent
+        return self.subtotal - self.discount - bonus_spent
 
 
 def max_bonus_spend(subtotal: int, balance: int, max_spend_bp: int, enabled: bool) -> int:
@@ -44,13 +45,37 @@ def max_bonus_spend(subtotal: int, balance: int, max_spend_bp: int, enabled: boo
 
 
 def build_quote(
-    lines: Sequence[PriceLine], *, bonus_balance: int, max_spend_bp: int, bonus_enabled: bool
+    lines: Sequence[PriceLine],
+    *,
+    bonus_balance: int,
+    max_spend_bp: int,
+    bonus_enabled: bool,
+    discount: int = 0,
 ) -> Quote:
+    """The bonus limit applies to the check after the promo discount."""
     subtotal = sum(line.price for line in lines)
+    discount = min(max(discount, 0), subtotal)
     return Quote(
         lines=tuple(lines),
         subtotal=subtotal,
         duration_min=sum(line.duration_min for line in lines),
         bonus_balance=bonus_balance,
-        max_bonus_spend=max_bonus_spend(subtotal, bonus_balance, max_spend_bp, bonus_enabled),
+        max_bonus_spend=max_bonus_spend(
+            subtotal - discount, bonus_balance, max_spend_bp, bonus_enabled
+        ),
+        discount=discount,
     )
+
+
+def promo_discount(kind: str, value: int, max_discount: int | None, subtotal: int) -> int:
+    """percent: value in basis points, rounded down, optionally capped; fixed: tyiyn.
+    Never more than the subtotal."""
+    if subtotal <= 0:
+        return 0
+    if kind == "percent":
+        amount = percent_of(subtotal, value)
+        if max_discount is not None:
+            amount = min(amount, max_discount)
+    else:
+        amount = value
+    return min(amount, subtotal)

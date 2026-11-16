@@ -94,6 +94,7 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "ky": "{barber} устатка болгон визит кандай болду? Баалап коюңузчу 🙏",
         "en": "How was your visit to {barber}? Please rate it 🙏",
     },
+    "broadcast": {"ru": "{text}{promo}", "ky": "{text}{promo}", "en": "{text}{promo}"},
     "waitlist_client": {
         "ru": (
             "🔔 Освободилось время у мастера {barber}: {when}.\n"

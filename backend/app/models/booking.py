@@ -48,8 +48,9 @@ class Booking(TimestampMixin, Base):
         CheckConstraint("blocked_until >= end_at", name="blocked_until"),
         CheckConstraint("kind = 'block' OR client_id IS NOT NULL", name="client_required"),
         CheckConstraint("subtotal >= 0 AND bonus_spent >= 0", name="non_negative"),
-        CheckConstraint("total_due = subtotal - bonus_spent", name="total_due"),
-        CheckConstraint("bonus_spent <= subtotal", name="bonus_le_subtotal"),
+        CheckConstraint("total_due = subtotal - bonus_spent - discount", name="total_due"),
+        CheckConstraint("bonus_spent + discount <= subtotal", name="bonus_le_subtotal"),
+        CheckConstraint("discount >= 0", name="discount"),
         CheckConstraint("rating IS NULL OR rating BETWEEN 1 AND 5", name="rating"),
         Index("ix_bookings_barber_start", "barber_id", "start_at"),
         Index("ix_bookings_branch_start", "branch_id", "start_at"),
@@ -89,6 +90,11 @@ class Booking(TimestampMixin, Base):
 
     subtotal: Mapped[int] = money()
     bonus_spent: Mapped[int] = money()
+    # promo code discount (salon's cost, like bonuses: the barber's share uses subtotal)
+    discount: Mapped[int] = money()
+    promo_code_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("promo_codes.id", ondelete="SET NULL")
+    )
     total_due: Mapped[int] = money()
     paid_amount: Mapped[int | None] = money(nullable=True, default=None)
     payment_method: Mapped[PaymentMethod | None] = mapped_column(

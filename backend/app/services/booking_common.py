@@ -66,6 +66,7 @@ async def quote_for(
     barber_id: uuid.UUID,
     service_ids: Sequence[uuid.UUID],
     client: Client | None,
+    discount: int = 0,
 ) -> Quote:
     lines = await price_lines(session, barber_id, service_ids)
     bonus = await session.get(BonusSettings, branch_id)
@@ -74,6 +75,7 @@ async def quote_for(
         bonus_balance=client.bonus_balance if client else 0,
         max_spend_bp=bonus.max_spend_bp if bonus else 0,
         bonus_enabled=bool(bonus and bonus.enabled),
+        discount=discount,
     )
 
 
@@ -92,10 +94,11 @@ def snapshot_services(quote: Quote) -> list[BookingService]:
 
 async def cap_bonus(session: AsyncSession, booking: Booking, now: datetime) -> None:
     """After the price went down, bonuses above the new subtotal are returned."""
-    extra = max(booking.bonus_spent - booking.subtotal, 0)
+    booking.discount = min(booking.discount, booking.subtotal)
+    extra = max(booking.bonus_spent - (booking.subtotal - booking.discount), 0)
     # set a consistent row first: the refund queries autoflush the booking
     booking.bonus_spent -= extra
-    booking.total_due = booking.subtotal - booking.bonus_spent
+    booking.total_due = booking.subtotal - booking.discount - booking.bonus_spent
     if extra:
         await BonusService(session).refund_for_booking(booking, now, extra)
 

@@ -387,6 +387,7 @@ async def test_finance_report_and_exports(
         "bookings": 4,
         "subtotal": 320_000,
         "bonus_spent": 20_000,
+        "discount": 0,
         "total_due": 300_000,
         "paid": 300_000,
         "master_share": 0,  # no commission rates set

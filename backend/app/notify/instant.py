@@ -25,6 +25,7 @@ logger = structlog.get_logger(__name__)
 
 OUTBOX_IDS = "outbox_ids"
 SEND_TIMEOUT_SECONDS = 3.0
+MAX_INSTANT = 20  # anything bigger (e.g. a broadcast) is left to the worker
 
 
 @event.listens_for(Session, "after_flush")
@@ -44,7 +45,8 @@ def track_outbox(session_info: dict[str, Any], scope_state: dict[str, Any]) -> N
 async def send_now(app_state: Any, ids: list[uuid.UUID]) -> None:
     sender: Sender | None = getattr(app_state, "outbox_sender", None)
     maker = getattr(app_state, "sessionmaker", None)
-    if not ids or sender is None or maker is None:
+    if not ids or sender is None or maker is None or len(ids) > MAX_INSTANT:
+        ids.clear()
         return
     try:
         await asyncio.wait_for(

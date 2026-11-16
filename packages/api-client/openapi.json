@@ -1082,6 +1082,135 @@
         }
       }
     },
+    "/api/v1/miniapp/holds/{hold_id}/promo": {
+      "post": {
+        "tags": [
+          "miniapp-bookings"
+        ],
+        "summary": "Check Promo",
+        "description": "Apply a promo code to the held slot's price; the code is re-checked on booking.",
+        "operationId": "miniapp_check_promo",
+        "parameters": [
+          {
+            "name": "hold_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hold Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoCheckIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "slot_conflict → details.alternatives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/api/v1/miniapp/holds/{hold_id}": {
       "delete": {
         "tags": [
@@ -6480,6 +6609,459 @@
         }
       }
     },
+    "/api/v1/admin/promo-codes": {
+      "get": {
+        "tags": [
+          "admin-promo"
+        ],
+        "summary": "List Promo Codes",
+        "operationId": "admin_list_promo_codes",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PromoCodeOut"
+                  },
+                  "type": "array",
+                  "title": "Response Admin List Promo Codes"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-promo"
+        ],
+        "summary": "Create Promo Code",
+        "operationId": "admin_create_promo_code",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoCodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCodeOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/promo-codes/{promo_id}": {
+      "patch": {
+        "tags": [
+          "admin-promo"
+        ],
+        "summary": "Update Promo Code",
+        "operationId": "admin_update_promo_code",
+        "parameters": [
+          {
+            "name": "promo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Promo Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoCodePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCodeOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/broadcasts/preview": {
+      "post": {
+        "tags": [
+          "admin-broadcasts"
+        ],
+        "summary": "Preview",
+        "description": "How many clients would receive a broadcast to this segment.",
+        "operationId": "admin_preview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SegmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentCountOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/broadcasts": {
+      "get": {
+        "tags": [
+          "admin-broadcasts"
+        ],
+        "summary": "List Broadcasts",
+        "operationId": "admin_list_broadcasts",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BroadcastOut"
+                  },
+                  "type": "array",
+                  "title": "Response Admin List Broadcasts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-broadcasts"
+        ],
+        "summary": "Send Broadcast",
+        "operationId": "admin_send_broadcast",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/settings/bonus": {
       "get": {
         "tags": [
@@ -8854,6 +9436,11 @@
             "type": "integer",
             "title": "Bonus Spent"
           },
+          "discount": {
+            "type": "integer",
+            "title": "Discount",
+            "default": 0
+          },
           "total_due": {
             "type": "integer",
             "title": "Total Due"
@@ -10566,6 +11153,18 @@
             "title": "Bonus To Spend",
             "description": "Bonus units to pay with (≤ max)",
             "default": 0
+          },
+          "promo_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Code"
           }
         },
         "type": "object",
@@ -10619,6 +11218,11 @@
           "bonus_spent": {
             "type": "integer",
             "title": "Bonus Spent"
+          },
+          "discount": {
+            "type": "integer",
+            "title": "Discount",
+            "default": 0
           },
           "total_due": {
             "type": "integer",
@@ -10807,6 +11411,95 @@
           "no_show"
         ],
         "title": "BookingStatus"
+      },
+      "BroadcastIn": {
+        "properties": {
+          "segment": {
+            "$ref": "#/components/schemas/SegmentIn"
+          },
+          "texts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Texts",
+            "description": "{'ru': required, 'ky', 'en'}"
+          },
+          "promo_code_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Code Id"
+          },
+          "book_button": {
+            "type": "boolean",
+            "title": "Book Button",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "segment",
+          "texts"
+        ],
+        "title": "BroadcastIn"
+      },
+      "BroadcastOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "texts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Texts"
+          },
+          "segment": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Segment"
+          },
+          "promo_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Code"
+          },
+          "recipients": {
+            "type": "integer",
+            "title": "Recipients"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "texts",
+          "segment",
+          "promo_code",
+          "recipients",
+          "created_at"
+        ],
+        "title": "BroadcastOut"
       },
       "CancelIn": {
         "properties": {
@@ -11612,6 +12305,12 @@
             "type": "integer",
             "title": "Bonus Spent"
           },
+          "discount": {
+            "type": "integer",
+            "title": "Discount",
+            "description": "Promo code discounts",
+            "default": 0
+          },
           "total_due": {
             "type": "integer",
             "title": "Total Due"
@@ -11797,6 +12496,12 @@
           "bonus_spent": {
             "type": "integer",
             "title": "Bonus Spent"
+          },
+          "discount": {
+            "type": "integer",
+            "title": "Discount",
+            "description": "Promo code discounts",
+            "default": 0
           },
           "total_due": {
             "type": "integer",
@@ -12385,6 +13090,317 @@
         "title": "PortfolioPut",
         "description": "Current catalogue URLs in the new order; leaving one out deletes it."
       },
+      "PromoCheckIn": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "PromoCheckIn"
+      },
+      "PromoCodeIn": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{3,32}$",
+            "title": "Code",
+            "description": "Letters, digits, - and _"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PromoKind"
+          },
+          "value": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Value",
+            "description": "percent: basis points (2000 = 20 %); fixed: tyiyn"
+          },
+          "max_discount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000000000.0,
+                "minimum": 0.0,
+                "description": "Minor units (tyiyn)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Discount",
+            "description": "Cap for percent codes"
+          },
+          "min_subtotal": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Min Subtotal",
+            "description": "Minor units (tyiyn)",
+            "default": 0
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "max_uses": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Uses"
+          },
+          "max_uses_per_client": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Uses Per Client",
+            "default": 1
+          },
+          "first_visit_only": {
+            "type": "boolean",
+            "title": "First Visit Only",
+            "default": false
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "kind",
+          "value"
+        ],
+        "title": "PromoCodeIn"
+      },
+      "PromoCodeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PromoKind"
+          },
+          "value": {
+            "type": "integer",
+            "title": "Value"
+          },
+          "max_discount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Discount"
+          },
+          "min_subtotal": {
+            "type": "integer",
+            "title": "Min Subtotal"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "max_uses": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Uses"
+          },
+          "max_uses_per_client": {
+            "type": "integer",
+            "title": "Max Uses Per Client"
+          },
+          "first_visit_only": {
+            "type": "boolean",
+            "title": "First Visit Only"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "uses": {
+            "type": "integer",
+            "title": "Uses"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "kind",
+          "value",
+          "max_discount",
+          "min_subtotal",
+          "valid_from",
+          "valid_to",
+          "max_uses",
+          "max_uses_per_client",
+          "first_visit_only",
+          "is_active",
+          "description",
+          "uses",
+          "created_at"
+        ],
+        "title": "PromoCodeOut"
+      },
+      "PromoCodePatch": {
+        "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "max_uses": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Uses"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "PromoCodePatch"
+      },
+      "PromoKind": {
+        "type": "string",
+        "enum": [
+          "percent",
+          "fixed"
+        ],
+        "title": "PromoKind"
+      },
       "PublicBarberOut": {
         "properties": {
           "id": {
@@ -12666,7 +13682,25 @@
           },
           "max_bonus_spend": {
             "type": "integer",
-            "title": "Max Bonus Spend"
+            "title": "Max Bonus Spend",
+            "description": "Limit after the promo discount"
+          },
+          "discount": {
+            "type": "integer",
+            "title": "Discount",
+            "description": "Promo code discount",
+            "default": 0
+          },
+          "promo_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Code"
           }
         },
         "type": "object",
@@ -13420,6 +14454,65 @@
           "conflicting_bookings"
         ],
         "title": "ScheduleExceptionUpdateOut"
+      },
+      "SegmentCountOut": {
+        "properties": {
+          "recipients": {
+            "type": "integer",
+            "title": "Recipients"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipients"
+        ],
+        "title": "SegmentCountOut"
+      },
+      "SegmentIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "all",
+              "inactive",
+              "never_visited",
+              "birthday_month",
+              "tag"
+            ],
+            "title": "Kind"
+          },
+          "days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3650.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days",
+            "description": "inactive: N+ days"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "SegmentIn"
       },
       "ServiceCategoryIn": {
         "properties": {

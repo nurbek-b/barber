@@ -65,6 +65,14 @@ describe("pricing", () => {
       maxBonus: 45_000,
     });
     expect(computeTotals(10_000, 45_000, 100_000).totalDue).toBe(0);
+    // promo discount first, bonuses on what is left
+    expect(computeTotals(150_000, 45_000, 100_000, 30_000)).toEqual({
+      subtotal: 150_000,
+      bonusSpent: 45_000,
+      totalDue: 75_000,
+      maxBonus: 45_000,
+    });
+    expect(computeTotals(150_000, 45_000, 100_000, 140_000).totalDue).toBe(0);
   });
 
   it("percent rounds down like the backend", () => {

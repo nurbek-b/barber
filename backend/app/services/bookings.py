@@ -56,6 +56,7 @@ from app.services.booking_common import (
 from app.services.branches import BranchService
 from app.services.events import BookingEvents, publish
 from app.services.holds import HOLD_TTL, Hold, HoldStore, HoldUnavailableError
+from app.services.promo import PromoService
 from app.services.slot_cache import SlotCache
 
 HOLD_RATE = (20, 60)
@@ -300,6 +301,7 @@ class ClientBookingService:
         bonus_to_spend: int,
         idempotency_key: str,
         now: datetime,
+        promo_code: str | None = None,
     ) -> CreatedBooking:
         if not idempotency_key or len(idempotency_key) > 64:
             raise ValidationAppError(
@@ -307,7 +309,9 @@ class ClientBookingService:
             )
         client_id = client.id  # objects are expired after a rollback; keep plain values
         self._viewer = client_id
-        fingerprint = hashlib.sha256(f"{hold_id}|{comment}|{bonus_to_spend}".encode()).hexdigest()
+        fingerprint = hashlib.sha256(
+            f"{hold_id}|{comment}|{bonus_to_spend}|{promo_code or ''}".encode()
+        ).hexdigest()
         await self._idempotency_guard(client, idempotency_key, fingerprint)
         existing = await self.repo.get_by_idempotency_key(client.id, idempotency_key)
         if existing is not None:
@@ -333,6 +337,14 @@ class ClientBookingService:
         await self._ensure_still_free(branch_id, salon, hold, client, now, exclude=())
 
         quote = await quote_for(self.session, branch_id, hold.barber_id, hold.service_ids, client)
+        promo = None
+        if promo_code:
+            promo, discount = await PromoService(self.session).resolve(
+                promo_code, client, salon, quote.subtotal, now, lock=True
+            )
+            quote = await quote_for(
+                self.session, branch_id, hold.barber_id, hold.service_ids, client, discount
+            )
         if bonus_to_spend > quote.max_bonus_spend:
             raise ValidationAppError(
                 "Too many bonuses for this booking",
@@ -349,6 +361,8 @@ class ClientBookingService:
             source=BookingSource.MINIAPP,
             subtotal=quote.subtotal,
             bonus_spent=bonus_to_spend,
+            discount=quote.discount,
+            promo_code_id=promo.id if promo else None,
             total_due=quote.total_due(bonus_to_spend),
             comment=comment,
             idempotency_key=idempotency_key,
@@ -383,6 +397,21 @@ class ClientBookingService:
         await self.cache.bump([booking.barber_id])
         await publish(self.redis, notification)
         return CreatedBooking(booking, created=True)
+
+    async def check_promo(
+        self, branch_id: uuid.UUID, client: Client, hold_id: str, code: str, now: datetime
+    ) -> tuple[Quote, str]:
+        """The hold's quote with the code applied (nothing is reserved until booking)."""
+        hold = await self._own_hold(client, hold_id, now)
+        salon = await self.branches.settings(branch_id)
+        base = await quote_for(self.session, branch_id, hold.barber_id, hold.service_ids, client)
+        promo, discount = await PromoService(self.session).resolve(
+            code, client, salon, base.subtotal, now
+        )
+        quote = await quote_for(
+            self.session, branch_id, hold.barber_id, hold.service_ids, client, discount
+        )
+        return quote, promo.code
 
     async def _ensure_still_free(
         self,

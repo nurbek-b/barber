@@ -17,10 +17,12 @@ export function PriceSummary({
   const t = useT();
   const lang = useLang();
   const { money } = useMoney();
+  const discount = quote.discount ?? 0;
   const totals = computeTotals(
     quote.subtotal,
     quote.max_bonus_spend,
     useBonus ? quote.max_bonus_spend : 0,
+    discount,
   );
   const canUse = quote.max_bonus_spend > 0;
 
@@ -40,6 +42,17 @@ export function PriceSummary({
           {money(totals.subtotal)}
         </span>
       </div>
+
+      {discount > 0 && (
+        <div className="flex justify-between text-accent">
+          <span>
+            {t("confirm.promo")} {quote.promo_code}
+          </span>
+          <span className="tabular-nums" data-testid="discount">
+            −{money(discount)}
+          </span>
+        </div>
+      )}
 
       <label className={`flex items-center justify-between gap-3 ${canUse ? "" : "opacity-60"}`}>
         <span>
@@ -82,6 +95,10 @@ export function PriceSummary({
 }
 
 export function bonusToSpend(quote: Quote, useBonus: boolean): number {
-  return computeTotals(quote.subtotal, quote.max_bonus_spend, useBonus ? quote.max_bonus_spend : 0)
-    .bonusSpent;
+  return computeTotals(
+    quote.subtotal,
+    quote.max_bonus_spend,
+    useBonus ? quote.max_bonus_spend : 0,
+    quote.discount ?? 0,
+  ).bonusSpent;
 }

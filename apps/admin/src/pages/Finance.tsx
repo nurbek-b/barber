@@ -77,11 +77,12 @@ export default function Finance() {
       {report.isError && <p className="text-destructive">{errorMessage(report.error)}</p>}
       {report.data && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-6">
             {[
               [t("finance.visits"), String(report.data.totals.bookings)],
               [t("finance.subtotal"), money(report.data.totals.subtotal)],
               [t("finance.bonusSpent"), money(report.data.totals.bonus_spent)],
+              [t("marketing.discounts"), money(report.data.totals.discount ?? 0)],
               [t("finance.paid"), money(report.data.totals.paid)],
               [t("finance.mastersTotal"), money(report.data.totals.master_share)],
             ].map(([label, value]) => (

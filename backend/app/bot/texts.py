@@ -145,6 +145,12 @@ TEXTS: dict[str, dict[str, str]] = {
         "ky": "Визитти аяктоо мүмкүн болбоду: ал жабылган же али башталган жок.",
         "en": "Couldn't finish the visit: it is already closed or hasn't started yet.",
     },
+    "unsubscribe": {"ru": "Отписаться", "ky": "Жазылууну токтотуу", "en": "Unsubscribe"},
+    "unsubscribed": {
+        "ru": "Вы отписались от рассылок. Напоминания о записях будут приходить как раньше.",
+        "ky": "Сиз жарнамалык билдирүүлөрдөн баш тарттыңыз. Жазылуу эскертмелери келе берет.",
+        "en": "You've unsubscribed. Booking reminders will still come.",
+    },
     "revisit_book": {"ru": "✂️ Записаться", "ky": "✂️ Жазылуу", "en": "✂️ Book now"},
     "visit_confirm_btn": {"ru": "✅ Приду", "ky": "✅ Келем", "en": "✅ I'll come"},
     "visit_cancel_btn": {"ru": "❌ Отменить", "ky": "❌ Жокко чыгаруу", "en": "❌ Cancel"},

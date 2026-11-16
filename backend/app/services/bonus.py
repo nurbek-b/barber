@@ -157,7 +157,7 @@ class BonusService:
         if not settings.enabled:
             raise ValidationAppError("Bonuses are disabled", code="bonus_disabled")
         client = await self.ledger.lock_client(booking.client_id)
-        limit = percent_of(booking.subtotal, settings.max_spend_bp)
+        limit = percent_of(booking.subtotal - booking.discount, settings.max_spend_bp)
         if amount > limit:
             raise ValidationAppError(
                 "Too many bonuses for this booking",

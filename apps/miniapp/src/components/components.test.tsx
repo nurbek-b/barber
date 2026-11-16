@@ -82,6 +82,7 @@ const quote: Quote = {
   duration_min: 90,
   bonus_balance: 60_000,
   max_bonus_spend: 45_000,
+  discount: 0,
 };
 
 function Harness({ value }: { value: Quote }) {
@@ -101,6 +102,19 @@ describe("PriceSummary", () => {
 
     await userEvent.click(screen.getByRole("switch"));
     expect(screen.queryByTestId("bonus-spent")).not.toBeInTheDocument();
+  });
+
+  it("shows the promo discount and pays bonuses on the rest", async () => {
+    // 20 % off 1500 = 300; bonus limit (30 %) is then counted on 1200 → 360
+    renderWithProviders(
+      <Harness
+        value={{ ...quote, discount: 30_000, promo_code: "SPRING20", max_bonus_spend: 36_000 }}
+      />,
+    );
+    expect(screen.getByTestId("discount").textContent).toBe(`−300${NB}сом`);
+    expect(screen.getByTestId("total-due").textContent).toBe(`1${NB}200${NB}сом`);
+    await userEvent.click(screen.getByRole("switch"));
+    expect(screen.getByTestId("total-due").textContent).toBe(`840${NB}сом`);
   });
 
   it("disables the switch without bonuses", () => {

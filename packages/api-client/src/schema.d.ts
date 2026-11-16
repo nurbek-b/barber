@@ -233,6 +233,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/miniapp/holds/{hold_id}/promo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Promo
+         * @description Apply a promo code to the held slot's price; the code is re-checked on booking.
+         */
+        post: operations["miniapp_check_promo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/miniapp/holds/{hold_id}": {
         parameters: {
             query?: never;
@@ -1058,6 +1078,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/promo-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Promo Codes */
+        get: operations["admin_list_promo_codes"];
+        put?: never;
+        /** Create Promo Code */
+        post: operations["admin_create_promo_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/promo-codes/{promo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Promo Code */
+        patch: operations["admin_update_promo_code"];
+        trace?: never;
+    };
+    "/api/v1/admin/broadcasts/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview
+         * @description How many clients would receive a broadcast to this segment.
+         */
+        post: operations["admin_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/broadcasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Broadcasts */
+        get: operations["admin_list_broadcasts"];
+        put?: never;
+        /** Send Broadcast */
+        post: operations["admin_send_broadcast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/settings/bonus": {
         parameters: {
             query?: never;
@@ -1486,6 +1579,11 @@ export interface components {
             subtotal: number;
             /** Bonus Spent */
             bonus_spent: number;
+            /**
+             * Discount
+             * @default 0
+             */
+            discount: number;
             /** Total Due */
             total_due: number;
             /** Paid Amount */
@@ -2143,6 +2241,8 @@ export interface components {
              * @default 0
              */
             bonus_to_spend: number;
+            /** Promo Code */
+            promo_code?: string | null;
         };
         /**
          * BookingKind
@@ -2174,6 +2274,11 @@ export interface components {
             subtotal: number;
             /** Bonus Spent */
             bonus_spent: number;
+            /**
+             * Discount
+             * @default 0
+             */
+            discount: number;
             /** Total Due */
             total_due: number;
             /** Comment */
@@ -2246,6 +2351,49 @@ export interface components {
          * @enum {string}
          */
         BookingStatus: "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
+        /** BroadcastIn */
+        BroadcastIn: {
+            segment: components["schemas"]["SegmentIn"];
+            /**
+             * Texts
+             * @description {'ru': required, 'ky', 'en'}
+             */
+            texts: {
+                [key: string]: string;
+            };
+            /** Promo Code Id */
+            promo_code_id?: string | null;
+            /**
+             * Book Button
+             * @default true
+             */
+            book_button: boolean;
+        };
+        /** BroadcastOut */
+        BroadcastOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Texts */
+            texts: {
+                [key: string]: string;
+            };
+            /** Segment */
+            segment: {
+                [key: string]: unknown;
+            };
+            /** Promo Code */
+            promo_code: string | null;
+            /** Recipients */
+            recipients: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** CancelIn */
         CancelIn: {
             /** Reason */
@@ -2511,6 +2659,12 @@ export interface components {
             subtotal: number;
             /** Bonus Spent */
             bonus_spent: number;
+            /**
+             * Discount
+             * @description Promo code discounts
+             * @default 0
+             */
+            discount: number;
             /** Total Due */
             total_due: number;
             /** Paid */
@@ -2587,6 +2741,12 @@ export interface components {
             subtotal: number;
             /** Bonus Spent */
             bonus_spent: number;
+            /**
+             * Discount
+             * @description Promo code discounts
+             * @default 0
+             */
+            discount: number;
             /** Total Due */
             total_due: number;
             /** Paid */
@@ -2850,6 +3010,113 @@ export interface components {
             /** Urls */
             urls: string[];
         };
+        /** PromoCheckIn */
+        PromoCheckIn: {
+            /** Code */
+            code: string;
+        };
+        /** PromoCodeIn */
+        PromoCodeIn: {
+            /**
+             * Code
+             * @description Letters, digits, - and _
+             */
+            code: string;
+            kind: components["schemas"]["PromoKind"];
+            /**
+             * Value
+             * @description percent: basis points (2000 = 20 %); fixed: tyiyn
+             */
+            value: number;
+            /**
+             * Max Discount
+             * @description Cap for percent codes
+             */
+            max_discount?: number | null;
+            /**
+             * Min Subtotal
+             * @description Minor units (tyiyn)
+             * @default 0
+             */
+            min_subtotal: number;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid To */
+            valid_to?: string | null;
+            /** Max Uses */
+            max_uses?: number | null;
+            /**
+             * Max Uses Per Client
+             * @default 1
+             */
+            max_uses_per_client: number;
+            /**
+             * First Visit Only
+             * @default false
+             */
+            first_visit_only: boolean;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /** Description */
+            description?: string | null;
+        };
+        /** PromoCodeOut */
+        PromoCodeOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            kind: components["schemas"]["PromoKind"];
+            /** Value */
+            value: number;
+            /** Max Discount */
+            max_discount: number | null;
+            /** Min Subtotal */
+            min_subtotal: number;
+            /** Valid From */
+            valid_from: string | null;
+            /** Valid To */
+            valid_to: string | null;
+            /** Max Uses */
+            max_uses: number | null;
+            /** Max Uses Per Client */
+            max_uses_per_client: number;
+            /** First Visit Only */
+            first_visit_only: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Description */
+            description: string | null;
+            /** Uses */
+            uses: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PromoCodePatch */
+        PromoCodePatch: {
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Valid To */
+            valid_to?: string | null;
+            /** Max Uses */
+            max_uses?: number | null;
+            /** Description */
+            description?: string | null;
+        };
+        /**
+         * PromoKind
+         * @enum {string}
+         */
+        PromoKind: "percent" | "fixed";
         /** PublicBarberOut */
         PublicBarberOut: {
             /**
@@ -2968,8 +3235,19 @@ export interface components {
             duration_min: number;
             /** Bonus Balance */
             bonus_balance: number;
-            /** Max Bonus Spend */
+            /**
+             * Max Bonus Spend
+             * @description Limit after the promo discount
+             */
             max_bonus_spend: number;
+            /**
+             * Discount
+             * @description Promo code discount
+             * @default 0
+             */
+            discount: number;
+            /** Promo Code */
+            promo_code?: string | null;
         };
         /** ReadAllOut */
         ReadAllOut: {
@@ -3263,6 +3541,26 @@ export interface components {
             exception: components["schemas"]["ScheduleExceptionOut"];
             /** Conflicting Bookings */
             conflicting_bookings: components["schemas"]["BookingRef"][];
+        };
+        /** SegmentCountOut */
+        SegmentCountOut: {
+            /** Recipients */
+            recipients: number;
+        };
+        /** SegmentIn */
+        SegmentIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "all" | "inactive" | "never_visited" | "birthday_month" | "tag";
+            /**
+             * Days
+             * @description inactive: N+ days
+             */
+            days?: number | null;
+            /** Tag */
+            tag?: string | null;
         };
         /** ServiceCategoryIn */
         ServiceCategoryIn: {
@@ -4244,6 +4542,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HoldOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description slot_conflict → details.alternatives */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    miniapp_check_promo: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                hold_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteOut"];
                 };
             };
             /** @description Unauthorized */
@@ -8220,6 +8609,387 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_promo_codes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodeOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_create_promo_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoCodeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_update_promo_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                promo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoCodePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SegmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentCountOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_broadcasts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_send_broadcast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

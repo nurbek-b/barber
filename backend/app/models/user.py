@@ -58,6 +58,8 @@ class Client(TimestampMixin, Base):
     )
     notes: Mapped[str | None] = mapped_column(Text)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # "Unsubscribe" under a broadcast; service messages (bookings, reminders) still go out
+    marketing_opt_out: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     level_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("loyalty_levels.id", ondelete="SET NULL")
     )

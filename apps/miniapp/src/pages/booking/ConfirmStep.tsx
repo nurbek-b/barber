@@ -1,10 +1,11 @@
-import type { Slot } from "@barber/api-client";
+import type { Quote, Slot } from "@barber/api-client";
 import { formatDateTime, formatTime } from "@barber/ui";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import {
   ApiError,
+  checkPromo,
   newIdempotencyKey,
   placeHold,
   useCreateBooking,
@@ -14,7 +15,7 @@ import {
 } from "../../api";
 import { PriceSummary, bonusToSpend } from "../../components/PriceSummary";
 import { Avatar, Card, Screen, useTimezone } from "../../components/ui";
-import { useLang, useT } from "../../i18n";
+import { DICTIONARIES, type MessageKey, useLang, useT } from "../../i18n";
 import { barberParam, useBooking } from "../../store/booking";
 import { haptic, requestSignedContact } from "../../telegram/sdk";
 import { useBackButton, useMainButton } from "../../telegram/hooks";
@@ -43,6 +44,9 @@ export default function ConfirmStep() {
   const savePhone = useSavePhone();
   const [error, setError] = useState<string | null>(null);
   const [alternatives, setAlternatives] = useState<Slot[]>([]);
+  // promo applies to one hold: a new time means checking the code again
+  const [promo, setPromo] = useState<{ holdId: string; quote: Quote } | null>(null);
+  const promoQuote = promo && promo.holdId === draft.hold?.hold_id ? promo.quote : null;
   const left = useCountdown(draft.hold?.expires_at);
   const expired = Boolean(draft.hold) && left <= 0;
   const isReschedule = Boolean(draft.rescheduleBookingId);
@@ -65,8 +69,9 @@ export default function ConfirmStep() {
         await create.mutateAsync({
           holdId: hold.hold_id,
           comment: draft.comment.trim() || null,
-          bonusToSpend: bonusToSpend(hold.quote, draft.useBonus),
+          bonusToSpend: bonusToSpend(promoQuote ?? hold.quote, draft.useBonus),
           idempotencyKey: draft.ensureIdempotencyKey(newIdempotencyKey),
+          promoCode: promoQuote?.promo_code ?? null,
         });
       }
       haptic.success();
@@ -152,10 +157,17 @@ export default function ConfirmStep() {
             </Card>
             <Card>
               <PriceSummary
-                quote={hold.quote}
+                quote={promoQuote ?? hold.quote}
                 useBonus={draft.useBonus}
                 onToggleBonus={draft.setUseBonus}
               />
+              {!isReschedule && (
+                <PromoField
+                  holdId={hold.hold_id}
+                  applied={promoQuote?.promo_code ?? null}
+                  onApplied={(quote) => setPromo(quote ? { holdId: hold.hold_id, quote } : null)}
+                />
+              )}
             </Card>
             {!isReschedule && (
               <Card>
@@ -222,5 +234,80 @@ export default function ConfirmStep() {
         )}
       </div>
     </Screen>
+  );
+}
+
+/** "Have a promo code?" — checked against the held slot; the server checks it again on booking. */
+function PromoField({
+  holdId,
+  applied,
+  onApplied,
+}: {
+  holdId: string;
+  applied: string | null;
+  onApplied: (quote: Quote | null) => void;
+}) {
+  const t = useT();
+  const [code, setCode] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (applied) {
+    return (
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <span className="rounded-full bg-button/10 px-3 py-1 font-medium text-button">
+          🎁 {applied}
+        </span>
+        <button type="button" className="text-link" onClick={() => onApplied(null)}>
+          {t("confirm.promoRemove")}
+        </button>
+      </div>
+    );
+  }
+
+  const apply = async () => {
+    if (!code.trim()) return;
+    setPending(true);
+    setError(null);
+    try {
+      onApplied(await checkPromo(holdId, code.trim()));
+      haptic.success();
+      setCode("");
+    } catch (caught) {
+      haptic.error();
+      const key = caught instanceof ApiError ? `promo.${caught.code}` : "error.generic";
+      setError(t((key in DICTIONARIES.ru ? key : "error.generic") as MessageKey));
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-1">
+      <div className="flex gap-2">
+        <input
+          value={code}
+          maxLength={32}
+          autoCapitalize="characters"
+          placeholder={t("confirm.promoPlaceholder")}
+          onChange={(event) => setCode(event.target.value)}
+          onKeyDown={(event) => event.key === "Enter" && void apply()}
+          className="min-w-0 flex-1 rounded-xl bg-bg-secondary px-3 py-2 text-sm uppercase outline-none placeholder:normal-case"
+        />
+        <button
+          type="button"
+          disabled={pending || !code.trim()}
+          onClick={() => void apply()}
+          className="rounded-xl bg-button px-4 py-2 text-sm font-medium text-button-text disabled:opacity-50"
+        >
+          {t("confirm.promoApply")}
+        </button>
+      </div>
+      {error && (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

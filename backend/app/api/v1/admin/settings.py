@@ -52,6 +52,8 @@ def to_out(salon: SalonSettings) -> SalonSettingsOut:
         prepay_percent=salon.prepay_percent,
         prepay_after_no_shows=salon.prepay_after_no_shows,
         prepay_timeout_min=salon.prepay_timeout_min,
+        delivery_enabled=salon.delivery_enabled,
+        delivery_fee=salon.delivery_fee,
         revisit_after_days=salon.revisit_after_days,
     )
 

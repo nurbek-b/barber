@@ -1,7 +1,14 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError, newIdempotencyKey, useMyOrders, usePlaceOrder, useProducts } from "../api";
+import {
+  ApiError,
+  newIdempotencyKey,
+  useMyOrders,
+  usePlaceOrder,
+  useProducts,
+  useSalon,
+} from "../api";
 import { Card, ErrorState, Screen, SkeletonList, useMoney } from "../components/ui";
 import { pickI18n, useLang, useT, type MessageKey } from "../i18n";
 import { ORDER_STYLE } from "../orderStyle";
@@ -20,12 +27,20 @@ export default function Shop() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const key = useRef(newIdempotencyKey());
   const [error, setError] = useState<string | null>(null);
+  const salon = useSalon();
+  const canDeliver = Boolean(salon.data?.delivery_enabled);
+  const [delivery, setDelivery] = useState(false);
+  const [address, setAddress] = useState("");
+  const shipping = canDeliver && delivery;
+  const fee = shipping ? (salon.data?.delivery_fee ?? 0) : 0;
 
   const items = Object.entries(cart).filter(([, qty]) => qty > 0);
-  const total = items.reduce((sum, [id, qty]) => {
-    const product = products.data?.find((p) => p.id === id);
-    return sum + (product ? product.price * qty : 0);
-  }, 0);
+  const total =
+    items.reduce((sum, [id, qty]) => {
+      const product = products.data?.find((p) => p.id === id);
+      return sum + (product ? product.price * qty : 0);
+    }, 0) + fee;
+  const ready = items.length > 0 && (!shipping || address.trim().length >= 5);
   const change = (id: string, delta: number, max: number | null | undefined) => {
     haptic.select();
     setCart((c) => {
@@ -38,6 +53,7 @@ export default function Shop() {
   useMainButton({
     text: `${t("shop.order")} · ${money(total)}`,
     visible: items.length > 0,
+    enabled: ready,
     loading: place.isPending,
     onClick: () => {
       setError(null);
@@ -45,6 +61,8 @@ export default function Shop() {
         {
           items: items.map(([product_id, quantity]) => ({ product_id, quantity })),
           idempotencyKey: key.current,
+          delivery: shipping,
+          address: shipping ? address.trim() : null,
         },
         {
           onSuccess: (order) => {
@@ -142,6 +160,43 @@ export default function Shop() {
             );
           })}
         </div>
+
+        {items.length > 0 && canDeliver && (
+          <Card className="space-y-3">
+            <div className="grid grid-cols-2 gap-2" role="radiogroup">
+              {([false, true] as const).map((value) => (
+                <button
+                  key={String(value)}
+                  type="button"
+                  role="radio"
+                  aria-checked={delivery === value}
+                  onClick={() => setDelivery(value)}
+                  className={`rounded-xl py-2 text-sm font-medium ${
+                    delivery === value ? "bg-button text-button-text" : "bg-bg-secondary"
+                  }`}
+                >
+                  {value ? t("shop.delivery") : t("shop.pickupOption")}
+                </button>
+              ))}
+            </div>
+            {delivery && (
+              <>
+                <textarea
+                  value={address}
+                  maxLength={500}
+                  rows={2}
+                  placeholder={t("shop.address")}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full resize-none rounded-xl bg-bg-secondary p-3 text-sm outline-none"
+                />
+                <div className="flex justify-between text-sm text-hint">
+                  <span>{t("shop.deliveryFee")}</span>
+                  <span className="tabular-nums">{fee > 0 ? money(fee) : t("shop.free")}</span>
+                </div>
+              </>
+            )}
+          </Card>
+        )}
 
         {open.length > 0 && (
           <section className="space-y-2">

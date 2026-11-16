@@ -63,17 +63,32 @@ export default function Order() {
                 <span className="tabular-nums">{money(line.price * line.quantity)}</span>
               </div>
             ))}
+            {order.delivery && order.delivery_fee > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>{t("shop.deliveryFee")}</span>
+                <span className="tabular-nums">{money(order.delivery_fee)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-bg-secondary pt-2 font-semibold">
               <span>{t("pay.amount")}</span>
               <span className="tabular-nums">{money(data.total)}</span>
             </div>
           </Card>
 
+          {order.delivery && order.address && (
+            <Card className="space-y-1 text-sm">
+              <div className="text-hint">🚚 {t("shop.delivery")}</div>
+              <div>{order.address}</div>
+              {order.shipping_note && <div className="text-hint">{order.shipping_note}</div>}
+            </Card>
+          )}
           {data.status === "payment_claimed" && (
             <p className="rounded-xl bg-section p-4 text-center">⏳ {t("pay.claimed")}</p>
           )}
           {(data.status === "paid" || data.status === "ready") && (
-            <p className="rounded-xl bg-section p-4 text-center">✅ {t("shop.pickup")}</p>
+            <p className="rounded-xl bg-section p-4 text-center">
+              ✅ {t(order.delivery ? "shop.deliveryWait" : "shop.pickup")}
+            </p>
           )}
           {data.status === "new" &&
             (data.qr_url ? (

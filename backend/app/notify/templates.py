@@ -84,11 +84,14 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "en": "💰 Payout of {amount} on {date}\n{note}",
     },
     "order_created_admin": {
-        "ru": "🛍 <b>Заказ №{number}</b>\n{items}\nСумма: {total}\nКлиент: {client} {phone}\n"
+        "ru": "🛍 <b>Заказ №{number}</b>{delivery}\n"
+        "{items}\nСумма: {total}\nКлиент: {client} {phone}\n"
         "Ждёт оплаты по QR.",
-        "ky": "🛍 <b>№{number} буйрутма</b>\n{items}\nСумма: {total}\nКардар: {client} {phone}\n"
+        "ky": "🛍 <b>№{number} буйрутма</b>{delivery}\n"
+        "{items}\nСумма: {total}\nКардар: {client} {phone}\n"
         "QR аркылуу төлөмдү күтөт.",
-        "en": "🛍 <b>Order #{number}</b>\n{items}\nTotal: {total}\nClient: {client} {phone}\n"
+        "en": "🛍 <b>Order #{number}</b>{delivery}\n"
+        "{items}\nTotal: {total}\nClient: {client} {phone}\n"
         "Waiting for QR payment.",
     },
     "order_paid_claimed_admin": {
@@ -109,6 +112,11 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "ru": "🛍 Заказ №{number} готов — заберите его в салоне.\n{items}\n\n{salon}",
         "ky": "🛍 №{number} буйрутма даяр — салондон алып кетиңиз.\n{items}\n\n{salon}",
         "en": "🛍 Order #{number} is ready — pick it up at the salon.\n{items}\n\n{salon}",
+    },
+    "order_shipped_client": {
+        "ru": "🚚 Заказ №{number} отправлен.\nАдрес: {address}{note}",
+        "ky": "🚚 №{number} буйрутма жөнөтүлдү.\nДарек: {address}{note}",
+        "en": "🚚 Order #{number} has been shipped.\nAddress: {address}{note}",
     },
     "order_cancelled_client": {
         "ru": "❌ Заказ №{number} отменён.",

@@ -57,6 +57,8 @@ async def place_order(
         idempotency_key,
         ctx.actor,
         now,
+        delivery=body.delivery,
+        address=body.address,
     )
     if not created:
         response.status_code = status.HTTP_200_OK

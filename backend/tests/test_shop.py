@@ -124,3 +124,67 @@ async def test_shop_flow(
     assert product.stock == 1
     mine = (await client.get(f"{MINI}/orders", headers=headers)).json()
     assert [o["status"] for o in mine] == ["cancelled", "completed"]
+
+
+async def test_delivery_order(
+    client: httpx.AsyncClient, owner_client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    product = (
+        await owner_client.post(
+            f"{ADMIN}/products", json={"name_i18n": {"ru": "Шампунь"}, "price": 70_000}
+        )
+    ).json()
+    headers = await register(client, 9401)
+    line = [{"product_id": product["id"], "quantity": 1}]
+
+    async def order(**extra: object) -> httpx.Response:
+        return await client.post(
+            f"{MINI}/orders",
+            headers={**headers, "Idempotency-Key": uuid.uuid4().hex},
+            json={"items": line, **extra},
+        )
+
+    off = await order(delivery=True, address="Бишкек, Чуй 1")
+    assert off.json()["error"]["code"] == "no_delivery"
+
+    current = (await owner_client.get(f"{ADMIN}/settings/salon")).json()
+    saved = await owner_client.put(
+        f"{ADMIN}/settings/salon",
+        json={**current, "delivery_enabled": True, "delivery_fee": 15_000, "admin_chat_id": -1},
+    )
+    assert saved.status_code == 200, saved.text
+    salon = (await client.get(f"{MINI}/salon", headers=headers)).json()
+    assert (salon["delivery_enabled"], salon["delivery_fee"]) == (True, 15_000)
+
+    no_address = await order(delivery=True)
+    assert no_address.json()["error"]["code"] == "address_required"
+    placed = await order(delivery=True, address="Бишкек, Чуй 1, кв. 5")
+    assert placed.status_code == 201, placed.text
+    created = placed.json()
+    assert (created["total"], created["delivery_fee"], created["address"]) == (
+        85_000,
+        15_000,
+        "Бишкек, Чуй 1, кв. 5",
+    )
+
+    url = f"{ADMIN}/orders/{created['id']}/status"
+    paid = (
+        await owner_client.post(url, json={"version": created["version"], "status": "paid"})
+    ).json()
+    ready = await owner_client.post(url, json={"version": paid["version"], "status": "ready"})
+    assert ready.json()["error"]["code"] == "is_delivery"
+    shipped = await owner_client.post(
+        url, json={"version": paid["version"], "status": "shipped", "note": "Курьер Азамат"}
+    )
+    assert shipped.status_code == 200, shipped.text
+    assert (shipped.json()["status"], shipped.json()["shipping_note"]) == (
+        "shipped",
+        "Курьер Азамат",
+    )
+    done = await owner_client.post(
+        url, json={"version": shipped.json()["version"], "status": "completed"}
+    )
+    assert done.json()["status"] == "completed"
+    assert "order_shipped_client" in await _templates(session)
+    mine = (await client.get(f"{MINI}/orders", headers=headers)).json()
+    assert mine[0]["status"] == "completed"

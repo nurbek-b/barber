@@ -132,6 +132,8 @@ class SalonSettingsOut(ApiModel):
     prepay_percent: int = 0
     prepay_after_no_shows: int = 1
     prepay_timeout_min: int = 120
+    delivery_enabled: bool = False
+    delivery_fee: int = 0
 
 
 class GalleryPut(ApiModel):
@@ -168,6 +170,8 @@ class SalonSettingsIn(ApiModel):
     prepay_timeout_min: int = Field(
         default=120, ge=0, le=7 * 24 * 60, description="Cancel unpaid bookings after; 0 = never"
     )
+    delivery_enabled: bool = False
+    delivery_fee: int = Field(default=0, ge=0, le=10**9, description="Shop delivery fee, tyiyn")
 
     @field_validator("review_links")
     @classmethod

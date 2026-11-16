@@ -38,6 +38,8 @@ class OrderLineIn(ApiModel):
 class OrderIn(ApiModel):
     items: list[OrderLineIn] = Field(min_length=1, max_length=30)
     comment: str | None = Field(default=None, max_length=500)
+    delivery: bool = Field(default=False, description="false = pickup at the salon")
+    address: str | None = Field(default=None, max_length=500)
 
 
 class OrderItemOut(ApiModel):
@@ -57,6 +59,10 @@ class OrderOut(ApiModel):
     comment: str | None
     created_at: datetime
     version: int
+    delivery: bool = False
+    address: str | None = None
+    delivery_fee: int = 0
+    shipping_note: str | None = None
 
 
 class AdminOrderOut(OrderOut):
@@ -80,6 +86,9 @@ class OrderStatusIn(ApiModel):
     status: OrderStatus
     payment_method: PaymentMethod | None = Field(
         default=None, description="For 'paid' without a client claim (cash at pickup)"
+    )
+    note: str | None = Field(
+        default=None, max_length=300, description="For 'shipped': courier, tracking number"
     )
 
     @field_validator("status")

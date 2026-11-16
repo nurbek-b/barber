@@ -26,7 +26,8 @@ class OrderStatus(StrEnum):
     PAYMENT_CLAIMED = "payment_claimed"  # the client says they paid
     PAID = "paid"
     READY = "ready"  # ready for pickup
-    COMPLETED = "completed"  # picked up
+    SHIPPED = "shipped"  # handed to the courier / sent (delivery orders)
+    COMPLETED = "completed"  # picked up or delivered
     CANCELLED = "cancelled"
 
 
@@ -72,6 +73,12 @@ class Order(TimestampMixin, Base):
     total: Mapped[int] = money(default=None)
     paid_amount: Mapped[int] = money()
     comment: Mapped[str | None] = mapped_column(String(500))
+    # delivery instead of pickup: address from the client, fee from salon settings,
+    # shipping note from the salon (courier, tracking number)
+    delivery: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    address: Mapped[str | None] = mapped_column(String(500))
+    delivery_fee: Mapped[int] = money()
+    shipping_note: Mapped[str | None] = mapped_column(String(300))
     idempotency_key: Mapped[str | None] = mapped_column(String(64))
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 

@@ -2528,6 +2528,20 @@ export interface components {
             /** Version */
             version: number;
             /**
+             * Delivery
+             * @default false
+             */
+            delivery: boolean;
+            /** Address */
+            address?: string | null;
+            /**
+             * Delivery Fee
+             * @default 0
+             */
+            delivery_fee: number;
+            /** Shipping Note */
+            shipping_note?: string | null;
+            /**
              * Client Id
              * Format: uuid
              */
@@ -4052,6 +4066,14 @@ export interface components {
             items: components["schemas"]["OrderLineIn"][];
             /** Comment */
             comment?: string | null;
+            /**
+             * Delivery
+             * @description false = pickup at the salon
+             * @default false
+             */
+            delivery: boolean;
+            /** Address */
+            address?: string | null;
         };
         /** OrderItemOut */
         OrderItemOut: {
@@ -4101,6 +4123,20 @@ export interface components {
             created_at: string;
             /** Version */
             version: number;
+            /**
+             * Delivery
+             * @default false
+             */
+            delivery: boolean;
+            /** Address */
+            address?: string | null;
+            /**
+             * Delivery Fee
+             * @default 0
+             */
+            delivery_fee: number;
+            /** Shipping Note */
+            shipping_note?: string | null;
         };
         /** OrderPaymentOut */
         OrderPaymentOut: {
@@ -4125,7 +4161,7 @@ export interface components {
          * OrderStatus
          * @enum {string}
          */
-        OrderStatus: "new" | "payment_claimed" | "paid" | "ready" | "completed" | "cancelled";
+        OrderStatus: "new" | "payment_claimed" | "paid" | "ready" | "shipped" | "completed" | "cancelled";
         /** OrderStatusIn */
         OrderStatusIn: {
             /** Version */
@@ -4133,6 +4169,11 @@ export interface components {
             status: components["schemas"]["OrderStatus"];
             /** @description For 'paid' without a client claim (cash at pickup) */
             payment_method?: components["schemas"]["PaymentMethod"] | null;
+            /**
+             * Note
+             * @description For 'shipped': courier, tracking number
+             */
+            note?: string | null;
         };
         /** Page[AdminReviewOut] */
         Page_AdminReviewOut_: {
@@ -4838,6 +4879,16 @@ export interface components {
             review_links?: {
                 [key: string]: string;
             };
+            /**
+             * Delivery Enabled
+             * @default false
+             */
+            delivery_enabled: boolean;
+            /**
+             * Delivery Fee
+             * @default 0
+             */
+            delivery_fee: number;
         };
         /** SalonSettingsIn */
         SalonSettingsIn: {
@@ -4911,6 +4962,17 @@ export interface components {
              * @default 120
              */
             prepay_timeout_min: number;
+            /**
+             * Delivery Enabled
+             * @default false
+             */
+            delivery_enabled: boolean;
+            /**
+             * Delivery Fee
+             * @description Shop delivery fee, tyiyn
+             * @default 0
+             */
+            delivery_fee: number;
             /**
              * Revisit After Days
              * @description 0 = off
@@ -4987,6 +5049,16 @@ export interface components {
              * @default 120
              */
             prepay_timeout_min: number;
+            /**
+             * Delivery Enabled
+             * @default false
+             */
+            delivery_enabled: boolean;
+            /**
+             * Delivery Fee
+             * @default 0
+             */
+            delivery_fee: number;
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {

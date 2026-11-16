@@ -61,6 +61,8 @@ class SalonPublicOut(ApiModel):
     logo_url: str | None = None
     gallery: list[str] = Field(default_factory=list)
     review_links: dict[str, str] = Field(default_factory=dict)
+    delivery_enabled: bool = False
+    delivery_fee: int = 0
 
 
 class WaitlistIn(ApiModel):

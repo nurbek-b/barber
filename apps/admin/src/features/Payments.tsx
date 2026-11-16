@@ -7,7 +7,16 @@ import { toast } from "sonner";
 
 import { FileButton } from "@/components/FileButton";
 import { MoneyInput } from "@/components/MoneyInput";
-import { Badge, Button, Card, CardContent, Field, Input, NativeSelect } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Field,
+  Input,
+  NativeSelect,
+  Switch,
+} from "@/components/ui";
 import { ADMIN, api, call, errorMessage } from "@/lib/api";
 import { salonKey, useFormat } from "@/lib/format";
 
@@ -341,6 +350,28 @@ export function PaymentSettingsCard({
           {int("prepay_after_no_shows", t("pay.after"))}
           {int("prepay_timeout_min", t("pay.timeout"))}
         </div>
+        <section className="space-y-3 border-t pt-4">
+          <h3 className="font-medium">{t("shop.deliveryTitle")}</h3>
+          <label className="flex items-center justify-between text-sm">
+            {t("shop.deliveryEnabled")}
+            <Switch
+              checked={form.delivery_enabled ?? false}
+              disabled={!writable}
+              onCheckedChange={(value) => set("delivery_enabled", value)}
+            />
+          </label>
+          {form.delivery_enabled && (
+            <Field label={t("shop.deliveryPrice")} htmlFor="delivery-fee">
+              <div className="w-40">
+                <MoneyInput
+                  id="delivery-fee"
+                  value={form.delivery_fee ?? 0}
+                  onChange={(value) => set("delivery_fee", value ?? 0)}
+                />
+              </div>
+            </Field>
+          )}
+        </section>
       </CardContent>
     </Card>
   );

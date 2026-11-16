@@ -14647,6 +14647,38 @@
             "type": "integer",
             "title": "Version"
           },
+          "delivery": {
+            "type": "boolean",
+            "title": "Delivery",
+            "default": false
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "delivery_fee": {
+            "type": "integer",
+            "title": "Delivery Fee",
+            "default": 0
+          },
+          "shipping_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shipping Note"
+          },
           "client_id": {
             "type": "string",
             "format": "uuid",
@@ -18441,6 +18473,24 @@
               }
             ],
             "title": "Comment"
+          },
+          "delivery": {
+            "type": "boolean",
+            "title": "Delivery",
+            "description": "false = pickup at the salon",
+            "default": false
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
           }
         },
         "type": "object",
@@ -18557,6 +18607,38 @@
           "version": {
             "type": "integer",
             "title": "Version"
+          },
+          "delivery": {
+            "type": "boolean",
+            "title": "Delivery",
+            "default": false
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "delivery_fee": {
+            "type": "integer",
+            "title": "Delivery Fee",
+            "default": 0
+          },
+          "shipping_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shipping Note"
           }
         },
         "type": "object",
@@ -18637,6 +18719,7 @@
           "payment_claimed",
           "paid",
           "ready",
+          "shipped",
           "completed",
           "cancelled"
         ],
@@ -18661,6 +18744,19 @@
               }
             ],
             "description": "For 'paid' without a client claim (cash at pickup)"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "For 'shipped': courier, tracking number"
           }
         },
         "type": "object",
@@ -20379,6 +20475,16 @@
             },
             "type": "object",
             "title": "Review Links"
+          },
+          "delivery_enabled": {
+            "type": "boolean",
+            "title": "Delivery Enabled",
+            "default": false
+          },
+          "delivery_fee": {
+            "type": "integer",
+            "title": "Delivery Fee",
+            "default": 0
           }
         },
         "type": "object",
@@ -20542,6 +20648,19 @@
             "title": "Prepay Timeout Min",
             "description": "Cancel unpaid bookings after; 0 = never",
             "default": 120
+          },
+          "delivery_enabled": {
+            "type": "boolean",
+            "title": "Delivery Enabled",
+            "default": false
+          },
+          "delivery_fee": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Delivery Fee",
+            "description": "Shop delivery fee, tyiyn",
+            "default": 0
           },
           "revisit_after_days": {
             "type": "integer",
@@ -20719,6 +20838,16 @@
             "type": "integer",
             "title": "Prepay Timeout Min",
             "default": 120
+          },
+          "delivery_enabled": {
+            "type": "boolean",
+            "title": "Delivery Enabled",
+            "default": false
+          },
+          "delivery_fee": {
+            "type": "integer",
+            "title": "Delivery Fee",
+            "default": 0
           }
         },
         "type": "object",

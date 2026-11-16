@@ -37,6 +37,7 @@ const STATUS_VARIANT = {
   payment_claimed: "warning",
   paid: "default",
   ready: "success",
+  shipped: "success",
   completed: "secondary",
   cancelled: "destructive",
 } as const;
@@ -45,10 +46,11 @@ const STATUS_LABEL = {
   payment_claimed: "shop.payment_claimed",
   paid: "shop.paid",
   ready: "shop.readyStatus",
+  shipped: "shop.shippedStatus",
   completed: "shop.completed",
   cancelled: "shop.cancelled",
 } as const;
-const OPEN: Status[] = ["new", "payment_claimed", "paid", "ready"];
+const OPEN: Status[] = ["new", "payment_claimed", "paid", "ready", "shipped"];
 
 export default function ShopPage() {
   const { t } = useTranslation();
@@ -82,6 +84,7 @@ function Orders() {
   const can = useCan();
   const client = useQueryClient();
   const [onlyOpen, setOnlyOpen] = useState(true);
+  const [shipping, setShipping] = useState<Order | null>(null);
   const orders = useQuery({
     queryKey: ["admin-orders", onlyOpen],
     queryFn: () =>
@@ -91,14 +94,21 @@ function Orders() {
   const onError = (error: unknown) => toast.error(errorMessage(error));
   const refresh = () => void client.invalidateQueries({ queryKey: ["admin-orders"] });
   const setStatus = useMutation({
-    mutationFn: (input: { order: Order; status: Exclude<Status, "new" | "payment_claimed"> }) =>
+    mutationFn: (input: {
+      order: Order;
+      status: Exclude<Status, "new" | "payment_claimed">;
+      note?: string;
+    }) =>
       call(
         api.POST(`${ADMIN}/orders/{order_id}/status`, {
           params: { path: { order_id: input.order.id } },
-          body: { version: input.order.version, status: input.status },
+          body: { version: input.order.version, status: input.status, note: input.note ?? null },
         }),
       ),
-    onSuccess: refresh,
+    onSuccess: () => {
+      setShipping(null);
+      refresh();
+    },
     onError,
   });
   const reject = useMutation({
@@ -158,6 +168,20 @@ function Orders() {
                   .join(", ")}{" "}
                 · <span className="font-medium">{money(order.total)}</span>
               </div>
+              {order.delivery && (
+                <div className="text-sm">
+                  🚚 {order.address}
+                  {order.delivery_fee > 0 && (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {t("shop.deliveryFee")} {money(order.delivery_fee)}
+                    </span>
+                  )}
+                  {order.shipping_note && (
+                    <div className="text-muted-foreground">{order.shipping_note}</div>
+                  )}
+                </div>
+              )}
               {writable && (
                 <div className="flex flex-wrap gap-2">
                   {order.status === "payment_claimed" && (
@@ -189,7 +213,7 @@ function Orders() {
                       {t("shop.markPaid")}
                     </Button>
                   )}
-                  {order.status === "paid" && (
+                  {order.status === "paid" && !order.delivery && (
                     <Button
                       size="sm"
                       disabled={busy}
@@ -198,14 +222,21 @@ function Orders() {
                       {t("shop.ready")}
                     </Button>
                   )}
-                  {(order.status === "paid" || order.status === "ready") && (
+                  {order.status === "paid" && order.delivery && (
+                    <Button size="sm" disabled={busy} onClick={() => setShipping(order)}>
+                      🚚 {t("shop.ship")}
+                    </Button>
+                  )}
+                  {(order.status === "paid" ||
+                    order.status === "ready" ||
+                    order.status === "shipped") && (
                     <Button
                       size="sm"
                       variant="outline"
                       disabled={busy}
                       onClick={() => setStatus.mutate({ order, status: "completed" })}
                     >
-                      {t("shop.complete")}
+                      {t(order.delivery ? "shop.delivered" : "shop.complete")}
                     </Button>
                   )}
                   {OPEN.includes(order.status) && (
@@ -224,7 +255,51 @@ function Orders() {
           ))}
         </div>
       </CardContent>
+      {shipping && (
+        <ShipDialog
+          order={shipping}
+          loading={setStatus.isPending}
+          onClose={() => setShipping(null)}
+          onShip={(note) => setStatus.mutate({ order: shipping, status: "shipped", note })}
+        />
+      )}
     </Card>
+  );
+}
+
+function ShipDialog({
+  order,
+  loading,
+  onClose,
+  onShip,
+}: {
+  order: Order;
+  loading: boolean;
+  onClose: () => void;
+  onShip: (note: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [note, setNote] = useState("");
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent title={`${t("shop.ship")} · ${t("shop.number")}${order.number}`}>
+        <div className="space-y-3">
+          <p className="text-sm">🚚 {order.address}</p>
+          <Field label={t("shop.shipNote")} htmlFor="ship-note">
+            <Input
+              id="ship-note"
+              maxLength={300}
+              placeholder={t("shop.shipNoteHint")}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </Field>
+          <Button loading={loading} onClick={() => onShip(note.trim())}>
+            {t("shop.ship")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

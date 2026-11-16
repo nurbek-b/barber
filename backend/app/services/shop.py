@@ -45,12 +45,20 @@ from app.services.branches import BranchService
 TRANSITIONS: dict[OrderStatus, frozenset[OrderStatus]] = {
     OrderStatus.NEW: frozenset({OrderStatus.PAID, OrderStatus.CANCELLED}),
     OrderStatus.PAYMENT_CLAIMED: frozenset({OrderStatus.PAID, OrderStatus.CANCELLED}),
-    OrderStatus.PAID: frozenset({OrderStatus.READY, OrderStatus.COMPLETED, OrderStatus.CANCELLED}),
+    OrderStatus.PAID: frozenset(
+        {OrderStatus.READY, OrderStatus.SHIPPED, OrderStatus.COMPLETED, OrderStatus.CANCELLED}
+    ),
     OrderStatus.READY: frozenset({OrderStatus.COMPLETED, OrderStatus.CANCELLED}),
+    OrderStatus.SHIPPED: frozenset({OrderStatus.COMPLETED, OrderStatus.CANCELLED}),
     OrderStatus.COMPLETED: frozenset(),
     OrderStatus.CANCELLED: frozenset(),
 }
-CLIENT_NOTIFY = (OrderStatus.PAID, OrderStatus.READY, OrderStatus.CANCELLED)
+CLIENT_NOTIFY = (
+    OrderStatus.PAID,
+    OrderStatus.READY,
+    OrderStatus.SHIPPED,
+    OrderStatus.CANCELLED,
+)
 MAX_ORDERS_OPEN = 5
 
 
@@ -122,6 +130,9 @@ class ShopService:
         idempotency_key: str,
         actor: Actor,
         now: datetime,
+        *,
+        delivery: bool = False,
+        address: str | None = None,
     ) -> tuple[Order, bool]:
         if not idempotency_key or len(idempotency_key) > 64:
             raise ValidationAppError("Idempotency-Key is required", code="idempotency_key_required")
@@ -134,6 +145,13 @@ class ShopService:
             return existing, False
         if not client.phone:
             raise ValidationAppError("Share your phone number first", code="phone_required")
+        salon = await BranchService(self.session).settings(branch_id)
+        address = (address or "").strip() or None
+        if delivery:
+            if not salon.delivery_enabled:
+                raise ValidationAppError("Delivery is not available", code="no_delivery")
+            if address is None or len(address) < 5:
+                raise ValidationAppError("Enter the delivery address", code="address_required")
         open_orders = await self.session.scalar(
             select(func.count()).where(
                 Order.client_id == client.id,
@@ -189,8 +207,12 @@ class ShopService:
             client_id=client.id,
             number=number,
             status=OrderStatus.NEW,
-            total=sum(line.price * line.quantity for line in lines),
+            total=sum(line.price * line.quantity for line in lines)
+            + (salon.delivery_fee if delivery else 0),
             comment=(comment or "").strip() or None,
+            delivery=delivery,
+            address=address if delivery else None,
+            delivery_fee=salon.delivery_fee if delivery else 0,
             idempotency_key=idempotency_key,
             items=lines,
         )
@@ -308,6 +330,7 @@ class ShopService:
         method: PaymentMethod | None,
         actor: Actor,
         now: datetime,
+        note: str | None = None,
     ) -> Order:
         order = await self.order(branch_id, order_id)
         if order.version != version:
@@ -317,6 +340,12 @@ class ShopService:
                 f"Cannot change status from {order.status.value} to {status.value}",
                 code="invalid_transition",
             )
+        if status is OrderStatus.SHIPPED and not order.delivery:
+            raise ConflictError("A pickup order is not shipped", code="not_delivery")
+        if status is OrderStatus.READY and order.delivery:
+            raise ConflictError("A delivery order is shipped, not picked up", code="is_delivery")
+        if status is OrderStatus.SHIPPED:
+            order.shipping_note = (note or "").strip() or None
         previous = order.status
         claimed = await self.session.scalars(
             select(Payment).where(
@@ -415,6 +444,7 @@ class ShopService:
             "phone": client.phone or "",
             "items": self._items_text(order, salon.default_language),
             "total": format_money(order.total, salon.currency),
+            "delivery": f"\n🚚 {order.address}" if order.delivery else "",
         }
         notification = Notification(
             branch_id=order.branch_id,
@@ -451,6 +481,8 @@ class ShopService:
                     "items": self._items_text(order, client.language),
                     "total": format_money(order.total, salon.currency),
                     "salon": salon.name,
+                    "address": order.address or "",
+                    "note": f"\n{order.shipping_note}" if order.shipping_note else "",
                 },
                 dedupe_key=f"{template}:{order.id}:{order.version}",
             )

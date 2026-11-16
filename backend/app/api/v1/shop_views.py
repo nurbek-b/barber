@@ -38,6 +38,10 @@ def order_out(order: Order) -> OrderOut:
         comment=order.comment,
         created_at=order.created_at,
         version=order.version,
+        delivery=order.delivery,
+        address=order.address,
+        delivery_fee=order.delivery_fee,
+        shipping_note=order.shipping_note,
     )
 
 

@@ -458,11 +458,13 @@ export function usePlaceOrder() {
     mutationFn: (input: {
       items: { product_id: string; quantity: number }[];
       idempotencyKey: string;
+      delivery: boolean;
+      address: string | null;
     }) =>
       call(
         api.POST(`${BASE}/orders`, {
           params: { header: { "Idempotency-Key": input.idempotencyKey } },
-          body: { items: input.items },
+          body: { items: input.items, delivery: input.delivery, address: input.address },
         }),
       ),
     onSuccess: () => {

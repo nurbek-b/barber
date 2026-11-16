@@ -81,6 +81,9 @@ class SalonSettings(TimestampMixin, Base):
     prepay_percent: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
     prepay_after_no_shows: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")
     prepay_timeout_min: Mapped[int] = mapped_column(SmallInteger, default=120, server_default="120")
+    # shop delivery (pickup is always available); fee in tyiyn, 0 = free
+    delivery_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    delivery_fee: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     # days after a visit to remind the client to come again; 0 = off
     revisit_after_days: Mapped[int] = mapped_column(SmallInteger, default=30, server_default="30")
     # branding for the Mini App: /media/salon/... URLs

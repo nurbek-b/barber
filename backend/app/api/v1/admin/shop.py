@@ -110,6 +110,7 @@ async def change_order_status(
         method=body.payment_method,
         actor=ctx.actor,
         now=now,
+        note=body.note,
     )
     return await _out(session, order_id, ctx)
 

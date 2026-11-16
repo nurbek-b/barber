@@ -190,6 +190,18 @@ export const ky: Messages = {
     undo: "Кайтаруу",
     publicCheck: "Кардар калдыкты онлайн-жазылуу баракчасында код менен текшере алат.",
   },
+  funnel: {
+    title: "Жазылуу воронкасы",
+    hint: "Тиркеменин аноним сессиялары: ар бир кадамга канчасы жетти (ачкандардын үлүшү).",
+    source_miniapp: "Telegram Mini App",
+    source_web: "Сайт (/book/)",
+    step_open: "Ачышты",
+    step_barber: "Устат тандоо",
+    step_services: "Кызмат тандоо",
+    step_time: "Убакыт тандоо",
+    step_confirm: "Ырастоо",
+    step_booked: "Жазылышты",
+  },
   booking: {
     title: "Жазылуу",
     client: "Кардар",

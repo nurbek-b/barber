@@ -27,6 +27,7 @@ import {
   Textarea,
   Th,
 } from "@/components/ui";
+import { FunnelCard } from "@/features/Funnel";
 import { PageHeader } from "@/features/Layout";
 import { ADMIN, api, call, errorMessage } from "@/lib/api";
 import { useCan } from "@/lib/auth";
@@ -48,7 +49,11 @@ export default function Marketing() {
             <TabsTrigger value="broadcasts">{t("marketing.broadcasts")}</TabsTrigger>
           )}
           <TabsTrigger value="promo">{t("marketing.promo")}</TabsTrigger>
+          {can("finance:read") && <TabsTrigger value="funnel">{t("funnel.title")}</TabsTrigger>}
         </TabsList>
+        <TabsContent value="funnel">
+          <FunnelCard />
+        </TabsContent>
         <TabsContent value="broadcasts">
           <Broadcasts />
         </TabsContent>

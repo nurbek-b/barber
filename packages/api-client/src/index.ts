@@ -148,3 +148,30 @@ export async function call<T>(promise: Promise<{ data?: T; error?: unknown }>): 
 export function newIdempotencyKey(): string {
   return crypto.randomUUID().replaceAll("-", "");
 }
+
+export type FunnelStep = Schemas["FunnelEventIn"]["step"];
+
+function funnelSession(): string {
+  const key = "funnel_session";
+  try {
+    const existing = window.sessionStorage.getItem(key);
+    if (existing) return existing;
+    const created = crypto.randomUUID();
+    window.sessionStorage.setItem(key, created);
+    return created;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+/** Anonymous booking-funnel tracker: fire-and-forget, never throws, one id per tab session. */
+export function createFunnel(api: ReturnType<typeof createApi>, source: "miniapp" | "web") {
+  const sent = new Set<FunnelStep>();
+  return (step: FunnelStep) => {
+    if (sent.has(step)) return;
+    sent.add(step);
+    void api
+      .POST("/api/v1/public/events", { body: { session_id: funnelSession(), source, step } })
+      .catch(() => undefined);
+  };
+}

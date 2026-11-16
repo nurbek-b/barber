@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, useMemo, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from "react";
 import {
   createMemoryRouter,
   NavLink,
@@ -8,7 +8,7 @@ import {
   type RouteObject,
 } from "react-router-dom";
 
-import { queryClient, useMe } from "./api";
+import { queryClient, track, useMe } from "./api";
 import { OfflineBanner, SkeletonList } from "./components/ui";
 import { LangContext, normalizeLang, useT } from "./i18n";
 import Home from "./pages/Home";
@@ -187,6 +187,7 @@ function Localized({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => track("open"), []);
   // memory router: the Telegram launch params live in the URL hash, don't touch it
   const router = useMemo(() => createMemoryRouter(routes, { initialEntries: [initialPath()] }), []);
   return (

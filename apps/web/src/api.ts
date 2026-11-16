@@ -1,10 +1,13 @@
-import { ApiError, call, createApi, newIdempotencyKey } from "@barber/api-client";
+import { ApiError, call, createApi, createFunnel, newIdempotencyKey } from "@barber/api-client";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 export { ApiError, newIdempotencyKey };
 
 export const api = createApi({ baseUrl: import.meta.env.VITE_API_BASE ?? "" });
 const P = "/api/v1/public";
+
+/** Booking funnel (anonymous): open → barber → services → time → confirm → booked. */
+export const track = createFunnel(api, "web");
 
 export function useSalon() {
   return useQuery({ queryKey: ["salon"], queryFn: () => call(api.GET(`${P}/salon`)) });

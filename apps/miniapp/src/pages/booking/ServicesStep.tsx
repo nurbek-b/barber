@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useServices } from "../../api";
+import { useServices, track } from "../../api";
 import { Card, ErrorState, Screen, SkeletonList, useMoney } from "../../components/ui";
 import { pickI18n, useLang, useT } from "../../i18n";
 import { barberParam, useBooking } from "../../store/booking";
@@ -9,6 +9,7 @@ import { haptic } from "../../telegram/sdk";
 import { useBackButton, useMainButton } from "../../telegram/hooks";
 
 export default function ServicesStep() {
+  useEffect(() => track("services"), []);
   const t = useT();
   const lang = useLang();
   const navigate = useNavigate();

@@ -184,6 +184,18 @@ export const ru = {
     undo: "Вернуть",
     publicCheck: "Остаток по коду клиент может проверить на странице онлайн-записи.",
   },
+  funnel: {
+    title: "Воронка записи",
+    hint: "Анонимные сессии приложения: сколько дошло до каждого шага (доля от открывших).",
+    source_miniapp: "Telegram Mini App",
+    source_web: "Сайт (/book/)",
+    step_open: "Открыли",
+    step_barber: "Выбор мастера",
+    step_services: "Выбор услуг",
+    step_time: "Выбор времени",
+    step_confirm: "Подтверждение",
+    step_booked: "Записались",
+  },
   booking: {
     title: "Запись",
     client: "Клиент",

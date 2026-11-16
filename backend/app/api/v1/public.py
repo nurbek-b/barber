@@ -9,10 +9,11 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import date
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Header, Query, Request
+from pydantic import Field
 
 from app.api.deps import (
     MiniappContext,
@@ -46,10 +47,12 @@ from app.schemas.catalog import (
     PublicCatalogOut,
     ReviewPage,
 )
+from app.schemas.common import ApiModel
 from app.schemas.miniapp import SalonPublicOut
 from app.schemas.schedule import AvailabilityDaysOut, AvailabilitySlotsOut
 from app.schemas.vouchers import CertificateBalanceOut
 from app.services.branches import BranchService
+from app.services.funnel import FunnelService
 from app.services.public_booking import PublicBookingService
 from app.services.vouchers import VoucherService, certificate_state
 
@@ -278,3 +281,24 @@ async def certificate_balance(
         expires_on=cert.expires_on,
         state=certificate_state(cert, today),
     )
+
+
+class FunnelEventIn(ApiModel):
+    session_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    source: Literal["miniapp", "web"]
+    step: Literal["open", "barber", "services", "time", "confirm", "booked"]
+
+
+@router.post("/events", status_code=204, responses=ERRORS)
+async def track_event(
+    body: FunnelEventIn,
+    request: Request,
+    ctx: PublicDep,
+    session: SessionDep,
+    redis: RedisDep,
+) -> None:
+    """Anonymous booking-funnel step (one per session and step; no personal data)."""
+    ip = client_ip(request) or "unknown"
+    if await hit_rate_limit(redis, f"pub:ev:{ip}", 300, 3600):
+        return
+    await FunnelService(session).track(ctx.branch_id, body.session_id, body.source, body.step)

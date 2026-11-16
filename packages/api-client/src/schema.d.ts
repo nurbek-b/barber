@@ -1887,6 +1887,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/reports/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Funnel
+         * @description Booking funnel per source: sessions reaching each step and the share of opens.
+         */
+        get: operations["admin_funnel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/salon": {
         parameters: {
             query?: never;
@@ -2077,6 +2097,26 @@ export interface paths {
         get: operations["public_certificate_balance"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Track Event
+         * @description Anonymous booking-funnel step (one per session and step; no personal data).
+         */
+        post: operations["public_track_event"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3520,6 +3560,40 @@ export interface components {
              * @description Barbers' commission: % of subtotal, see commission_bp
              */
             master_share: number;
+        };
+        /** FunnelEventIn */
+        FunnelEventIn: {
+            /** Session Id */
+            session_id: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "miniapp" | "web";
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "open" | "barber" | "services" | "time" | "confirm" | "booked";
+        };
+        /** FunnelOut */
+        FunnelOut: {
+            /** Source */
+            source: string;
+            /** Steps */
+            steps: components["schemas"]["FunnelStepOut"][];
+        };
+        /** FunnelStepOut */
+        FunnelStepOut: {
+            /** Step */
+            step: string;
+            /** Sessions */
+            sessions: number;
+            /**
+             * Rate
+             * @description Share of sessions that opened the app, 0..1
+             */
+            rate: number;
         };
         /**
          * GalleryPut
@@ -13772,6 +13846,56 @@ export interface operations {
             };
         };
     };
+    admin_funnel: {
+        parameters: {
+            query: {
+                date_from: string;
+                date_to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunnelOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     public_salon: {
         parameters: {
             query?: never;
@@ -14473,6 +14597,73 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CertificateBalanceOut"];
                 };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    public_track_event: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FunnelEventIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Unauthorized */
             401: {

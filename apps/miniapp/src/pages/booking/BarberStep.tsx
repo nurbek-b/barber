@@ -1,6 +1,7 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useBarbers } from "../../api";
+import { useBarbers, track } from "../../api";
 import { Avatar, Card, ErrorState, Screen, SkeletonList } from "../../components/ui";
 import { pickI18n, useLang, useT } from "../../i18n";
 import { ANY_BARBER, useBooking } from "../../store/booking";
@@ -8,6 +9,7 @@ import { haptic } from "../../telegram/sdk";
 import { useBackButton, useMainButton } from "../../telegram/hooks";
 
 export default function BarberStep() {
+  useEffect(() => track("barber"), []);
   const t = useT();
   const lang = useLang();
   const navigate = useNavigate();

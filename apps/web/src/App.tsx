@@ -15,6 +15,7 @@ import {
   ApiError,
   book,
   checkCertificate,
+  track,
   newIdempotencyKey,
   useBarbers,
   useDays,
@@ -53,6 +54,19 @@ function Booking({ lang, onLang }: { lang: Lang; onLang: (lang: Lang) => void })
   const t = useT();
   const salon = useSalon();
   const [step, setStep] = useState<Step>("barber");
+  useEffect(() => {
+    track("open");
+  }, []);
+  useEffect(() => {
+    const funnelStep = {
+      barber: "barber",
+      services: "services",
+      time: "time",
+      contacts: "confirm",
+      done: "booked",
+    } as const;
+    track(funnelStep[step]);
+  }, [step]);
   const [barber, setBarber] = useState<string | null>(null);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [slot, setSlot] = useState<Slot | null>(null);

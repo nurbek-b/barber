@@ -473,3 +473,17 @@ class PayoutOut(ApiModel):
     method: PaymentMethod
     note: str | None
     created_at: datetime
+
+
+# ---------------- booking funnel ----------------
+
+
+class FunnelStepOut(ApiModel):
+    step: str
+    sessions: int
+    rate: float = Field(description="Share of sessions that opened the app, 0..1")
+
+
+class FunnelOut(ApiModel):
+    source: str
+    steps: list[FunnelStepOut]

@@ -15,8 +15,11 @@ from app.schemas.admin import (
     FinanceByService,
     FinanceReportOut,
     FinanceTotals,
+    FunnelOut,
+    FunnelStepOut,
     RevenuePoint,
 )
+from app.services.funnel import STEPS, FunnelService
 from app.services.permissions import Perm
 from app.services.reports import FinanceReport, ReportService, export_csv, export_xlsx
 
@@ -119,3 +122,28 @@ async def finance_export(
         media_type=media,
         headers={"Content-Disposition": f'attachment; filename="{name}"'},
     )
+
+
+@router.get("/reports/funnel", response_model=list[FunnelOut], responses=ERRORS)
+async def funnel(
+    ctx: CanFinance, session: SessionDep, date_from: date, date_to: date
+) -> list[FunnelOut]:
+    """Booking funnel per source: sessions reaching each step and the share of opens."""
+    data = await FunnelService(session).report(ctx.branch_id, date_from, date_to)
+    result = []
+    for source, counts in data.items():
+        opened = counts.get("open", 0)
+        result.append(
+            FunnelOut(
+                source=source,
+                steps=[
+                    FunnelStepOut(
+                        step=step,
+                        sessions=counts.get(step, 0),
+                        rate=round(counts.get(step, 0) / opened, 4) if opened else 0.0,
+                    )
+                    for step in STEPS
+                ],
+            )
+        )
+    return result

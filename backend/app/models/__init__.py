@@ -14,6 +14,7 @@ from app.models.catalog import (
     Service,
     ServiceCategory,
 )
+from app.models.funnel import FunnelEvent
 from app.models.notification import Notification, NotificationRead, TelegramOutbox
 from app.models.payment import Payment
 from app.models.payout import BarberPayout
@@ -43,6 +44,7 @@ __all__ = [
     "Broadcast",
     "Client",
     "ClientSubscription",
+    "FunnelEvent",
     "GiftCertificate",
     "LoyaltyLevel",
     "Notification",

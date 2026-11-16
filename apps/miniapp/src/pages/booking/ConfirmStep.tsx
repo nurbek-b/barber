@@ -12,6 +12,7 @@ import {
   useMe,
   useReschedule,
   useSavePhone,
+  track,
 } from "../../api";
 import { PriceSummary, bonusToSpend } from "../../components/PriceSummary";
 import { Avatar, Card, Screen, useTimezone } from "../../components/ui";
@@ -33,6 +34,7 @@ function useCountdown(until: string | undefined): number {
 }
 
 export default function ConfirmStep() {
+  useEffect(() => track("confirm"), []);
   const t = useT();
   const lang = useLang();
   const tz = useTimezone();
@@ -73,6 +75,7 @@ export default function ConfirmStep() {
           idempotencyKey: draft.ensureIdempotencyKey(newIdempotencyKey),
           promoCode: promoQuote?.promo_code ?? null,
         });
+        track("booked");
         if (created.prepay_due > 0) {
           haptic.success();
           // the booking waits for a prepayment: straight to the QR

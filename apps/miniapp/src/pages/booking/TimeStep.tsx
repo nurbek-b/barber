@@ -14,6 +14,7 @@ import {
   useLeaveWaitlist,
   useSlots,
   useWaitlist,
+  track,
 } from "../../api";
 import { DayStrip, SlotGrid } from "../../components/SlotPicker";
 import { ErrorState, Screen, Skeleton, SkeletonList, useTimezone } from "../../components/ui";
@@ -23,6 +24,7 @@ import { haptic } from "../../telegram/sdk";
 import { useBackButton } from "../../telegram/hooks";
 
 export default function TimeStep() {
+  useEffect(() => track("time"), []);
   const t = useT();
   const lang = useLang();
   const tz = useTimezone();

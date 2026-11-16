@@ -186,6 +186,18 @@ export const en: Messages = {
     undo: "Undo",
     publicCheck: "Clients can check the balance by code on the online booking page.",
   },
+  funnel: {
+    title: "Booking funnel",
+    hint: "Anonymous app sessions: how many reached each step (share of those who opened).",
+    source_miniapp: "Telegram Mini App",
+    source_web: "Website (/book/)",
+    step_open: "Opened",
+    step_barber: "Picked a barber",
+    step_services: "Picked services",
+    step_time: "Picked a time",
+    step_confirm: "Confirmation",
+    step_booked: "Booked",
+  },
   booking: {
     title: "Booking",
     client: "Client",

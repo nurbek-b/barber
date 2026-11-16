@@ -1,4 +1,5 @@
 import {
+  createFunnel,
   ApiError,
   call,
   createApi,
@@ -28,6 +29,9 @@ export const api = createApi({
     return raw ? `tma ${raw}` : null;
   },
 });
+
+/** Booking funnel (anonymous): open → barber → services → time → confirm → booked. */
+export const track = createFunnel(api, "miniapp");
 
 export const queryClient = new QueryClient({
   defaultOptions: {

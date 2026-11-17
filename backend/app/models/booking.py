@@ -121,6 +121,8 @@ class Booking(TimestampMixin, Base):
     cancelled_by: Mapped[ActorType | None] = mapped_column(str_enum(ActorType, "actor_type"))
     cancelled_at: Mapped[datetime | None] = mapped_column()
     completed_at: Mapped[datetime | None] = mapped_column()
+    # marked no-show by the system (nobody closed the visit); the salon should check it
+    no_show_auto: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     # barber's commission at completion time: later rate changes do not rewrite payouts
     barber_commission_bp: Mapped[int | None] = mapped_column(SmallInteger)
     rating: Mapped[int | None] = mapped_column(SmallInteger)  # 1..5 from the post-visit poll

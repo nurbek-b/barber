@@ -21,6 +21,7 @@ from app.core.redis import create_redis
 from app.notify.sender import AiogramSender
 from app.worker.barber_digest import send_barber_digests
 from app.worker.bonus_jobs import run_bonus_jobs
+from app.worker.no_show import mark_no_shows
 from app.worker.outbox import drain_outbox
 from app.worker.prepay import cancel_unpaid
 from app.worker.reminders import scan_reminders
@@ -54,9 +55,11 @@ async def send_outbox(ctx: dict[str, Any]) -> int:
 
 
 async def queue_reminders(ctx: dict[str, Any]) -> int:
-    """Every minute: reminders, plus releasing slots of bookings whose prepayment never came."""
+    """Every minute: reminders, releasing slots of bookings whose prepayment never came and
+    marking visits nobody closed as no-show."""
     now = datetime.now(UTC)
     await cancel_unpaid(ctx["maker"], ctx.get("redis"), now)
+    await mark_no_shows(ctx["maker"], ctx.get("redis"), now)
     return await scan_reminders(ctx["maker"], now)
 
 

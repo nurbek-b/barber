@@ -2443,6 +2443,12 @@ export interface components {
              * @default 0
              */
             voucher_amount: number;
+            /**
+             * No Show Auto
+             * @description Marked no-show by the system; the salon should check it
+             * @default false
+             */
+            no_show_auto: boolean;
         };
         /** AdminBookingPage */
         AdminBookingPage: {
@@ -4974,6 +4980,12 @@ export interface components {
              */
             delivery_fee: number;
             /**
+             * Auto No Show Hours
+             * @description Mark unclosed visits no-show after; 0 = off
+             * @default 3
+             */
+            auto_no_show_hours: number;
+            /**
              * Revisit After Days
              * @description 0 = off
              * @default 30
@@ -5059,6 +5071,11 @@ export interface components {
              * @default 0
              */
             delivery_fee: number;
+            /**
+             * Auto No Show Hours
+             * @default 3
+             */
+            auto_no_show_hours: number;
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {

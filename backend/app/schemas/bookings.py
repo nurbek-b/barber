@@ -260,6 +260,9 @@ class AdminBookingOut(ApiModel):
     prepay_due: int = 0
     payment_status: PaymentState = "unpaid"
     voucher_amount: int = Field(default=0, description="Covered by certificates / subscription")
+    no_show_auto: bool = Field(
+        default=False, description="Marked no-show by the system; the salon should check it"
+    )
 
 
 class AdminBookingPage(ApiModel):

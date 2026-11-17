@@ -42,6 +42,7 @@ class SalonSettings(TimestampMixin, Base):
         CheckConstraint("max_active_bookings_per_client >= 1", name="max_active"),
         CheckConstraint("revisit_after_days BETWEEN 0 AND 365", name="revisit_days"),
         CheckConstraint("prepay_percent BETWEEN 0 AND 100", name="prepay_percent"),
+        CheckConstraint("auto_no_show_hours BETWEEN 0 AND 72", name="auto_no_show"),
     )
 
     branch_id: Mapped[uuid.UUID] = mapped_column(
@@ -84,6 +85,8 @@ class SalonSettings(TimestampMixin, Base):
     # shop delivery (pickup is always available); fee in tyiyn, 0 = free
     delivery_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     delivery_fee: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    # hours after a visit's end to mark it no-show if nobody closed it; 0 = off
+    auto_no_show_hours: Mapped[int] = mapped_column(SmallInteger, default=3, server_default="3")
     # days after a visit to remind the client to come again; 0 = off
     revisit_after_days: Mapped[int] = mapped_column(SmallInteger, default=30, server_default="30")
     # branding for the Mini App: /media/salon/... URLs

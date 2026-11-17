@@ -134,6 +134,7 @@ class SalonSettingsOut(ApiModel):
     prepay_timeout_min: int = 120
     delivery_enabled: bool = False
     delivery_fee: int = 0
+    auto_no_show_hours: int = 3
 
 
 class GalleryPut(ApiModel):
@@ -172,6 +173,9 @@ class SalonSettingsIn(ApiModel):
     )
     delivery_enabled: bool = False
     delivery_fee: int = Field(default=0, ge=0, le=10**9, description="Shop delivery fee, tyiyn")
+    auto_no_show_hours: int = Field(
+        default=3, ge=0, le=72, description="Mark unclosed visits no-show after; 0 = off"
+    )
 
     @field_validator("review_links")
     @classmethod

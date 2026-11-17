@@ -35,7 +35,8 @@ type NumberKey =
   | "cancel_min_hours"
   | "reschedule_min_hours"
   | "max_active_bookings_per_client"
-  | "revisit_after_days";
+  | "revisit_after_days"
+  | "auto_no_show_hours";
 
 const TIMEZONES = ["Asia/Bishkek", "Asia/Almaty", "Asia/Tashkent", "Europe/Moscow", "UTC"];
 
@@ -235,6 +236,10 @@ export default function SettingsPage() {
               <div>
                 {number("revisit_after_days", t("settings.revisitDays"))}
                 <p className="mt-1 text-xs text-muted-foreground">{t("settings.revisitHint")}</p>
+              </div>
+              <div>
+                {number("auto_no_show_hours", t("settings.autoNoShow"))}
+                <p className="mt-1 text-xs text-muted-foreground">{t("settings.autoNoShowHint")}</p>
               </div>
             </CardContent>
           </Card>

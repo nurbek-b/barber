@@ -67,7 +67,8 @@ TRANSITIONS: dict[BookingStatus, frozenset[BookingStatus]] = {
     ),
     BookingStatus.COMPLETED: frozenset(),
     BookingStatus.CANCELLED: frozenset(),
-    BookingStatus.NO_SHOW: frozenset({BookingStatus.CONFIRMED}),  # mistakes happen
+    # mistakes happen: back to confirmed, or "the client did come" straight to completed
+    BookingStatus.NO_SHOW: frozenset({BookingStatus.CONFIRMED, BookingStatus.COMPLETED}),
 }
 BARBER_ALLOWED = frozenset({BookingStatus.COMPLETED, BookingStatus.NO_SHOW})
 
@@ -357,6 +358,8 @@ class AdminBookingService:
         self._check_version(booking, data.version)
         if booking.kind is BookingKind.BLOCK:
             raise ValidationAppError("Use the blocks API for blocks", code="is_block")
+        if booking.status is BookingStatus.NO_SHOW and data.status is BookingStatus.NO_SHOW:
+            return await self._confirm_auto_no_show(booking, actor)
         if data.status not in TRANSITIONS[booking.status]:
             raise ConflictError(
                 f"Cannot change status from {booking.status.value} to {data.status.value}",
@@ -375,6 +378,14 @@ class AdminBookingService:
         booking.status = data.status
         event = NotificationType.BOOKING_STATUS_CHANGED
         extra: dict[str, Any] = {}
+        if previous is BookingStatus.NO_SHOW:
+            client = await self.session.get(Client, booking.client_id)
+            if client is not None and client.no_show_count > 0:
+                client.no_show_count -= 1
+            # bonuses were returned at no-show: the revived booking is paid in full
+            booking.bonus_spent = 0
+            booking.total_due = booking.subtotal - booking.discount
+            booking.no_show_auto = False
         if data.status is BookingStatus.COMPLETED:
             booking.payment_method = data.payment_method or booking.payment_method
             # certificates / subscription visits are not money paid today
@@ -396,13 +407,6 @@ class AdminBookingService:
             client = await self.session.get(Client, booking.client_id)
             if client is not None:
                 client.no_show_count += 1
-        elif previous is BookingStatus.NO_SHOW:
-            client = await self.session.get(Client, booking.client_id)
-            if client is not None and client.no_show_count > 0:
-                client.no_show_count -= 1
-            # bonuses were returned at no-show: the revived booking is paid in full
-            booking.bonus_spent = 0
-            booking.total_due = booking.subtotal
         try:
             await self.session.flush()
         except IntegrityError as exc:  # no_show → confirmed into an occupied slot
@@ -434,6 +438,27 @@ class AdminBookingService:
         await self.session.commit()
         await self.cache.bump([booking.barber_id])
         await publish(self.redis, notification)
+        return booking
+
+    async def _confirm_auto_no_show(self, booking: Booking, actor: Actor) -> Booking:
+        """The salon checked a system no-show: the client really did not come."""
+        if not booking.no_show_auto:
+            raise ConflictError(
+                "The booking is already a no-show",
+                code="invalid_transition",
+                details={"allowed": sorted(s.value for s in TRANSITIONS[booking.status])},
+            )
+        booking.no_show_auto = False
+        await self.session.flush()
+        self.audit.record(
+            actor,
+            "booking.no_show_confirmed",
+            "booking",
+            booking.id,
+            before={"no_show_auto": True},
+            after={"no_show_auto": False},
+        )
+        await self.session.commit()
         return booking
 
     async def move(

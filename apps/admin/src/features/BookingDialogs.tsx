@@ -370,8 +370,13 @@ export function BookingDetailsDialog({
 
   useEffect(() => {
     if (!booking) return;
-    // certificates / subscription visits are not money paid today
-    setPaid(Math.max(0, booking.total_due - (booking.voucher_amount ?? 0)));
+    // certificates / subscription visits are not money paid today; a no-show got its bonuses
+    // and vouchers back, so "the client came" is paid in full
+    setPaid(
+      booking.status === "no_show"
+        ? booking.subtotal - (booking.discount ?? 0)
+        : Math.max(0, booking.total_due - (booking.voucher_amount ?? 0)),
+    );
     setMethod((booking.payment_method as PaymentMethod | null) ?? "cash");
     setReason("");
     setNote(booking.admin_note ?? "");
@@ -392,8 +397,12 @@ export function BookingDetailsDialog({
           },
         }),
       ),
-    onSuccess: () => {
-      toast.success(t("booking.updated"));
+    onSuccess: (_data, next) => {
+      toast.success(
+        next === "no_show" && booking?.status === "no_show"
+          ? t("booking.noShowConfirmed")
+          : t("booking.updated"),
+      );
       invalidateBookings(client);
       onClose();
     },
@@ -426,6 +435,8 @@ export function BookingDetailsDialog({
   const canWrite = can("bookings:write");
   const canStatus = canWrite || can("bookings:status_own");
   const started = new Date(booking.start_at).getTime() <= Date.now();
+  const noShow = booking.status === "no_show";
+  const autoNoShow = noShow && booking.no_show_auto;
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -439,6 +450,7 @@ export function BookingDetailsDialog({
             {booking.client_confirmed_at && (
               <Badge variant="success">✓ {t("booking.clientConfirmed")}</Badge>
             )}
+            {autoNoShow && <Badge variant="warning">⚠ {t("booking.autoNoShow")}</Badge>}
             <PaymentBadge state={booking.payment_status} />
             <span className="text-muted-foreground">{booking.source}</span>
           </div>
@@ -519,8 +531,11 @@ export function BookingDetailsDialog({
             </Button>
           )}
 
-          {canStatus && booking.status === "confirmed" && started && (
+          {canStatus && ((booking.status === "confirmed" && started) || noShow) && (
             <div className="space-y-2 rounded-md border p-3">
+              {autoNoShow && (
+                <p className="text-sm text-muted-foreground">{t("booking.autoNoShowHint")}</p>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <Field label={t("booking.paymentMethod")} htmlFor="method">
                   <NativeSelect
@@ -545,11 +560,17 @@ export function BookingDetailsDialog({
                   loading={status.isPending}
                   onClick={() => status.mutate("completed")}
                 >
-                  {t("booking.complete")}
+                  {noShow ? t("booking.came") : t("booking.complete")}
                 </Button>
-                <Button variant="outline" onClick={() => status.mutate("no_show")}>
-                  {t("booking.noShow")}
-                </Button>
+                {(!noShow || autoNoShow) && (
+                  <Button
+                    variant="outline"
+                    loading={status.isPending}
+                    onClick={() => status.mutate("no_show")}
+                  >
+                    {noShow ? t("booking.didNotCome") : t("booking.noShow")}
+                  </Button>
+                )}
               </div>
             </div>
           )}

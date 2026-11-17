@@ -14366,6 +14366,12 @@
             "title": "Voucher Amount",
             "description": "Covered by certificates / subscription",
             "default": 0
+          },
+          "no_show_auto": {
+            "type": "boolean",
+            "title": "No Show Auto",
+            "description": "Marked no-show by the system; the salon should check it",
+            "default": false
           }
         },
         "type": "object",
@@ -20662,6 +20668,14 @@
             "description": "Shop delivery fee, tyiyn",
             "default": 0
           },
+          "auto_no_show_hours": {
+            "type": "integer",
+            "maximum": 72.0,
+            "minimum": 0.0,
+            "title": "Auto No Show Hours",
+            "description": "Mark unclosed visits no-show after; 0 = off",
+            "default": 3
+          },
           "revisit_after_days": {
             "type": "integer",
             "maximum": 365.0,
@@ -20848,6 +20862,11 @@
             "type": "integer",
             "title": "Delivery Fee",
             "default": 0
+          },
+          "auto_no_show_hours": {
+            "type": "integer",
+            "title": "Auto No Show Hours",
+            "default": 3
           }
         },
         "type": "object",

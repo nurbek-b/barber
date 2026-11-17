@@ -144,6 +144,17 @@ DEFAULTS: dict[str, dict[str, str]] = {
         "en": "❌ <b>Cancelled</b> ({cancelled_by})\n{when}\nClient: {client} {phone}\n"
         "Barber: {barber}\nServices: {services}\nTotal: {total_due}\nReason: {reason}",
     },
+    "booking_auto_no_show_admin": {
+        "ru": "⚠️ <b>Визит не закрыт — отмечена неявка</b>\n{when}\nКлиент: {client} {phone}\n"
+        "Мастер: {barber}\nУслуги: {services}\n"
+        "Если клиент был, откройте запись в админке и нажмите «Пришёл».",
+        "ky": "⚠️ <b>Визит жабылган жок — келбеди деп белгиленди</b>\n{when}\n"
+        "Кардар: {client} {phone}\nУстат: {barber}\nКызматтар: {services}\n"
+        "Кардар келген болсо, админкада жазылууну ачып, «Келди» баскычын басыңыз.",
+        "en": "⚠️ <b>Visit not closed — marked as no-show</b>\n{when}\n"
+        "Client: {client} {phone}\nBarber: {barber}\nServices: {services}\n"
+        "If the client came, open the booking in the admin and tap \u201cCame\u201d.",
+    },
     "booking_cancelled_barber": {
         "ru": "❌ Отменена запись {when}: {client}",
         "ky": "❌ {when} жазылуу жокко чыгарылды: {client}",

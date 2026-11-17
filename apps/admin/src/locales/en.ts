@@ -237,7 +237,7 @@ export const en: Messages = {
     photo: "Photo",
     empty: "Nothing yet",
     newProduct: "New product",
-    hint: "Clients pay orders by the salon QR (Settings → Payments) and pick them up at the salon.",
+    hint: "Clients pay orders by the salon QR (Settings → Payments) and pick them up at the salon or get them delivered, if delivery is on.",
   },
   booking: {
     title: "Booking",
@@ -262,6 +262,12 @@ export const en: Messages = {
     complete: "Complete",
     confirm: "Confirm",
     noShow: "No-show",
+    autoNoShow: "Marked automatically",
+    autoNoShowHint:
+      "Nobody closed this visit, so the system marked a no-show. Check it: if the client came, finish the visit.",
+    came: "Came",
+    didNotCome: "Did not come",
+    noShowConfirmed: "No-show confirmed",
     cancelBooking: "Cancel booking",
     cancelReason: "Cancellation reason",
     priceOverride: "Actual price",
@@ -416,6 +422,9 @@ export const en: Messages = {
     moveLeft: "Move left",
     moveRight: "Move right",
     revisitDays: '"Time for a haircut" after, days',
+    autoNoShow: "No-show if the visit is not closed after, h",
+    autoNoShowHint:
+      "A visit nobody finished this many hours after its end becomes a no-show. You can fix it in the booking. 0 = off.",
     revisitHint:
       "The bot reminds the client to book again if they have nothing booked. 0 = off. Sent 10:00–20:00.",
   },

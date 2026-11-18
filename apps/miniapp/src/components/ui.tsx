@@ -78,6 +78,7 @@ export function Screen({
   children,
   withMainButton = false,
   back = false,
+  hideTitle = false,
 }: {
   title: string;
   step?: number;
@@ -85,6 +86,8 @@ export function Screen({
   children: ReactNode;
   withMainButton?: boolean;
   back?: boolean;
+  /** keep the heading for screen readers only (the home screen shows the salon instead) */
+  hideTitle?: boolean;
 }) {
   const t = useT();
   const navigate = useNavigate();
@@ -95,7 +98,7 @@ export function Screen({
         withMainButton ? "pb-28" : "pb-24"
       }`}
     >
-      <header className="mb-4">
+      <header className={hideTitle && !showInPageBack && !step ? "" : "mb-4"}>
         <div className="flex items-center gap-2">
           {showInPageBack && (
             <button
@@ -107,7 +110,7 @@ export function Screen({
               ‹
             </button>
           )}
-          <h1 className="text-xl font-semibold">{title}</h1>
+          <h1 className={hideTitle ? "sr-only" : "text-xl font-semibold"}>{title}</h1>
         </div>
         {step && totalSteps && (
           <div className="mt-3">

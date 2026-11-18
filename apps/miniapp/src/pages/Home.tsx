@@ -11,7 +11,7 @@ import {
   useSetLanguage,
 } from "../api";
 import { BookingCard } from "../components/BookingCard";
-import { Card, ErrorState, Screen, Skeleton, useMoney } from "../components/ui";
+import { ErrorState, Screen, Skeleton, useMoney } from "../components/ui";
 import { type Lang, pickI18n, useLang, useT } from "../i18n";
 import { useBooking } from "../store/booking";
 import { useBackButton, useMainButton } from "../telegram/hooks";
@@ -63,30 +63,51 @@ export default function Home() {
     <Screen
       title={me.data ? t("home.hello", { name: me.data.name.split(" ")[0] ?? "" }) : t("app.title")}
       withMainButton
+      hideTitle
     >
       <div className="space-y-4">
-        {salon.data && <SalonHeader name={salon.data.name} logo={salon.data.logo_url ?? null} />}
+        {salon.data && (
+          <div className="flex items-center gap-3">
+            {salon.data.logo_url && (
+              <img
+                src={salon.data.logo_url}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-2xl bg-section object-contain p-1"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-lg font-semibold leading-tight">{salon.data.name}</div>
+              <button
+                type="button"
+                data-testid="bonus-chip"
+                onClick={() => navigate("/bonus")}
+                aria-label={`${t("home.bonus")}: ${bonus.data ? money(bonus.data.balance) : ""}`}
+                className="mt-1 inline-flex min-h-8 items-center gap-1.5 rounded-full bg-button/10 px-2.5 text-sm font-medium tabular-nums text-button transition active:opacity-60"
+              >
+                <GiftIcon />
+                {bonus.data ? money(bonus.data.balance) : "…"}
+              </button>
+            </div>
+            {draft && draft.service_ids.length > 0 && (
+              <button
+                type="button"
+                data-testid="repeat"
+                title={`${t("home.repeat")}: ${[draft.barber?.name ?? t("barber.any"), repeatNames].filter(Boolean).join(" · ")}`}
+                onClick={() => {
+                  startRepeat(draft.barber?.id ?? null, draft.service_ids);
+                  navigate("/book/time");
+                }}
+                className="flex min-h-11 shrink-0 items-center gap-1 rounded-full bg-button/10 px-3 text-sm font-semibold text-button transition active:opacity-60"
+              >
+                ↻ {t("home.repeatShort")}
+              </button>
+            )}
+          </div>
+        )}
         {salon.data?.gallery?.length ? (
           <Gallery photos={salon.data.gallery} label={t("home.photos")} />
         ) : null}
         {me.isPending && <Skeleton className="h-24" />}
-
-        {draft && draft.service_ids.length > 0 && (
-          <button
-            type="button"
-            data-testid="repeat"
-            onClick={() => {
-              startRepeat(draft.barber?.id ?? null, draft.service_ids);
-              navigate("/book/time");
-            }}
-            className="w-full rounded-2xl bg-button/10 p-4 text-left"
-          >
-            <div className="font-semibold text-button">↻ {t("home.repeat")}</div>
-            <div className="mt-1 text-sm text-hint">
-              {[draft.barber?.name ?? t("barber.any"), repeatNames].filter(Boolean).join(" · ")}
-            </div>
-          </button>
-        )}
 
         {next && (
           <section>
@@ -107,19 +128,6 @@ export default function Home() {
             />
           </section>
         )}
-
-        <button
-          type="button"
-          onClick={() => navigate("/bonus")}
-          className="block w-full text-left transition active:scale-[0.99]"
-        >
-          <Card className="flex items-center justify-between">
-            <span>{t("home.bonus")}</span>
-            <span className="text-lg font-semibold tabular-nums">
-              {bonus.data ? money(bonus.data.balance) : "…"}
-            </span>
-          </Card>
-        </button>
 
         {barbers.data && barbers.data.length > 0 && (
           <section>
@@ -166,18 +174,20 @@ export default function Home() {
   );
 }
 
-function SalonHeader({ name, logo }: { name: string; logo: string | null }) {
+function GiftIcon() {
   return (
-    <div className="flex items-center gap-3">
-      {logo && (
-        <img
-          src={logo}
-          alt=""
-          className="h-14 w-14 shrink-0 rounded-2xl bg-section object-contain p-1"
-        />
-      )}
-      <div className="text-lg font-semibold leading-tight">{name}</div>
-    </div>
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8m16 0H4m16 0V8H4v4m8-4v13m0-13S10.5 3 8 3.5 7 7 8.5 8M12 8s1.5-5 4-4.5S17 7 15.5 8" />
+    </svg>
   );
 }
 

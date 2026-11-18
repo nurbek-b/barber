@@ -349,7 +349,9 @@ function Subscriptions() {
 
 function SellSubscription({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
-  const { money } = useFormat();
+  const { money, date } = useFormat();
+  const period = usePeriodLabel();
+  const [creatingPlan, setCreatingPlan] = useState(false);
   const client = useQueryClient();
   const [search, setSearch] = useState("");
   const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
@@ -366,13 +368,14 @@ function SellSubscription({ onClose }: { onClose: () => void }) {
       call(api.GET(`${ADMIN}/clients`, { params: { query: { q: search, limit: 8 } } })),
   });
   const active = (plans.data ?? []).filter((plan) => plan.is_active);
+  const chosen = active.find((plan) => plan.id === planId) ?? active[0];
   const sell = useMutation({
     mutationFn: () =>
       call(
         api.POST(`${ADMIN}/subscriptions`, {
           body: {
             client_id: picked!.id,
-            plan_id: planId || active[0]!.id,
+            plan_id: chosen!.id,
             payment_method: method,
           },
         }),
@@ -420,17 +423,53 @@ function SellSubscription({ onClose }: { onClose: () => void }) {
             )}
           </Field>
           <Field label={t("vouchers.plan")} htmlFor="sub-plan">
-            <NativeSelect
-              id="sub-plan"
-              value={planId || active[0]?.id || ""}
-              onChange={(e) => setPlanId(e.target.value)}
-            >
-              {active.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.name} · {plan.visits} · {money(plan.price)}
-                </option>
-              ))}
-            </NativeSelect>
+            {plans.isSuccess && active.length === 0 ? (
+              <div className="space-y-2 rounded-md border border-dashed p-3 text-sm">
+                <p className="text-muted-foreground">{t("vouchers.noPlans")}</p>
+                <Can perm="settings:write">
+                  <Button size="sm" variant="outline" onClick={() => setCreatingPlan(true)}>
+                    {t("vouchers.createPlan")}
+                  </Button>
+                </Can>
+              </div>
+            ) : (
+              <>
+                <NativeSelect
+                  id="sub-plan"
+                  value={chosen?.id ?? ""}
+                  onChange={(e) => setPlanId(e.target.value)}
+                  disabled={plans.isPending}
+                >
+                  {active.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} — {money(plan.price)} · {period(plan.valid_days)}
+                    </option>
+                  ))}
+                </NativeSelect>
+                {chosen && (
+                  <div className="mt-2 grid grid-cols-3 gap-2 rounded-md bg-muted/50 p-2 text-center text-sm">
+                    <div>
+                      <div className="font-semibold tabular-nums">{money(chosen.price)}</div>
+                      <div className="text-xs text-muted-foreground">{t("vouchers.price")}</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold tabular-nums">{chosen.visits}</div>
+                      <div className="text-xs text-muted-foreground">{t("vouchers.visits")}</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold">{period(chosen.valid_days)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {t("vouchers.validUntil", {
+                          date: date(
+                            new Date(Date.now() + chosen.valid_days * 86_400_000).toISOString(),
+                          ),
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </Field>
           <Field label={t("vouchers.method")} htmlFor="sub-method">
             <MethodSelect value={method} onChange={setMethod} />
@@ -441,8 +480,16 @@ function SellSubscription({ onClose }: { onClose: () => void }) {
             onClick={() => sell.mutate()}
           >
             {t("vouchers.sell")}
+            {chosen && ` · ${money(chosen.price)}`}
           </Button>
         </div>
+        {creatingPlan && (
+          <PlanDialog
+            plan={null}
+            onClose={() => setCreatingPlan(false)}
+            onSaved={(plan) => setPlanId(plan.id)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -451,6 +498,22 @@ function SellSubscription({ onClose }: { onClose: () => void }) {
 // ---------------------------------------------------------------------------
 // plans
 // ---------------------------------------------------------------------------
+
+/** Preset periods in days; anything else is shown as a number of days. */
+const PERIODS = [
+  { days: 30, key: "vouchers.month1" },
+  { days: 90, key: "vouchers.month3" },
+  { days: 180, key: "vouchers.month6" },
+  { days: 365, key: "vouchers.year1" },
+] as const;
+
+function usePeriodLabel() {
+  const { t } = useTranslation();
+  return (days: number) => {
+    const preset = PERIODS.find((p) => p.days === days);
+    return preset ? t(preset.key) : t("vouchers.daysN", { n: days });
+  };
+}
 
 const EMPTY_PLAN = {
   name: "",
@@ -464,6 +527,7 @@ const EMPTY_PLAN = {
 function Plans() {
   const { t, i18n } = useTranslation();
   const { money } = useFormat();
+  const period = usePeriodLabel();
   const services = useServicesList(true);
   const [editing, setEditing] = useState<Plan | "new" | null>(null);
   const plans = useQuery({
@@ -495,7 +559,8 @@ function Plans() {
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {plan.visits} × · {money(plan.price)} · {plan.valid_days} d
+                  {money(plan.price)} · {t("vouchers.visitsN", { n: plan.visits })} ·{" "}
+                  {period(plan.valid_days)}
                   {(plan.service_ids?.length ?? 0) > 0 &&
                     ` · ${(plan.service_ids ?? []).map((id) => names.get(id) ?? "?").join(", ")}`}
                 </div>
@@ -516,7 +581,15 @@ function Plans() {
   );
 }
 
-function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void }) {
+function PlanDialog({
+  plan,
+  onClose,
+  onSaved,
+}: {
+  plan: Plan | null;
+  onClose: () => void;
+  onSaved?: (plan: Plan) => void;
+}) {
   const { t, i18n } = useTranslation();
   const client = useQueryClient();
   const services = useServicesList(true);
@@ -528,6 +601,9 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
     valid_days: plan?.valid_days ?? EMPTY_PLAN.valid_days,
     is_active: plan?.is_active ?? true,
   });
+  const [customPeriod, setCustomPeriod] = useState(
+    () => !PERIODS.some((p) => p.days === form.valid_days),
+  );
   const save = useMutation({
     mutationFn: () =>
       plan
@@ -538,9 +614,10 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
             }),
           )
         : call(api.POST(`${ADMIN}/subscription-plans`, { body: form })),
-    onSuccess: () => {
+    onSuccess: (saved) => {
       toast.success(t("common.saved"));
       void client.invalidateQueries({ queryKey: ["plans"] });
+      onSaved?.(saved);
       onClose();
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -554,7 +631,7 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
     }));
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent title={plan?.name ?? t("vouchers.plans")}>
+      <DialogContent title={plan?.name ?? t("vouchers.createPlan")}>
         <div className="space-y-3">
           <Field label={t("vouchers.planName")} htmlFor="plan-name">
             <Input
@@ -563,16 +640,7 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </Field>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label={t("vouchers.visits")} htmlFor="plan-visits">
-              <Input
-                id="plan-visits"
-                type="number"
-                min={1}
-                value={form.visits}
-                onChange={(e) => setForm({ ...form, visits: Number(e.target.value) })}
-              />
-            </Field>
+          <div className="grid grid-cols-2 gap-3">
             <Field label={t("vouchers.price")} htmlFor="plan-price">
               <MoneyInput
                 id="plan-price"
@@ -580,16 +648,65 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
                 onChange={(v) => setForm({ ...form, price: v ?? 0 })}
               />
             </Field>
-            <Field label={t("vouchers.validDays")} htmlFor="plan-days">
+            <Field label={t("vouchers.visits")} htmlFor="plan-visits">
               <Input
-                id="plan-days"
+                id="plan-visits"
                 type="number"
                 min={1}
-                value={form.valid_days}
-                onChange={(e) => setForm({ ...form, valid_days: Number(e.target.value) })}
+                max={100}
+                value={form.visits}
+                onChange={(e) => setForm({ ...form, visits: Number(e.target.value) })}
               />
             </Field>
           </div>
+          <Field label={t("vouchers.period")} htmlFor="plan-period">
+            <div
+              id="plan-period"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+              role="radiogroup"
+            >
+              {PERIODS.map((p) => {
+                const on = !customPeriod && form.valid_days === p.days;
+                return (
+                  <button
+                    key={p.days}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => {
+                      setCustomPeriod(false);
+                      setForm({ ...form, valid_days: p.days });
+                    }}
+                    className={`min-h-10 rounded-md border px-2 text-sm transition-colors ${on ? "border-primary bg-primary/10 font-medium text-primary" : "hover:bg-accent"}`}
+                  >
+                    {t(p.key)}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={customPeriod}
+                onClick={() => setCustomPeriod(true)}
+                className={`col-span-2 min-h-10 rounded-md border px-2 text-sm transition-colors sm:col-span-4 ${customPeriod ? "border-primary bg-primary/10 font-medium text-primary" : "hover:bg-accent"}`}
+              >
+                {t("vouchers.otherPeriod")}
+              </button>
+            </div>
+            {customPeriod && (
+              <Input
+                id="plan-days"
+                className="mt-2"
+                type="number"
+                min={1}
+                max={1000}
+                aria-label={t("vouchers.validDays")}
+                placeholder={t("vouchers.validDays")}
+                value={form.valid_days}
+                onChange={(e) => setForm({ ...form, valid_days: Number(e.target.value) })}
+              />
+            )}
+          </Field>
           <Field label={t("vouchers.services")} htmlFor="plan-services">
             <div id="plan-services" className="flex flex-wrap gap-2">
               {services.data?.map((s) => (

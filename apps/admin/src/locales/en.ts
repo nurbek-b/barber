@@ -3,6 +3,7 @@ import type { Messages } from "./ru";
 export const en: Messages = {
   app: { title: "Barbershop", admin: "Admin" },
   nav: {
+    more: "More",
     dashboard: "Dashboard",
     calendar: "Calendar",
     bookings: "Bookings",
@@ -96,6 +97,8 @@ export const en: Messages = {
     dayEmpty: "No bookings this day",
     prevDay: "Previous day",
     nextDay: "Next day",
+    allBarbers: "All barbers",
+    free: "Free",
   },
   pay: {
     title: "QR payments",

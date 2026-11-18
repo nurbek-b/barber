@@ -98,3 +98,13 @@
 .rbc-current-time-indicator {
   @apply bg-destructive;
 }
+/* resource (per-barber) day view: columns stop growing instead of stretching across the screen */
+.rbc-time-view-resources .rbc-time-header-content,
+.rbc-time-view-resources .rbc-day-slot {
+  flex: 1 0 0;
+  max-width: 18rem;
+}
+.rbc-time-view-resources .rbc-time-gutter,
+.rbc-time-view-resources .rbc-time-header-gutter {
+  @apply border-border bg-card;
+}

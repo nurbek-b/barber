@@ -35,6 +35,7 @@ import { ADMIN, ApiError, api, call, errorMessage } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { useFormat } from "@/lib/format";
 import { useIsPhone } from "@/lib/media";
+import { cn } from "@/lib/utils";
 import { fromWallClock, toWallClock, wallDayKey } from "@/lib/zoned";
 
 const localizer = dateFnsLocalizer({
@@ -71,7 +72,7 @@ export default function CalendarPage() {
   const can = useCan();
   const client = useQueryClient();
   const barbers = useBarbersList(true);
-  const [view, setView] = useState<View>(Views.DAY);
+  const [view, setView] = useState<View>(Views.WEEK);
   const [cursor, setCursor] = useState<Date>(() => toWallClock(new Date(), tz));
   const [creating, setCreating] = useState<CreateDefaults | null>(null);
   const [selected, setSelected] = useState<AdminBooking | null>(null);
@@ -81,13 +82,13 @@ export default function CalendarPage() {
 
   const range = useMemo(() => {
     const day = wallDayKey(cursor);
-    if (view === Views.WEEK && !phone) {
+    if (view === Views.WEEK) {
       const monday = startOfWeek(cursor, { weekStartsOn: 1 });
       const from = wallDayKey(monday);
       return { from, to: addDaysKey(from, 6) };
     }
     return { from: day, to: day };
-  }, [cursor, view, phone]);
+  }, [cursor, view]);
 
   const calendar = useQuery({
     queryKey: ["calendar", range],
@@ -174,9 +175,25 @@ export default function CalendarPage() {
 
   const resources = (barbers.data ?? []).map((barber) => ({ id: barber.id, title: barber.name }));
 
-  const dayItems = (calendar.data ?? [])
-    .filter((booking) => !phoneBarber || booking.barber.id === phoneBarber)
-    .sort((a, b) => a.start_at.localeCompare(b.start_at));
+  const dateLocale = i18n.language === "en" ? enUS : ru;
+  const phoneDays = useMemo(() => {
+    const items = (calendar.data ?? [])
+      .filter((booking) => !phoneBarber || booking.barber.id === phoneBarber)
+      .sort((a, b) => a.start_at.localeCompare(b.start_at));
+    const days: { key: string; date: Date; items: AdminBooking[] }[] = [];
+    let day = new Date(`${range.from}T00:00:00`);
+    for (let key = range.from; key <= range.to; key = addDaysKey(key, 1)) {
+      days.push({
+        key,
+        date: day,
+        items: items.filter((booking) => wallDayKey(toWallClock(booking.start_at, tz)) === key),
+      });
+      day = addDays(day, 1);
+    }
+    return days;
+  }, [calendar.data, phoneBarber, range, tz]);
+  const step = view === Views.WEEK ? 7 : 1;
+  const todayKeyValue = wallDayKey(toWallClock(new Date(), tz));
 
   return (
     <div className={phone ? "flex flex-col" : "flex h-[calc(100vh-7rem)] flex-col"}>
@@ -188,66 +205,121 @@ export default function CalendarPage() {
               <Button variant="outline" onClick={() => setBlockOpen(true)}>
                 {t("calendar.newBlock")}
               </Button>
-              <Button onClick={() => setCreating({ start: fromWallClock(cursor, tz) })}>
-                <Plus /> {t("calendar.newBooking")}
-              </Button>
+              {!phone && (
+                <Button onClick={() => setCreating({ start: fromWallClock(cursor, tz) })}>
+                  <Plus /> {t("calendar.newBooking")}
+                </Button>
+              )}
             </>
           )
         }
       />
       {phone ? (
-        <div className="flex flex-col gap-3" data-testid="calendar">
+        <div className="flex flex-col gap-3 pb-16" data-testid="calendar">
+          <div className="grid grid-cols-2 gap-1 rounded-lg border bg-card p-1">
+            {[Views.WEEK, Views.DAY].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setView(item)}
+                className={cn(
+                  "min-h-10 rounded-md text-sm transition-colors",
+                  view === item
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground active:bg-accent",
+                )}
+              >
+                {t(item === Views.WEEK ? "calendar.week" : "calendar.day")}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="icon"
+              className="h-11 w-11 shrink-0"
               aria-label={t("calendar.prevDay")}
-              onClick={() => setCursor((day) => addDays(day, -1))}
+              onClick={() => setCursor((day) => addDays(day, -step))}
             >
               <ChevronLeft />
             </Button>
-            <div className="flex-1 text-center text-sm font-medium first-letter:uppercase">
-              {format(cursor, "EEEE, d MMMM", { locale: i18n.language === "en" ? enUS : ru })}
-            </div>
+            <button
+              type="button"
+              className="min-h-11 flex-1 rounded-md text-center text-sm font-medium first-letter:uppercase active:bg-accent"
+              onClick={() => setCursor(toWallClock(new Date(), tz))}
+              title={t("calendar.today")}
+            >
+              {view === Views.WEEK
+                ? `${format(phoneDays[0]?.date ?? cursor, "d MMM", { locale: dateLocale })} – ${format(phoneDays.at(-1)?.date ?? cursor, "d MMM", { locale: dateLocale })}`
+                : format(cursor, "EEEE, d MMMM", { locale: dateLocale })}
+            </button>
             <Button
               variant="outline"
               size="icon"
+              className="h-11 w-11 shrink-0"
               aria-label={t("calendar.nextDay")}
-              onClick={() => setCursor((day) => addDays(day, 1))}
+              onClick={() => setCursor((day) => addDays(day, step))}
             >
               <ChevronRight />
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => setCursor(toWallClock(new Date(), tz))}>
-              {t("calendar.today")}
-            </Button>
-            <NativeSelect
-              value={phoneBarber}
-              onChange={(e) => setPhoneBarber(e.target.value)}
-              aria-label={t("booking.barber")}
-            >
-              <option value="">{t("common.all")}</option>
-              {barbers.data?.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
+          <NativeSelect
+            value={phoneBarber}
+            onChange={(e) => setPhoneBarber(e.target.value)}
+            aria-label={t("booking.barber")}
+          >
+            <option value="">{t("calendar.allBarbers")}</option>
+            {barbers.data?.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </NativeSelect>
           {calendar.isPending ? (
             <Skeleton className="h-40" />
-          ) : dayItems.length === 0 ? (
-            <EmptyState>{t("calendar.dayEmpty")}</EmptyState>
           ) : (
-            dayItems.map((booking) => (
-              <BookingCard
-                key={booking.id}
-                booking={booking}
-                timeOnly
-                onClick={() => booking.kind !== "block" && setSelected(booking)}
-              />
+            phoneDays.map((day) => (
+              <section key={day.key} className="flex flex-col gap-2">
+                {view === Views.WEEK && (
+                  <h2
+                    className={cn(
+                      "sticky top-14 z-10 -mx-4 bg-background/95 px-4 py-1.5 text-sm font-semibold backdrop-blur first-letter:uppercase",
+                      day.key === todayKeyValue && "text-primary",
+                    )}
+                  >
+                    {format(day.date, "EEEE, d MMMM", { locale: dateLocale })}
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      {day.items.length || ""}
+                    </span>
+                  </h2>
+                )}
+                {day.items.length === 0 ? (
+                  view === Views.DAY ? (
+                    <EmptyState>{t("calendar.dayEmpty")}</EmptyState>
+                  ) : (
+                    <p className="px-1 text-sm text-muted-foreground">{t("calendar.free")}</p>
+                  )
+                ) : (
+                  day.items.map((booking) => (
+                    <BookingCard
+                      key={booking.id}
+                      booking={booking}
+                      timeOnly
+                      onClick={() => booking.kind !== "block" && setSelected(booking)}
+                    />
+                  ))
+                )}
+              </section>
             ))
+          )}
+          {can("bookings:write") && (
+            <Button
+              size="lg"
+              className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-30 h-14 rounded-full px-5 shadow-lg"
+              onClick={() => setCreating({ start: fromWallClock(cursor, tz) })}
+            >
+              <Plus /> {t("calendar.newBooking")}
+            </Button>
           )}
         </div>
       ) : (

@@ -1,6 +1,7 @@
 export const ru = {
   app: { title: "Барбершоп", admin: "Админка" },
   nav: {
+    more: "Ещё",
     dashboard: "Дашборд",
     calendar: "Календарь",
     bookings: "Записи",
@@ -94,6 +95,8 @@ export const ru = {
     dayEmpty: "На этот день записей нет",
     prevDay: "Предыдущий день",
     nextDay: "Следующий день",
+    allBarbers: "Все мастера",
+    free: "Свободно",
   },
   pay: {
     title: "Оплата по QR",

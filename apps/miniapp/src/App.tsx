@@ -44,23 +44,55 @@ function Lazy({ children }: { children: ReactNode }) {
   );
 }
 
+const TAB_ICONS = {
+  home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z",
+  bookings:
+    "M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z",
+  bonus:
+    "M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8m16 0H4m16 0V8H4v4m8-4v13m0-13S10.5 3 8 3.5 7 7 8.5 8M12 8s1.5-5 4-4.5S17 7 15.5 8",
+  shop: "M6 7h12l1 13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zm3 0a3 3 0 0 1 6 0",
+} as const;
+
+function TabIcon({ name }: { name: keyof typeof TAB_ICONS }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d={TAB_ICONS[name]} />
+    </svg>
+  );
+}
+
 function TabBar() {
   const t = useT();
   const tab = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-1 flex-col items-center py-2 text-xs ${isActive ? "text-button" : "text-hint"}`;
+    `flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors active:opacity-60 ${
+      isActive ? "text-button" : "text-hint"
+    }`;
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-separator bg-bg/95 pb-[var(--safe-bottom)] backdrop-blur">
       <NavLink to="/" end className={tab}>
-        <span className="text-lg">⌂</span>
+        <TabIcon name="home" />
         {t("nav.home")}
       </NavLink>
       <NavLink to="/bookings" className={tab}>
-        <span className="text-lg">☰</span>
+        <TabIcon name="bookings" />
         {t("nav.bookings")}
       </NavLink>
       <NavLink to="/bonus" className={tab}>
-        <span className="text-lg">★</span>
+        <TabIcon name="bonus" />
         {t("nav.bonus")}
+      </NavLink>
+      <NavLink to="/shop" className={tab}>
+        <TabIcon name="shop" />
+        {t("nav.shop")}
       </NavLink>
     </nav>
   );
@@ -97,6 +129,14 @@ export const routes: RouteObject[] = [
           </Lazy>
         ),
       },
+      {
+        path: "/shop",
+        element: (
+          <Lazy>
+            <Shop />
+          </Lazy>
+        ),
+      },
     ],
   },
   {
@@ -123,14 +163,6 @@ export const routes: RouteObject[] = [
         element: (
           <Lazy>
             <Payment />
-          </Lazy>
-        ),
-      },
-      {
-        path: "/shop",
-        element: (
-          <Lazy>
-            <Shop />
           </Lazy>
         ),
       },

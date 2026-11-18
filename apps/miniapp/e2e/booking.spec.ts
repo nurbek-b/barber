@@ -186,8 +186,7 @@ test("full booking flow with bonuses", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Здравствуйте, Бек!" })).toBeVisible();
 
   await page.getByTestId("main-button").click(); // Записаться
-  await page.getByRole("button", { name: /Любой свободный мастер/ }).click();
-  await page.getByTestId("main-button").click(); // Далее
+  await page.getByRole("button", { name: /Любой свободный мастер/ }).click(); // one tap → services
 
   await page.getByText("Стрижка", { exact: true }).click();
   await expect(page.getByTestId("services-summary")).toContainText("от 1 000 сом");
@@ -213,6 +212,7 @@ test("full booking flow with bonuses", async ({ page }) => {
     hold_id: "hold-1",
     comment: "покороче",
     bonus_to_spend: 30_000,
+    promo_code: null,
   });
   expect(recorded.bookings[0]!.idempotencyKey).toMatch(/^[0-9a-f]{32}$/);
 });
@@ -222,7 +222,6 @@ test("taken slot shows a message and lets the user pick another", async ({ page 
   await page.goto("./");
   await page.getByTestId("main-button").click();
   await page.getByRole("button", { name: /Азамат/ }).click();
-  await page.getByTestId("main-button").click();
   await page.getByText("Борода", { exact: true }).click();
   await page.getByTestId("main-button").click();
 

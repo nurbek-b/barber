@@ -108,14 +108,11 @@ export default function Home() {
           </section>
         )}
 
-        <button type="button" onClick={() => navigate("/shop")} className="block w-full text-left">
-          <Card className="flex items-center justify-between">
-            <span>{t("shop.home")}</span>
-            <span className="text-hint">›</span>
-          </Card>
-        </button>
-
-        <button type="button" onClick={() => navigate("/bonus")} className="block w-full text-left">
+        <button
+          type="button"
+          onClick={() => navigate("/bonus")}
+          className="block w-full text-left transition active:scale-[0.99]"
+        >
           <Card className="flex items-center justify-between">
             <span>{t("home.bonus")}</span>
             <span className="text-lg font-semibold tabular-nums">
@@ -125,33 +122,38 @@ export default function Home() {
         </button>
 
         {barbers.data && barbers.data.length > 0 && (
-          <div className="-mx-4 flex gap-3 overflow-x-auto px-4">
-            {barbers.data.map((barber) => (
-              <button
-                key={barber.id}
-                type="button"
-                onClick={() => navigate(`/barber/${barber.id}`)}
-                className="w-20 shrink-0 text-center text-xs"
-              >
-                {barber.photo_url ? (
-                  <img
-                    src={barber.photo_url}
-                    alt=""
-                    loading="lazy"
-                    className="mx-auto mb-1 h-16 w-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="mx-auto mb-1 flex h-16 w-16 items-center justify-center rounded-full bg-bg-secondary">
-                    ✂
-                  </div>
-                )}
-                <div className="truncate">{barber.name}</div>
-                {barber.rating !== null && barber.rating !== undefined && (
-                  <div className="text-hint">★ {barber.rating.toFixed(1)}</div>
-                )}
-              </button>
-            ))}
-          </div>
+          <section>
+            <h2 className="mb-2 px-1 text-sm font-medium uppercase text-hint">
+              {t("home.barbers")}
+            </h2>
+            <div className="-mx-4 flex gap-3 overflow-x-auto px-4">
+              {barbers.data.map((barber) => (
+                <button
+                  key={barber.id}
+                  type="button"
+                  onClick={() => navigate(`/barber/${barber.id}`)}
+                  className="w-20 shrink-0 text-center text-xs transition active:opacity-60"
+                >
+                  {barber.photo_url ? (
+                    <img
+                      src={barber.photo_url}
+                      alt=""
+                      loading="lazy"
+                      className="mx-auto mb-1 h-16 w-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="mx-auto mb-1 flex h-16 w-16 items-center justify-center rounded-full bg-bg-secondary">
+                      ✂
+                    </div>
+                  )}
+                  <div className="truncate text-sm">{barber.name}</div>
+                  {barber.rating !== null && barber.rating !== undefined && (
+                    <div className="text-hint">★ {barber.rating.toFixed(1)}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </section>
         )}
 
         <LanguageSwitch
@@ -190,7 +192,7 @@ function Gallery({ photos, label }: { photos: string[]; label: string }) {
             src={url}
             alt=""
             loading={index === 0 ? "eager" : "lazy"}
-            className="aspect-[4/3] w-[85%] shrink-0 snap-center rounded-2xl bg-section object-cover"
+            className="aspect-[16/9] w-[80%] shrink-0 snap-center rounded-2xl bg-section object-cover"
           />
         ))}
       </div>
@@ -225,7 +227,7 @@ function LanguageSwitch({
           type="button"
           aria-pressed={item.code === value}
           onClick={() => item.code !== value && onChange(item.code)}
-          className={`rounded-full px-3 py-1 ${
+          className={`min-h-10 rounded-full px-4 ${
             item.code === value ? "bg-button text-button-text" : "text-hint"
           }`}
         >

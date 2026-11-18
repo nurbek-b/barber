@@ -97,6 +97,34 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+/** Phone bottom bar: the daily sections within thumb reach, the rest behind "More". */
+const BOTTOM = ["/", "/calendar", "/bookings", "/clients"];
+
+function BottomNav({ onMore }: { onMore: () => void }) {
+  const { t } = useTranslation();
+  const { can } = useAuth();
+  const items = NAV.filter((item) => BOTTOM.includes(item.to) && can(...item.perm));
+  const tab = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors active:opacity-60",
+      isActive ? "text-primary" : "text-muted-foreground",
+    );
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      {items.map((item) => (
+        <NavLink key={item.to} to={item.to} end={item.to === "/"} className={tab}>
+          <item.icon className="h-5 w-5" />
+          {t(item.label)}
+        </NavLink>
+      ))}
+      <button type="button" onClick={onMore} className={tab({ isActive: false })}>
+        <MenuIcon className="h-5 w-5" />
+        {t("nav.more")}
+      </button>
+    </nav>
+  );
+}
+
 export function Layout() {
   const { t, i18n } = useTranslation();
   const { me, logout } = useAuth();
@@ -122,16 +150,8 @@ export function Layout() {
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileOpen(true)}
-            aria-label="menu"
-          >
-            <MenuIcon />
-          </Button>
-          <div className="flex-1" />
+          <div className="flex-1 truncate font-semibold md:hidden">✂️ {t("app.title")}</div>
+          <div className="hidden flex-1 md:block" />
           <NotificationsBell connection={connection} />
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("common.theme")}>
             {theme === "dark" ? <Sun /> : <Moon />}
@@ -175,12 +195,13 @@ export function Layout() {
             </Menu.Portal>
           </Menu.Root>
         </header>
-        <main className="min-w-0 flex-1 p-4 md:p-6">
+        <main className="min-w-0 flex-1 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-6">
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <Outlet />
           </Suspense>
         </main>
       </div>
+      <BottomNav onMore={() => setMobileOpen(true)} />
     </div>
   );
 }

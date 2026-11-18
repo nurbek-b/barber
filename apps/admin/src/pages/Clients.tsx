@@ -137,9 +137,9 @@ export default function Clients() {
           )
         }
       />
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <Input
-          className="w-64"
+          className="col-span-2 sm:w-64"
           placeholder={t("booking.searchClient")}
           value={q}
           onChange={(e) => {
@@ -149,7 +149,7 @@ export default function Clients() {
           aria-label={t("common.search")}
         />
         <Input
-          className="w-40"
+          className="sm:w-40"
           placeholder={t("clients.tags")}
           value={tag}
           onChange={(e) => {
@@ -159,7 +159,7 @@ export default function Clients() {
           aria-label={t("clients.tags")}
         />
         <NativeSelect
-          className="w-44"
+          className="sm:w-44"
           value={blocked}
           onChange={(e) => {
             setBlocked(e.target.value as "" | "true" | "false");
@@ -186,6 +186,37 @@ export default function Clients() {
         }}
         loading={query.isPending}
         onRowClick={(row) => navigate(`/clients/${row.id}`)}
+        mobileCard={(row) => (
+          <button
+            type="button"
+            onClick={() => navigate(`/clients/${row.id}`)}
+            className="flex w-full flex-col gap-1 rounded-lg border bg-card p-3 text-left text-sm active:bg-muted/60"
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-medium">
+                {row.name}{" "}
+                {row.is_blocked && <Badge variant="destructive">{t("clients.blocked")}</Badge>}
+              </span>
+              <span className="tabular-nums">{money(row.total_spent)}</span>
+            </div>
+            <div className="text-muted-foreground">
+              {row.phone} {row.telegram_username && `@${row.telegram_username}`}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("clients.visits")}: {row.visits_count} · {t("clients.lastVisit")}:{" "}
+              {row.last_visit_at ? date(row.last_visit_at) : "—"}
+            </div>
+            {row.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {row.tags.map((item) => (
+                  <Badge key={item} variant="secondary">
+                    {item}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </button>
+        )}
       />
       <NewClientDialog open={creating} onOpenChange={setCreating} />
     </div>

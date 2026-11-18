@@ -7,6 +7,7 @@ import type { Messages } from "./ru";
 export const ky: Messages = {
   app: { title: "Барбершоп", admin: "Башкаруу" },
   nav: {
+    more: "Дагы",
     dashboard: "Көрсөткүчтөр",
     calendar: "Календарь",
     bookings: "Жазылуулар",
@@ -100,6 +101,8 @@ export const ky: Messages = {
     dayEmpty: "Бул күнгө жазылуу жок",
     prevDay: "Мурунку күн",
     nextDay: "Кийинки күн",
+    allBarbers: "Бардык устаттар",
+    free: "Бош",
   },
   pay: {
     title: "QR аркылуу төлөм",

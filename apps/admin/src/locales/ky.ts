@@ -94,6 +94,12 @@ export const ky: Messages = {
     conflict: "Бул убакыт бош эмес",
     stale: "Жазылуу өзгөртүлгөн — календарь жаңыланды",
     block: "Бөгөт",
+    upcoming: "Алдыдагылар",
+    past: "Өткөндөр",
+    period: "Мезгил",
+    dayEmpty: "Бул күнгө жазылуу жок",
+    prevDay: "Мурунку күн",
+    nextDay: "Кийинки күн",
   },
   pay: {
     title: "QR аркылуу төлөм",

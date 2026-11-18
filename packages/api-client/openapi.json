@@ -5953,7 +5953,7 @@
           "admin-bookings"
         ],
         "summary": "List Bookings",
-        "description": "Dates are local salon dates (inclusive).",
+        "description": "Dates are local salon dates (inclusive); oldest first unless `newest_first`.",
         "operationId": "admin_list_bookings",
         "parameters": [
           {
@@ -6067,6 +6067,16 @@
               "minimum": 0,
               "default": 0,
               "title": "Offset"
+            }
+          },
+          {
+            "name": "newest_first",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Newest First"
             }
           }
         ],

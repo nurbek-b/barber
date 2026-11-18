@@ -960,7 +960,7 @@ export interface paths {
         };
         /**
          * List Bookings
-         * @description Dates are local salon dates (inclusive).
+         * @description Dates are local salon dates (inclusive); oldest first unless `newest_first`.
          */
         get: operations["admin_list_bookings"];
         put?: never;
@@ -9924,6 +9924,7 @@ export interface operations {
                 client_id?: string | null;
                 limit?: number;
                 offset?: number;
+                newest_first?: boolean;
             };
             header?: never;
             path?: never;

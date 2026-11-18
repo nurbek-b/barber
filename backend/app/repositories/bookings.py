@@ -115,6 +115,7 @@ class BookingRepository:
         include_blocks: bool,
         limit: int,
         offset: int,
+        newest_first: bool = False,
     ) -> tuple[list[Booking], int]:
         query = self._base().where(Booking.branch_id == branch_id)
         if date_from is not None:
@@ -132,9 +133,12 @@ class BookingRepository:
         total = await self.session.scalar(
             select(func.count()).select_from(query.order_by(None).subquery())
         )
-        result = await self.session.execute(
-            query.order_by(Booking.start_at, Booking.id).limit(limit).offset(offset)
+        order = (
+            (Booking.start_at.desc(), Booking.id.desc())
+            if newest_first
+            else (Booking.start_at, Booking.id)
         )
+        result = await self.session.execute(query.order_by(*order).limit(limit).offset(offset))
         return list(result.scalars()), int(total or 0)
 
     async def clients_by_id(self, ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Client]:

@@ -1,9 +1,9 @@
 import type { AdminBooking } from "@barber/api-client";
 import { addDaysKey } from "@barber/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, getDay, parse, startOfWeek } from "date-fns";
+import { addDays, format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS, ru } from "date-fns/locale";
-import { Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Calendar, dateFnsLocalizer, Views, type View } from "react-big-calendar";
 import withDragAndDrop, {
@@ -12,7 +12,17 @@ import withDragAndDrop, {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { Button, Dialog, DialogContent, Field, Input, NativeSelect } from "@/components/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  EmptyState,
+  Field,
+  Input,
+  NativeSelect,
+  Skeleton,
+} from "@/components/ui";
+import { BookingCard } from "@/features/BookingCard";
 import {
   BookingDetailsDialog,
   CreateBookingDialog,
@@ -24,6 +34,7 @@ import { useBarbersList } from "@/features/queries";
 import { ADMIN, ApiError, api, call, errorMessage } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { useFormat } from "@/lib/format";
+import { useIsPhone } from "@/lib/media";
 import { fromWallClock, toWallClock, wallDayKey } from "@/lib/zoned";
 
 const localizer = dateFnsLocalizer({
@@ -65,16 +76,18 @@ export default function CalendarPage() {
   const [creating, setCreating] = useState<CreateDefaults | null>(null);
   const [selected, setSelected] = useState<AdminBooking | null>(null);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [phoneBarber, setPhoneBarber] = useState("");
+  const phone = useIsPhone();
 
   const range = useMemo(() => {
     const day = wallDayKey(cursor);
-    if (view === Views.WEEK) {
+    if (view === Views.WEEK && !phone) {
       const monday = startOfWeek(cursor, { weekStartsOn: 1 });
       const from = wallDayKey(monday);
       return { from, to: addDaysKey(from, 6) };
     }
     return { from: day, to: day };
-  }, [cursor, view]);
+  }, [cursor, view, phone]);
 
   const calendar = useQuery({
     queryKey: ["calendar", range],
@@ -161,8 +174,12 @@ export default function CalendarPage() {
 
   const resources = (barbers.data ?? []).map((barber) => ({ id: barber.id, title: barber.name }));
 
+  const dayItems = (calendar.data ?? [])
+    .filter((booking) => !phoneBarber || booking.barber.id === phoneBarber)
+    .sort((a, b) => a.start_at.localeCompare(b.start_at));
+
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col">
+    <div className={phone ? "flex flex-col" : "flex h-[calc(100vh-7rem)] flex-col"}>
       <PageHeader
         title={t("nav.calendar")}
         actions={
@@ -178,52 +195,109 @@ export default function CalendarPage() {
           )
         }
       />
-      <div className="min-h-0 flex-1 rounded-lg border bg-card p-2" data-testid="calendar">
-        <DnDCalendar
-          localizer={localizer}
-          culture={i18n.language}
-          events={events}
-          resources={view === Views.DAY ? resources : undefined}
-          resourceIdAccessor="id"
-          resourceTitleAccessor="title"
-          view={view}
-          views={[Views.DAY, Views.WEEK]}
-          onView={setView}
-          date={cursor}
-          onNavigate={setCursor}
-          step={15}
-          timeslots={4}
-          min={new Date(1970, 0, 1, 8)}
-          max={new Date(1970, 0, 1, 23)}
-          selectable={can("bookings:write")}
-          resizable={false}
-          draggableAccessor={(event) =>
-            can("bookings:write") && ["pending", "confirmed"].includes(event.booking.status)
-          }
-          onEventDrop={onDrop}
-          onSelectEvent={(event) => setSelected(event.booking)}
-          onSelectSlot={(slot) =>
-            setCreating({
-              start: fromWallClock(new Date(slot.start), tz),
-              barberId: typeof slot.resourceId === "string" ? slot.resourceId : undefined,
-            })
-          }
-          eventPropGetter={(event) => ({
-            style: {
-              backgroundColor:
-                STATUS_COLOR[event.booking.kind === "block" ? "block" : event.booking.status] ??
-                "#3b82f6",
-            },
-          })}
-          messages={{
-            day: t("calendar.day"),
-            week: t("calendar.week"),
-            today: t("calendar.today"),
-            previous: "‹",
-            next: "›",
-          }}
-        />
-      </div>
+      {phone ? (
+        <div className="flex flex-col gap-3" data-testid="calendar">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={t("calendar.prevDay")}
+              onClick={() => setCursor((day) => addDays(day, -1))}
+            >
+              <ChevronLeft />
+            </Button>
+            <div className="flex-1 text-center text-sm font-medium first-letter:uppercase">
+              {format(cursor, "EEEE, d MMMM", { locale: i18n.language === "en" ? enUS : ru })}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={t("calendar.nextDay")}
+              onClick={() => setCursor((day) => addDays(day, 1))}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => setCursor(toWallClock(new Date(), tz))}>
+              {t("calendar.today")}
+            </Button>
+            <NativeSelect
+              value={phoneBarber}
+              onChange={(e) => setPhoneBarber(e.target.value)}
+              aria-label={t("booking.barber")}
+            >
+              <option value="">{t("common.all")}</option>
+              {barbers.data?.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          {calendar.isPending ? (
+            <Skeleton className="h-40" />
+          ) : dayItems.length === 0 ? (
+            <EmptyState>{t("calendar.dayEmpty")}</EmptyState>
+          ) : (
+            dayItems.map((booking) => (
+              <BookingCard
+                key={booking.id}
+                booking={booking}
+                timeOnly
+                onClick={() => booking.kind !== "block" && setSelected(booking)}
+              />
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 rounded-lg border bg-card p-2" data-testid="calendar">
+          <DnDCalendar
+            localizer={localizer}
+            culture={i18n.language}
+            events={events}
+            resources={view === Views.DAY ? resources : undefined}
+            resourceIdAccessor="id"
+            resourceTitleAccessor="title"
+            view={view}
+            views={[Views.DAY, Views.WEEK]}
+            onView={setView}
+            date={cursor}
+            onNavigate={setCursor}
+            step={15}
+            timeslots={4}
+            min={new Date(1970, 0, 1, 8)}
+            max={new Date(1970, 0, 1, 23)}
+            selectable={can("bookings:write")}
+            resizable={false}
+            draggableAccessor={(event) =>
+              can("bookings:write") && ["pending", "confirmed"].includes(event.booking.status)
+            }
+            onEventDrop={onDrop}
+            onSelectEvent={(event) => setSelected(event.booking)}
+            onSelectSlot={(slot) =>
+              setCreating({
+                start: fromWallClock(new Date(slot.start), tz),
+                barberId: typeof slot.resourceId === "string" ? slot.resourceId : undefined,
+              })
+            }
+            eventPropGetter={(event) => ({
+              style: {
+                backgroundColor:
+                  STATUS_COLOR[event.booking.kind === "block" ? "block" : event.booking.status] ??
+                  "#3b82f6",
+              },
+            })}
+            messages={{
+              day: t("calendar.day"),
+              week: t("calendar.week"),
+              today: t("calendar.today"),
+              previous: "‹",
+              next: "›",
+            }}
+          />
+        </div>
+      )}
       {creating && (
         <CreateBookingDialog
           open
@@ -297,7 +371,7 @@ function BlockDialog({
             ))}
           </NativeSelect>
         </Field>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Field label={t("booking.date")} htmlFor="block-date">
             <Input
               id="block-date"

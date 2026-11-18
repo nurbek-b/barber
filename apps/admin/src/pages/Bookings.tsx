@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 
 import { DataTable } from "@/components/DataTable";
 import { Badge, Button, Input, NativeSelect } from "@/components/ui";
+import { BookingCard } from "@/features/BookingCard";
 import { BookingDetailsDialog, CreateBookingDialog } from "@/features/BookingDialogs";
 import { PageHeader } from "@/features/Layout";
 import { pickName, STATUS_VARIANT, useBarbersList } from "@/features/queries";
@@ -15,10 +16,13 @@ import { PaymentBadge } from "@/features/Payments";
 import { ADMIN, api, call } from "@/lib/api";
 import { useCan } from "@/lib/auth";
 import { useFormat } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 const PAGE = 25;
 const STATUSES = ["pending", "confirmed", "completed", "cancelled", "no_show"] as const;
 type Status = (typeof STATUSES)[number];
+const RANGES = ["upcoming", "today", "past", "period"] as const;
+type Range = (typeof RANGES)[number];
 
 export default function Bookings() {
   const { t, i18n } = useTranslation();
@@ -26,15 +30,21 @@ export default function Bookings() {
   const can = useCan();
   const barbers = useBarbersList();
   const [page, setPage] = useState(0);
-  const [from, setFrom] = useState(() => todayKey(tz));
-  const [to, setTo] = useState(() => todayKey(tz));
+  const [range, setRange] = useState<Range>("upcoming");
+  const [periodFrom, setFrom] = useState(() => todayKey(tz));
+  const [periodTo, setTo] = useState(() => todayKey(tz));
+  const today = todayKey(tz);
+  // upcoming: from today on; past: up to today, newest first
+  const from = range === "period" ? periodFrom : range === "past" ? "" : today;
+  const to = range === "period" ? periodTo : range === "upcoming" ? "" : today;
+  const newestFirst = range === "past";
   const [barberId, setBarberId] = useState("");
   const [status, setStatus] = useState<Status | "">("");
   const [selected, setSelected] = useState<AdminBooking | null>(null);
   const [creating, setCreating] = useState(false);
 
   const query = useQuery({
-    queryKey: ["bookings", { page, from, to, barberId, status }],
+    queryKey: ["bookings", { page, from, to, newestFirst, barberId, status }],
     placeholderData: keepPreviousData,
     queryFn: () =>
       call(
@@ -47,6 +57,7 @@ export default function Bookings() {
               status: status ? [status] : undefined,
               limit: PAGE,
               offset: page * PAGE,
+              newest_first: newestFirst || undefined,
             },
           },
         }),
@@ -103,29 +114,53 @@ export default function Bookings() {
           )
         }
       />
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Input
-          type="date"
-          className="w-40"
-          value={from}
-          onChange={(e) => {
-            setFrom(e.target.value);
-            reset();
-          }}
-          aria-label={t("common.from")}
-        />
-        <Input
-          type="date"
-          className="w-40"
-          value={to}
-          onChange={(e) => {
-            setTo(e.target.value);
-            reset();
-          }}
-          aria-label={t("common.to")}
-        />
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg border bg-card p-1 sm:flex sm:w-fit">
+        {RANGES.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => {
+              setRange(item);
+              reset();
+            }}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-sm transition-colors",
+              range === item
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent",
+            )}
+          >
+            {t(item === "today" ? "calendar.today" : `calendar.${item}`)}
+          </button>
+        ))}
+      </div>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        {range === "period" && (
+          <>
+            <Input
+              type="date"
+              className="sm:w-40"
+              value={periodFrom}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                reset();
+              }}
+              aria-label={t("common.from")}
+            />
+            <Input
+              type="date"
+              className="sm:w-40"
+              value={periodTo}
+              onChange={(e) => {
+                setTo(e.target.value);
+                reset();
+              }}
+              aria-label={t("common.to")}
+            />
+          </>
+        )}
         <NativeSelect
-          className="w-48"
+          className="sm:w-48"
           value={barberId}
           onChange={(e) => {
             setBarberId(e.target.value);
@@ -141,7 +176,7 @@ export default function Bookings() {
           ))}
         </NativeSelect>
         <NativeSelect
-          className="w-44"
+          className="sm:w-44"
           value={status}
           onChange={(e) => {
             setStatus(e.target.value as Status | "");
@@ -166,6 +201,9 @@ export default function Bookings() {
         onPageChange={setPage}
         loading={query.isPending}
         onRowClick={setSelected}
+        mobileCard={(booking) => (
+          <BookingCard booking={booking} onClick={() => setSelected(booking)} />
+        )}
       />
       <BookingDetailsDialog booking={selected} onClose={() => setSelected(null)} />
       {creating && <CreateBookingDialog open onOpenChange={setCreating} defaults={{}} />}

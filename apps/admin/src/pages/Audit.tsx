@@ -56,7 +56,7 @@ export default function Audit() {
     <div>
       <PageHeader title={t("audit.title")} />
       <Input
-        className="mb-4 w-80"
+        className="mb-4 w-full sm:w-80"
         placeholder={t("audit.filter")}
         value={action}
         onChange={(e) => {

@@ -11,11 +11,14 @@ import { useFormat } from "@/lib/format";
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
-      <CardHeader className="pb-1">
-        <span className="text-sm text-muted-foreground">{label}</span>
+      <CardHeader className="p-3 pb-1 sm:p-5 sm:pb-1">
+        <span className="text-xs text-muted-foreground sm:text-sm">{label}</span>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold tabular-nums" data-testid={`stat-${label}`}>
+      <CardContent className="p-3 pt-0 sm:p-5 sm:pt-0">
+        <div
+          className="text-lg font-semibold tabular-nums sm:text-2xl"
+          data-testid={`stat-${label}`}
+        >
           {value}
         </div>
       </CardContent>
@@ -44,7 +47,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <PageHeader title={t("nav.dashboard")} />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-3">
         <Stat label={t("dashboard.today")} value={d.bookings_today} />
         <Stat label={t("dashboard.revenueDay")} value={money(d.revenue_day)} />
         <Stat label={t("dashboard.revenueWeek")} value={money(d.revenue_week)} />

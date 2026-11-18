@@ -217,6 +217,7 @@ class AdminBookingService:
         include_blocks: bool,
         limit: int,
         offset: int,
+        newest_first: bool = False,
     ) -> tuple[list[Booking], int]:
         return await self.repo.search(
             branch_id,
@@ -228,6 +229,7 @@ class AdminBookingService:
             include_blocks=include_blocks,
             limit=limit,
             offset=offset,
+            newest_first=newest_first,
         )
 
     # ------------------------------------------------------------------ commands

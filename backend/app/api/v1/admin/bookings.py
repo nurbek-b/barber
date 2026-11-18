@@ -80,8 +80,9 @@ async def list_bookings(
     client_id: uuid.UUID | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
+    newest_first: bool = False,
 ) -> AdminBookingPage:
-    """Dates are local salon dates (inclusive)."""
+    """Dates are local salon dates (inclusive); oldest first unless `newest_first`."""
     salon = await BranchService(session).settings(ctx.branch_id)
     tz = ZoneInfo(salon.timezone)
     items, total = await service.search(
@@ -94,6 +95,7 @@ async def list_bookings(
         include_blocks=False,
         limit=limit,
         offset=offset,
+        newest_first=newest_first,
     )
     return AdminBookingPage(
         items=await admin_bookings_out(session, items), total=total, limit=limit, offset=offset

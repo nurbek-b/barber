@@ -90,6 +90,12 @@ export const en: Messages = {
     conflict: "This time is taken",
     stale: "The booking was changed — calendar refreshed",
     block: "Block",
+    upcoming: "Upcoming",
+    past: "Past",
+    period: "Period",
+    dayEmpty: "No bookings this day",
+    prevDay: "Previous day",
+    nextDay: "Next day",
   },
   pay: {
     title: "QR payments",

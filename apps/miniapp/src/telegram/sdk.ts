@@ -62,6 +62,19 @@ const DEV_THEME = {
   destructive_text_color: "#e53935",
 };
 
+// dev mock only: follow the browser's dark mode, like Telegram's night theme
+const DEV_THEME_DARK = {
+  bg_color: "#1c1c1d",
+  secondary_bg_color: "#000000",
+  text_color: "#ffffff",
+  hint_color: "#8e8e93",
+  link_color: "#5eb5f7",
+  button_color: "#2f9bf0",
+  button_text_color: "#ffffff",
+  section_bg_color: "#2c2c2e",
+  destructive_text_color: "#ff453a",
+};
+
 function mockOutsideTelegram(): boolean {
   const initData = import.meta.env.VITE_DEV_INIT_DATA as string | undefined;
   if (!initData) return false;
@@ -69,7 +82,9 @@ function mockOutsideTelegram(): boolean {
     tgWebAppData: initData,
     tgWebAppVersion: "8.0",
     tgWebAppPlatform: "tdesktop",
-    tgWebAppThemeParams: JSON.stringify(DEV_THEME),
+    tgWebAppThemeParams: JSON.stringify(
+      window.matchMedia("(prefers-color-scheme: dark)").matches ? DEV_THEME_DARK : DEV_THEME,
+    ),
   });
   mockTelegramEnv(params.toString());
   return true;
@@ -130,13 +145,29 @@ export interface MainButtonState {
   loading: boolean;
 }
 
+let mainButtonColors: { backgroundColor: `#${string}`; textColor: `#${string}` } | null = null;
+let lastMainButton: MainButtonState | null = null;
+
+/** Salon brand colors for Telegram's own button; null = Telegram theme colors. */
+export function setMainButtonColors(colors: { background: string; text: string } | null): void {
+  mainButtonColors = colors
+    ? {
+        backgroundColor: colors.background as `#${string}`,
+        textColor: colors.text as `#${string}`,
+      }
+    : null;
+  if (lastMainButton) setNativeMainButton(lastMainButton);
+}
+
 export function setNativeMainButton(state: MainButtonState): void {
+  lastMainButton = state;
   if (!env.native || !setMainButtonParams.isAvailable()) return;
   setMainButtonParams({
     text: state.text,
     isVisible: state.visible,
     isEnabled: state.enabled && !state.loading,
     isLoaderVisible: state.loading,
+    ...(mainButtonColors ?? {}),
   });
 }
 

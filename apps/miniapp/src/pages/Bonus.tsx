@@ -85,12 +85,15 @@ export default function Bonus() {
             {!summary.enabled && <p className="text-sm text-hint">{t("bonus.disabled")}</p>}
             <div>
               <div className="text-sm text-hint">{t("bonus.balance")}</div>
-              <div className="text-3xl font-semibold tabular-nums" data-testid="bonus-balance">
+              <div
+                className="text-3xl font-semibold tabular-nums text-brand2-ink"
+                data-testid="bonus-balance"
+              >
                 {money(summary.balance)}
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="rounded-full bg-button/10 px-3 py-1 text-sm font-medium text-button">
+              <span className="rounded-full bg-brand2/15 px-3 py-1 text-sm font-medium text-brand2-ink">
                 {summary.level ? pickI18n(summary.level.name_i18n, lang) : t("bonus.level")}
               </span>
               <span className="text-sm text-hint">

@@ -153,3 +153,25 @@ async def test_gallery_limit(owner_client: httpx.AsyncClient) -> None:
     )
     assert full.status_code == 422
     assert full.json()["error"]["code"] == "gallery_full"
+
+
+async def test_brand_colors(owner_client: httpx.AsyncClient, client: httpx.AsyncClient) -> None:
+    current = (await owner_client.get(f"{ADMIN}/settings/salon")).json()
+    assert (current["brand_color"], current["brand_color_2"]) == (None, None)
+
+    saved = await owner_client.put(
+        f"{ADMIN}/settings/salon",
+        json={**current, "brand_color": "#C8A24A", "brand_color_2": "#2f3437"},
+    )
+    assert saved.status_code == 200, saved.text
+    salon = (await client.get("/api/v1/miniapp/salon", headers=tma_header())).json()
+    assert (salon["brand_color"], salon["brand_color_2"]) == ("#C8A24A", "#2f3437")
+
+    bad = await owner_client.put(f"{ADMIN}/settings/salon", json={**current, "brand_color": "gold"})
+    assert bad.status_code == 422
+
+    # back to the Telegram theme
+    reset = await owner_client.put(
+        f"{ADMIN}/settings/salon", json={**current, "brand_color": None, "brand_color_2": None}
+    )
+    assert reset.json()["brand_color"] is None

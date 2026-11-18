@@ -166,7 +166,7 @@ export function Avatar({
     />
   ) : (
     <div
-      className="flex shrink-0 items-center justify-center rounded-full bg-button/15 font-semibold text-button"
+      className="flex shrink-0 items-center justify-center rounded-full bg-button/15 font-semibold text-link"
       style={{ width: size, height: size }}
       aria-hidden
     >

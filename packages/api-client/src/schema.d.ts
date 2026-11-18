@@ -4881,6 +4881,10 @@ export interface components {
             logo_url?: string | null;
             /** Gallery */
             gallery?: string[];
+            /** Brand Color */
+            brand_color?: string | null;
+            /** Brand Color 2 */
+            brand_color_2?: string | null;
             /** Review Links */
             review_links?: {
                 [key: string]: string;
@@ -4986,6 +4990,16 @@ export interface components {
              */
             auto_no_show_hours: number;
             /**
+             * Brand Color
+             * @description Main brand color, #rrggbb
+             */
+            brand_color?: string | null;
+            /**
+             * Brand Color 2
+             * @description Secondary brand color, #rrggbb
+             */
+            brand_color_2?: string | null;
+            /**
              * Revisit After Days
              * @description 0 = off
              * @default 30
@@ -5076,6 +5090,10 @@ export interface components {
              * @default 3
              */
             auto_no_show_hours: number;
+            /** Brand Color */
+            brand_color?: string | null;
+            /** Brand Color 2 */
+            brand_color_2?: string | null;
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {

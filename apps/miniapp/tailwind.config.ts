@@ -3,15 +3,18 @@ import type { Config } from "tailwindcss";
 // Colors come from Telegram theme params (bound to CSS variables by the SDK),
 // so the app follows the user's light/dark theme automatically.
 // A function color so opacity modifiers (`bg-button/10`) work on CSS variables too.
-const tg =
-  (name: string, fallback: string) =>
+const cssColor =
+  (color: string) =>
   ({ opacityValue }: { opacityValue?: string }) => {
-    const color = `var(--tg-theme-${name}, ${fallback})`;
     // plain classes (`bg-button`) get Tailwind's own opacity variable: keep the bare color so
     // they render even where color-mix is unsupported; only explicit `/10` tints mix
     if (opacityValue === undefined || opacityValue.startsWith("var(")) return color;
     return `color-mix(in srgb, ${color} calc(${opacityValue} * 100%), transparent)`;
   };
+const tg = (name: string, fallback: string) => cssColor(`var(--tg-theme-${name}, ${fallback})`);
+// salon brand colors (set at runtime from the admin settings) win over the Telegram theme
+const brand = (variable: string, name: string, fallback: string) =>
+  cssColor(`var(${variable}, var(--tg-theme-${name}, ${fallback}))`);
 
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -23,10 +26,21 @@ export default {
         section: tg("section-bg-color", "#ffffff"),
         text: tg("text-color", "#111111"),
         hint: tg("hint-color", "#8a8a8f"),
-        link: tg("link-color", "#2481cc"),
+        link: brand("--brand-ink", "link-color", "#2481cc"),
         accent: tg("accent-text-color", "#2481cc"),
-        button: tg("button-color", "#2481cc"),
-        "button-text": tg("button-text-color", "#ffffff"),
+        button: brand("--brand", "button-color", "#2481cc"),
+        "button-text": brand("--brand-text", "button-text-color", "#ffffff"),
+        // second brand color: bonuses and highlights; without it, the main color
+        brand2: cssColor("var(--brand-2, var(--brand, var(--tg-theme-button-color, #2481cc)))"),
+        "brand2-text": cssColor(
+          "var(--brand-2-text, var(--brand-text, var(--tg-theme-button-text-color, #ffffff)))",
+        ),
+        "brand2-ink": cssColor(
+          "var(--brand-2-ink, var(--brand-ink, var(--tg-theme-link-color, #2481cc)))",
+        ),
+        // semantic colors that keep their meaning in any brand
+        gold: cssColor("#f5a524"),
+        success: cssColor("#16a34a"),
         destructive: tg("destructive-text-color", "#e53935"),
         separator: tg("section-separator-color", "#e3e3e6"),
       },

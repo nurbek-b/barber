@@ -91,6 +91,9 @@ class SalonSettings(TimestampMixin, Base):
     revisit_after_days: Mapped[int] = mapped_column(SmallInteger, default=30, server_default="30")
     # branding for the Mini App: /media/salon/... URLs
     logo_url: Mapped[str | None] = mapped_column(String(512))
+    # brand colors as #rrggbb; None = follow the Telegram theme
+    brand_color: Mapped[str | None] = mapped_column(String(7))
+    brand_color_2: Mapped[str | None] = mapped_column(String(7))
     gallery: Mapped[list[str]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")
     )

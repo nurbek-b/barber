@@ -129,7 +129,7 @@ export default function MyBookings() {
                       <button
                         type="button"
                         onClick={() => navigate(`/review/${booking.id}`)}
-                        className="rounded-xl bg-button/10 px-3 py-2 text-sm font-medium text-button"
+                        className="rounded-xl bg-button/10 px-3 py-2 text-sm font-medium text-link"
                       >
                         {t(booking.rating ? "review.edit" : "review.leave")}
                       </button>

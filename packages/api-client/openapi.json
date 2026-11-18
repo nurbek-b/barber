@@ -20485,6 +20485,28 @@
             "type": "array",
             "title": "Gallery"
           },
+          "brand_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color"
+          },
+          "brand_color_2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color 2"
+          },
           "review_links": {
             "additionalProperties": {
               "type": "string"
@@ -20686,6 +20708,32 @@
             "description": "Mark unclosed visits no-show after; 0 = off",
             "default": 3
           },
+          "brand_color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color",
+            "description": "Main brand color, #rrggbb"
+          },
+          "brand_color_2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color 2",
+            "description": "Secondary brand color, #rrggbb"
+          },
           "revisit_after_days": {
             "type": "integer",
             "maximum": 365.0,
@@ -20877,6 +20925,28 @@
             "type": "integer",
             "title": "Auto No Show Hours",
             "default": 3
+          },
+          "brand_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color"
+          },
+          "brand_color_2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color 2"
           }
         },
         "type": "object",

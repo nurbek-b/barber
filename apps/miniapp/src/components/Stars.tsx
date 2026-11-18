@@ -6,7 +6,7 @@ export function Stars({ value, size = "text-sm" }: { value: number; size?: strin
   const full = Math.round(value);
   return (
     <span
-      className={`${size} tracking-tight text-amber-500`}
+      className={`${size} tracking-tight text-gold`}
       aria-label={t("review.stars", { n: value })}
     >
       {"★".repeat(full)}
@@ -28,7 +28,7 @@ export function StarInput({ value, onChange }: { value: number; onChange: (n: nu
           aria-checked={value === n}
           aria-label={t("review.stars", { n })}
           onClick={() => onChange(n)}
-          className={`h-12 w-12 text-4xl leading-none transition ${n <= value ? "text-amber-500" : "text-hint opacity-30"}`}
+          className={`h-12 w-12 text-4xl leading-none transition ${n <= value ? "text-gold" : "text-hint opacity-30"}`}
         >
           ★
         </button>

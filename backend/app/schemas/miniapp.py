@@ -60,6 +60,8 @@ class SalonPublicOut(ApiModel):
     contacts: dict[str, str]
     logo_url: str | None = None
     gallery: list[str] = Field(default_factory=list)
+    brand_color: str | None = None
+    brand_color_2: str | None = None
     review_links: dict[str, str] = Field(default_factory=dict)
     delivery_enabled: bool = False
     delivery_fee: int = 0

@@ -269,7 +269,7 @@ function PromoField({
   if (applied) {
     return (
       <div className="mt-3 flex items-center justify-between text-sm">
-        <span className="rounded-full bg-button/10 px-3 py-1 font-medium text-button">
+        <span className="rounded-full bg-button/10 px-3 py-1 font-medium text-link">
           🎁 {applied}
         </span>
         <button type="button" className="text-link" onClick={() => onApplied(null)}>

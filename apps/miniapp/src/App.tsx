@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import { queryClient, track, useMe } from "./api";
+import { useBrandTheme } from "./brand";
 import { OfflineBanner, SkeletonList } from "./components/ui";
 import { LangContext, normalizeLang, useT } from "./i18n";
 import Home from "./pages/Home";
@@ -74,26 +75,30 @@ function TabBar() {
   const t = useT();
   const tab = ({ isActive }: { isActive: boolean }) =>
     `flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors active:opacity-60 ${
-      isActive ? "text-button" : "text-hint"
+      isActive ? "text-link" : "text-hint"
     }`;
+  const item = (to: string, icon: keyof typeof TAB_ICONS, label: string) => (
+    <NavLink to={to} end={to === "/"} className={tab}>
+      {({ isActive }) => (
+        <>
+          <span
+            className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+              isActive ? "bg-button/15" : ""
+            }`}
+          >
+            <TabIcon name={icon} />
+          </span>
+          {label}
+        </>
+      )}
+    </NavLink>
+  );
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-separator bg-bg/95 pb-[var(--safe-bottom)] backdrop-blur">
-      <NavLink to="/" end className={tab}>
-        <TabIcon name="home" />
-        {t("nav.home")}
-      </NavLink>
-      <NavLink to="/bookings" className={tab}>
-        <TabIcon name="bookings" />
-        {t("nav.bookings")}
-      </NavLink>
-      <NavLink to="/bonus" className={tab}>
-        <TabIcon name="bonus" />
-        {t("nav.bonus")}
-      </NavLink>
-      <NavLink to="/shop" className={tab}>
-        <TabIcon name="shop" />
-        {t("nav.shop")}
-      </NavLink>
+      {item("/", "home", t("nav.home"))}
+      {item("/bookings", "bookings", t("nav.bookings"))}
+      {item("/bonus", "bonus", t("nav.bonus"))}
+      {item("/shop", "shop", t("nav.shop"))}
     </nav>
   );
 }
@@ -231,6 +236,7 @@ function initialPath(): string {
 }
 
 function Localized({ children }: { children: ReactNode }) {
+  useBrandTheme();
   const me = useMe();
   const lang = normalizeLang(me.data?.language ?? telegramEnv().languageCode);
   return <LangContext.Provider value={lang}>{children}</LangContext.Provider>;

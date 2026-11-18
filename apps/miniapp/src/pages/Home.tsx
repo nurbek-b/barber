@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -83,7 +83,7 @@ export default function Home() {
                 data-testid="bonus-chip"
                 onClick={() => navigate("/bonus")}
                 aria-label={`${t("home.bonus")}: ${bonus.data ? money(bonus.data.balance) : ""}`}
-                className="mt-1 inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full bg-button/10 px-2.5 text-sm font-medium tabular-nums text-button transition active:opacity-60"
+                className="mt-1 inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full bg-brand2/15 px-2.5 text-sm font-medium tabular-nums text-brand2-ink transition active:opacity-60"
               >
                 <GiftIcon />
                 {bonus.data ? money(bonus.data.balance) : "…"}
@@ -99,7 +99,7 @@ export default function Home() {
                   startRepeat(draft.barber?.id ?? null, draft.service_ids);
                   navigate("/book/time");
                 }}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-button/10 text-button transition active:opacity-60"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-button/10 text-link transition active:opacity-60"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -129,7 +129,9 @@ export default function Home() {
 
         {next && (
           <section>
-            <h2 className="mb-2 px-1 text-sm font-medium uppercase text-hint">{t("home.next")}</h2>
+            <SectionTitle icon="calendar" tone="brand">
+              {t("home.next")}
+            </SectionTitle>
             <BookingCard
               booking={next}
               actions={
@@ -149,9 +151,9 @@ export default function Home() {
 
         {barbers.data && barbers.data.length > 0 && (
           <section>
-            <h2 className="mb-2 px-1 text-sm font-medium uppercase text-hint">
+            <SectionTitle icon="scissors" tone="brand2">
               {t("home.barbers")}
-            </h2>
+            </SectionTitle>
             <div className="space-y-2">
               {barbers.data.map((barber) => {
                 const specialization = pickI18n(barber.specialization_i18n, lang);
@@ -169,13 +171,13 @@ export default function Home() {
                         <span className="truncate font-semibold">{barber.name}</span>
                         {barber.rating !== null && barber.rating !== undefined && (
                           <span className="shrink-0 text-sm text-hint">
-                            ★ {barber.rating.toFixed(1)}
+                            <span className="text-gold">★</span> {barber.rating.toFixed(1)}
                             {barber.rating_count > 0 && ` (${barber.rating_count})`}
                           </span>
                         )}
                       </div>
                       {specialization && (
-                        <div className="text-sm text-button">{specialization}</div>
+                        <div className="text-sm text-brand2-ink">{specialization}</div>
                       )}
                       {bio && <p className="mt-1 line-clamp-2 text-sm text-hint">{bio}</p>}
                     </div>
@@ -190,6 +192,48 @@ export default function Home() {
         )}
       </div>
     </Screen>
+  );
+}
+
+const SECTION_ICONS = {
+  calendar:
+    "M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z",
+  scissors:
+    "M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12",
+} as const;
+
+/** Section heading with a small icon in a tinted circle (main or second brand color). */
+function SectionTitle({
+  icon,
+  tone,
+  children,
+}: {
+  icon: keyof typeof SECTION_ICONS;
+  tone: "brand" | "brand2";
+  children: ReactNode;
+}) {
+  return (
+    <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-medium uppercase text-hint">
+      <span
+        aria-hidden
+        className={`flex h-7 w-7 items-center justify-center rounded-full ${
+          tone === "brand" ? "bg-button/15 text-link" : "bg-brand2/15 text-brand2-ink"
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d={SECTION_ICONS[icon]} />
+        </svg>
+      </span>
+      {children}
+    </h2>
   );
 }
 
@@ -312,7 +356,7 @@ function LanguageMenu({
               className="flex min-h-11 w-full items-center justify-between px-4 text-left transition active:bg-bg-secondary"
             >
               {item.label}
-              {item.code === value && <span className="text-button">✓</span>}
+              {item.code === value && <span className="text-link">✓</span>}
             </button>
           ))}
         </div>

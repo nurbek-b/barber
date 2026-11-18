@@ -19,6 +19,7 @@ import {
   TabsTrigger,
   Textarea,
 } from "@/components/ui";
+import { BrandColorsCard } from "@/features/BrandColors";
 import { BrandingCard } from "@/features/Branding";
 import { PageHeader } from "@/features/Layout";
 import { PaymentSettingsCard } from "@/features/Payments";
@@ -80,8 +81,9 @@ export default function SettingsPage() {
   });
 
   if (!form) return <Skeleton className="h-96" />;
+  // functional update: several fields may change in one click (a color palette)
   const set = <K extends keyof Salon>(key: K, value: Salon[K]) =>
-    setForm({ ...form, [key]: value });
+    setForm((current) => (current ? { ...current, [key]: value } : current));
   const number = (key: NumberKey, label: string) => (
     <Field label={label} htmlFor={key}>
       <Input
@@ -129,6 +131,7 @@ export default function SettingsPage() {
           )}
         </TabsContent>
         <TabsContent value="branding">
+          <BrandColorsCard form={form} set={set} writable={writable} />
           {salon.data && <BrandingCard salon={salon.data} writable={writable} />}
         </TabsContent>
         <TabsContent value="salon">

@@ -135,6 +135,8 @@ class SalonSettingsOut(ApiModel):
     delivery_enabled: bool = False
     delivery_fee: int = 0
     auto_no_show_hours: int = 3
+    brand_color: str | None = None
+    brand_color_2: str | None = None
 
 
 class GalleryPut(ApiModel):
@@ -175,6 +177,12 @@ class SalonSettingsIn(ApiModel):
     delivery_fee: int = Field(default=0, ge=0, le=10**9, description="Shop delivery fee, tyiyn")
     auto_no_show_hours: int = Field(
         default=3, ge=0, le=72, description="Mark unclosed visits no-show after; 0 = off"
+    )
+    brand_color: str | None = Field(
+        default=None, pattern=r"^#[0-9a-fA-F]{6}$", description="Main brand color, #rrggbb"
+    )
+    brand_color_2: str | None = Field(
+        default=None, pattern=r"^#[0-9a-fA-F]{6}$", description="Secondary brand color, #rrggbb"
     )
 
     @field_validator("review_links")

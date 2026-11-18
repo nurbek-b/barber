@@ -83,35 +83,42 @@ export default function Home() {
                 data-testid="bonus-chip"
                 onClick={() => navigate("/bonus")}
                 aria-label={`${t("home.bonus")}: ${bonus.data ? money(bonus.data.balance) : ""}`}
-                className="mt-1 inline-flex min-h-8 items-center gap-1.5 rounded-full bg-button/10 px-2.5 text-sm font-medium tabular-nums text-button transition active:opacity-60"
+                className="mt-1 inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full bg-button/10 px-2.5 text-sm font-medium tabular-nums text-button transition active:opacity-60"
               >
                 <GiftIcon />
                 {bonus.data ? money(bonus.data.balance) : "…"}
               </button>
             </div>
-            {draft && draft.service_ids.length > 0 && (
-              <button
-                type="button"
-                data-testid="repeat"
-                title={`${t("home.repeat")}: ${[draft.barber?.name ?? t("barber.any"), repeatNames].filter(Boolean).join(" · ")}`}
-                onClick={() => {
-                  startRepeat(draft.barber?.id ?? null, draft.service_ids);
-                  navigate("/book/time");
-                }}
-                className="flex min-h-11 max-w-[8.5rem] shrink-0 items-center gap-1.5 rounded-2xl bg-button/10 px-3 py-1.5 text-left text-[13px] font-semibold leading-tight text-button transition active:opacity-60"
-              >
-                <span aria-hidden className="text-base">
-                  ↻
-                </span>
-                {t("home.repeatShort")}
-              </button>
-            )}
             <LanguageMenu
               value={lang}
               label={t("home.language")}
               onChange={(next) => setLanguage.mutate(next)}
             />
           </div>
+        )}
+        {draft && draft.service_ids.length > 0 && (
+          <button
+            type="button"
+            data-testid="repeat"
+            onClick={() => {
+              startRepeat(draft.barber?.id ?? null, draft.service_ids);
+              navigate("/book/time");
+            }}
+            className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-button/10 px-4 py-2.5 text-left transition active:scale-[0.99]"
+          >
+            <span aria-hidden className="text-xl text-button">
+              ↻
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-button">{t("home.repeatShort")}</span>
+              <span className="block truncate text-sm text-hint">
+                {[draft.barber?.name ?? t("barber.any"), repeatNames].filter(Boolean).join(" · ")}
+              </span>
+            </span>
+            <span aria-hidden className="text-xl text-hint">
+              ›
+            </span>
+          </button>
         )}
         {salon.data?.gallery?.length ? (
           <Gallery photos={salon.data.gallery} label={t("home.photos")} />

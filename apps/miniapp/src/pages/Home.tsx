@@ -89,36 +89,38 @@ export default function Home() {
                 {bonus.data ? money(bonus.data.balance) : "…"}
               </button>
             </div>
+            {draft && draft.service_ids.length > 0 && (
+              <button
+                type="button"
+                data-testid="repeat"
+                aria-label={`${t("home.repeatShort")}: ${[draft.barber?.name ?? t("barber.any"), repeatNames].filter(Boolean).join(" · ")}`}
+                title={t("home.repeatShort")}
+                onClick={() => {
+                  startRepeat(draft.barber?.id ?? null, draft.service_ids);
+                  navigate("/book/time");
+                }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-button/10 text-button transition active:opacity-60"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" />
+                </svg>
+              </button>
+            )}
             <LanguageMenu
               value={lang}
               label={t("home.language")}
               onChange={(next) => setLanguage.mutate(next)}
             />
           </div>
-        )}
-        {draft && draft.service_ids.length > 0 && (
-          <button
-            type="button"
-            data-testid="repeat"
-            onClick={() => {
-              startRepeat(draft.barber?.id ?? null, draft.service_ids);
-              navigate("/book/time");
-            }}
-            className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-button/10 px-4 py-2.5 text-left transition active:scale-[0.99]"
-          >
-            <span aria-hidden className="text-xl text-button">
-              ↻
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-button">{t("home.repeatShort")}</span>
-              <span className="block truncate text-sm text-hint">
-                {[draft.barber?.name ?? t("barber.any"), repeatNames].filter(Boolean).join(" · ")}
-              </span>
-            </span>
-            <span aria-hidden className="text-xl text-hint">
-              ›
-            </span>
-          </button>
         )}
         {salon.data?.gallery?.length ? (
           <Gallery photos={salon.data.gallery} label={t("home.photos")} />

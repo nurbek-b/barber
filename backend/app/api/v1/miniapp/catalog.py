@@ -60,6 +60,7 @@ async def get_salon(ctx: MiniappDep, session: SessionDep) -> SalonPublicOut:
         gallery=list(salon.gallery or []),
         brand_color=salon.brand_color,
         brand_color_2=salon.brand_color_2,
+        brand_bg=salon.brand_bg,
         review_links={str(k): str(v) for k, v in (salon.review_links or {}).items()},
         delivery_enabled=salon.delivery_enabled,
         delivery_fee=salon.delivery_fee,

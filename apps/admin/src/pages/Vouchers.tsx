@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { MoneyInput } from "@/components/MoneyInput";
 import {
+  DisabledReason,
   Badge,
   Button,
   Card,
@@ -482,6 +483,13 @@ function SellSubscription({ onClose }: { onClose: () => void }) {
             {t("vouchers.sell")}
             {chosen && ` · ${money(chosen.price)}`}
           </Button>
+          <DisabledReason
+            reason={
+              active.length === 0
+                ? t("vouchers.createPlanFirst")
+                : !picked && t("common.fillIn", { fields: t("vouchers.client") })
+            }
+          />
         </div>
         {creatingPlan && (
           <PlanDialog
@@ -735,6 +743,19 @@ function PlanDialog({
           >
             {t("common.save")}
           </Button>
+          <DisabledReason
+            reason={
+              (!form.name.trim() || form.price <= 0) &&
+              t("common.fillIn", {
+                fields: [
+                  !form.name.trim() && t("common.name"),
+                  form.price <= 0 && t("vouchers.price"),
+                ]
+                  .filter(Boolean)
+                  .join(", "),
+              })
+            }
+          />
         </div>
       </DialogContent>
     </Dialog>

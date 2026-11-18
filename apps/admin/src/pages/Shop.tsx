@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { FileButton } from "@/components/FileButton";
 import { MoneyInput } from "@/components/MoneyInput";
 import {
+  DisabledReason,
   Badge,
   Button,
   Card,
@@ -474,13 +475,25 @@ function ProductDialog({ product, onClose }: { product: Product | null; onClose:
             </div>
           )}
           {writable && (
-            <Button
-              disabled={!name.ru.trim() || !price}
-              loading={save.isPending}
-              onClick={() => save.mutate()}
-            >
-              {t("common.save")}
-            </Button>
+            <>
+              <Button
+                disabled={!name.ru.trim() || !price}
+                loading={save.isPending}
+                onClick={() => save.mutate()}
+              >
+                {t("common.save")}
+              </Button>
+              <DisabledReason
+                reason={
+                  (!name.ru.trim() || !price) &&
+                  t("common.fillIn", {
+                    fields: [!name.ru.trim() && `${t("shop.name")} (ru)`, !price && t("shop.price")]
+                      .filter(Boolean)
+                      .join(", "),
+                  })
+                }
+              />
+            </>
           )}
         </div>
       </DialogContent>

@@ -32,8 +32,12 @@ import {
   requestPhoneAccess,
   retrieveLaunchParams,
   setMainButtonParams,
+  setMiniAppBackgroundColor,
+  setMiniAppBottomBarColor,
+  setMiniAppHeaderColor,
   shareURL,
   showBackButton,
+  themeParamsState,
 } from "@telegram-apps/sdk-react";
 
 export interface TelegramEnv {
@@ -134,6 +138,42 @@ export async function initTelegram(): Promise<boolean> {
     languageCode: lp.initData?.user?.languageCode ?? null,
   };
   return true;
+}
+
+// ------------------------------------------------------------------ theme
+
+/** Calls `handler` when the client switches light/dark (Telegram theme or, in the mock, the OS). */
+export function onThemeChange(handler: () => void): () => void {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", handler);
+  let off: () => void = () => undefined;
+  try {
+    off = themeParamsState.sub(handler);
+  } catch {
+    // theme params not mounted (no Telegram)
+  }
+  return () => {
+    media.removeEventListener("change", handler);
+    off();
+  };
+}
+
+/** Paints Telegram's own header, background and bottom bar; null = back to the theme colors. */
+export function setChromeColor(color: string | null): void {
+  if (!env.native) return;
+  const rgb = color as `#${string}` | null;
+  const calls: [() => void, { isAvailable(): boolean }][] = [
+    [() => setMiniAppHeaderColor(rgb ?? "bg_color"), setMiniAppHeaderColor],
+    [() => setMiniAppBackgroundColor(rgb ?? "bg_color"), setMiniAppBackgroundColor],
+    [() => setMiniAppBottomBarColor(rgb ?? "bottom_bar_bg_color"), setMiniAppBottomBarColor],
+  ];
+  for (const [call, method] of calls) {
+    try {
+      if (method.isAvailable()) call();
+    } catch {
+      // older Telegram: these colors are not supported
+    }
+  }
 }
 
 // ------------------------------------------------------------------ buttons

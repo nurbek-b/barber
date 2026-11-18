@@ -63,6 +63,65 @@ export function inkOn(color: string, background: string): string {
   return target;
 }
 
+function hsl(hex: string): [number, number, number] {
+  const [r, g, b] = rgb(hex).map((c) => c / 255) as [number, number, number];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return [0, 0, l];
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h =
+    max === r
+      ? ((g - b) / d + (g < b ? 6 : 0)) * 60
+      : max === g
+        ? ((b - r) / d + 2) * 60
+        : ((r - g) / d + 4) * 60;
+  return [h, s, l];
+}
+
+function fromHsl(h: number, s: number, l: number): string {
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return toHex([f(0) * 255, f(8) * 255, f(4) * 255]);
+}
+
+export interface BrandSurfaces {
+  /** page background (Telegram's secondary_bg) */
+  page: string;
+  /** cards and sections on the page */
+  section: string;
+  separator: string;
+}
+
+/**
+ * The salon's background tone, made to fit the client's theme: on a light theme the tone
+ * itself (kept light), with cards a bit lighter; on a dark theme a dark shade of the same hue.
+ */
+export function brandSurfaces(
+  tone: string | null | undefined,
+  telegramBackground: string,
+): BrandSurfaces | null {
+  if (!tone || !HEX_COLOR.test(tone) || !HEX_COLOR.test(telegramBackground)) return null;
+  const [h, s, l] = hsl(tone);
+  if (luminance(telegramBackground) > 0.4) {
+    const page = fromHsl(h, s, Math.min(Math.max(l, 0.9), 0.97));
+    return { page, section: mix(page, "#ffffff", 0.7), separator: mix(page, "#000000", 0.1) };
+  }
+  const muted = Math.min(s, 0.3);
+  return {
+    page: fromHsl(h, muted, 0.07),
+    section: fromHsl(h, muted, 0.14),
+    separator: fromHsl(h, muted, 0.22),
+  };
+}
+
+/** The background brand-colored text sits on with the least contrast (for `brandColors`). */
+export function inkBackground(surfaces: BrandSurfaces, dark: boolean): string {
+  return dark ? surfaces.section : surfaces.page;
+}
+
 /** A fill that disappears into the background (graphite on a dark theme) is not used as one. */
 const VISIBLE_FILL = 1.4;
 
@@ -89,11 +148,11 @@ export function brandColors(
   };
 }
 
-/** Ready-made pairs (main, second) offered in the admin. */
+/** Ready-made sets (main, second, background) offered in the admin. */
 export const BRAND_PALETTES = [
-  { id: "barbershop", colors: ["#C8A24A", "#7A1F2B"] },
-  { id: "earth", colors: ["#B85C38", "#6B7B3A"] },
-  { id: "scandi", colors: ["#6B8BA4", "#C8A97E"] },
-  { id: "contrast", colors: ["#2E3236", "#F2C230"] },
-  { id: "pastel", colors: ["#8E7CC3", "#E3A6B4"] },
+  { id: "barbershop", colors: ["#C8A24A", "#7A1F2B", "#F6F1E7"] },
+  { id: "earth", colors: ["#B85C38", "#6B7B3A", "#FAF6EE"] },
+  { id: "scandi", colors: ["#6B8BA4", "#C8A97E", "#EEF1F4"] },
+  { id: "contrast", colors: ["#2E3236", "#F2C230", "#F4F4F1"] },
+  { id: "pastel", colors: ["#8E7CC3", "#E3A6B4", "#FBF5EA"] },
 ] as const;

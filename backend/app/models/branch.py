@@ -94,6 +94,8 @@ class SalonSettings(TimestampMixin, Base):
     # brand colors as #rrggbb; None = follow the Telegram theme
     brand_color: Mapped[str | None] = mapped_column(String(7))
     brand_color_2: Mapped[str | None] = mapped_column(String(7))
+    # page background tone (light theme); the dark theme gets a dark shade of it
+    brand_bg: Mapped[str | None] = mapped_column(String(7))
     gallery: Mapped[list[str]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")
     )

@@ -21,9 +21,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: tg("bg-color", "#ffffff"),
-        "bg-secondary": tg("secondary-bg-color", "#f1f1f4"),
-        section: tg("section-bg-color", "#ffffff"),
+        // salon background tone (set at runtime) wins over the Telegram theme
+        bg: brand("--brand-section", "bg-color", "#ffffff"),
+        "bg-secondary": brand("--brand-page", "secondary-bg-color", "#f1f1f4"),
+        section: brand("--brand-section", "section-bg-color", "#ffffff"),
         text: tg("text-color", "#111111"),
         hint: tg("hint-color", "#8a8a8f"),
         link: brand("--brand-ink", "link-color", "#2481cc"),
@@ -42,7 +43,7 @@ export default {
         gold: cssColor("#f5a524"),
         success: cssColor("#16a34a"),
         destructive: tg("destructive-text-color", "#e53935"),
-        separator: tg("section-separator-color", "#e3e3e6"),
+        separator: brand("--brand-separator", "section-separator-color", "#e3e3e6"),
       },
       spacing: {
         "safe-top": "var(--safe-top)",

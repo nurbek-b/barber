@@ -137,6 +137,7 @@ class SalonSettingsOut(ApiModel):
     auto_no_show_hours: int = 3
     brand_color: str | None = None
     brand_color_2: str | None = None
+    brand_bg: str | None = None
 
 
 class GalleryPut(ApiModel):
@@ -183,6 +184,9 @@ class SalonSettingsIn(ApiModel):
     )
     brand_color_2: str | None = Field(
         default=None, pattern=r"^#[0-9a-fA-F]{6}$", description="Secondary brand color, #rrggbb"
+    )
+    brand_bg: str | None = Field(
+        default=None, pattern=r"^#[0-9a-fA-F]{6}$", description="Page background tone, #rrggbb"
     )
 
     @field_validator("review_links")

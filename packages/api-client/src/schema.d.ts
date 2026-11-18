@@ -4885,6 +4885,8 @@ export interface components {
             brand_color?: string | null;
             /** Brand Color 2 */
             brand_color_2?: string | null;
+            /** Brand Bg */
+            brand_bg?: string | null;
             /** Review Links */
             review_links?: {
                 [key: string]: string;
@@ -5000,6 +5002,11 @@ export interface components {
              */
             brand_color_2?: string | null;
             /**
+             * Brand Bg
+             * @description Page background tone, #rrggbb
+             */
+            brand_bg?: string | null;
+            /**
              * Revisit After Days
              * @description 0 = off
              * @default 30
@@ -5094,6 +5101,8 @@ export interface components {
             brand_color?: string | null;
             /** Brand Color 2 */
             brand_color_2?: string | null;
+            /** Brand Bg */
+            brand_bg?: string | null;
         };
         /** ScheduleExceptionIn */
         ScheduleExceptionIn: {

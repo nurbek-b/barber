@@ -8,7 +8,16 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/DataTable";
-import { Badge, Button, Dialog, DialogContent, Field, Input, NativeSelect } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DisabledReason,
+  Field,
+  Input,
+  NativeSelect,
+} from "@/components/ui";
 import { PageHeader } from "@/features/Layout";
 import { ADMIN, api, call, errorMessage } from "@/lib/api";
 import { useCan } from "@/lib/auth";
@@ -259,7 +268,14 @@ function NewClientDialog({
             placeholder="+996"
           />
         </Field>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-3">
+          <DisabledReason
+            reason={
+              !name.trim()
+                ? t("common.fillIn", { fields: t("common.name") })
+                : phone.trim().length < 7 && t("common.phoneShort")
+            }
+          />
           <Button
             disabled={!name.trim() || phone.trim().length < 7}
             loading={create.isPending}

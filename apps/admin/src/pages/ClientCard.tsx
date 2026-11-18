@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { MoneyInput } from "@/components/MoneyInput";
 import {
+  DisabledReason,
   Badge,
   Button,
   Card,
@@ -343,7 +344,14 @@ function AdjustDialog({
         <Field label={t("common.comment")} htmlFor="adj-comment">
           <Textarea id="adj-comment" value={comment} onChange={(e) => setComment(e.target.value)} />
         </Field>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-3">
+          <DisabledReason
+            reason={
+              !amount
+                ? t("common.fillIn", { fields: t("bonus.amount") })
+                : comment.trim().length < 3 && t("common.commentShort")
+            }
+          />
           <Button
             disabled={!amount || comment.trim().length < 3}
             loading={adjust.isPending}

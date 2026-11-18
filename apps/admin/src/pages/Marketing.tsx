@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { MoneyInput } from "@/components/MoneyInput";
 import {
+  DisabledReason,
   Badge,
   Button,
   Card,
@@ -170,6 +171,34 @@ function NewPromoDialog({
   const [perClient, setPerClient] = useState("1");
   const [firstVisit, setFirstVisit] = useState(false);
   const [description, setDescription] = useState("");
+  // errors show only after the first "Create" press, then update as the user types
+  const [submitted, setSubmitted] = useState(false);
+
+  const percentValue = Number(percent);
+  const errors = {
+    code: code.trim().length < 3 ? t("marketing.codeError") : undefined,
+    percent: kind === "percent" && !(percentValue > 0 && percentValue <= 100) ? "1–100" : undefined,
+    fixed: kind === "fixed" && !fixed ? t("common.required") : undefined,
+    maxUses: maxUses && !(Number(maxUses) >= 1) ? t("marketing.atLeastOne") : undefined,
+    perClient: !(Number(perClient) >= 1) ? t("marketing.atLeastOne") : undefined,
+  };
+  const shown = (key: keyof typeof errors) => (submitted ? errors[key] : undefined);
+  const FIELD_IDS: Record<keyof typeof errors, string> = {
+    code: "p-code",
+    percent: "p-percent",
+    fixed: "p-fixed",
+    maxUses: "p-uses",
+    perClient: "p-per",
+  };
+  const submit = () => {
+    setSubmitted(true);
+    const invalid = (Object.keys(errors) as (keyof typeof errors)[]).find((key) => errors[key]);
+    if (invalid) {
+      document.getElementById(FIELD_IDS[invalid])?.focus();
+      return;
+    }
+    create.mutate();
+  };
 
   const create = useMutation({
     mutationFn: () =>
@@ -194,6 +223,7 @@ function NewPromoDialog({
       void client.invalidateQueries({ queryKey: promoKey });
       onOpenChange(false);
       setCode("");
+      setSubmitted(false);
     },
     onError: (error) => toast.error(errorMessage(error)),
   });
@@ -202,13 +232,19 @@ function NewPromoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent title={t("marketing.newPromo")}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label={t("marketing.code")} htmlFor="p-code">
+          <Field
+            label={`${t("marketing.code")} *`}
+            htmlFor="p-code"
+            hint={t("marketing.codeHint")}
+            error={shown("code")}
+          >
             <Input
               id="p-code"
+              aria-invalid={Boolean(shown("code"))}
               value={code}
               maxLength={32}
-              className="font-mono uppercase"
-              placeholder="SPRING20"
+              className="font-mono uppercase placeholder:font-sans placeholder:normal-case"
+              placeholder={t("marketing.codePlaceholder")}
               onChange={(e) => setCode(e.target.value.replace(/[^A-Za-z0-9_-]/g, ""))}
             />
           </Field>
@@ -224,9 +260,14 @@ function NewPromoDialog({
           </Field>
           {kind === "percent" ? (
             <>
-              <Field label={t("marketing.valuePercent")} htmlFor="p-percent">
+              <Field
+                label={t("marketing.valuePercent")}
+                htmlFor="p-percent"
+                error={shown("percent")}
+              >
                 <Input
                   id="p-percent"
+                  aria-invalid={Boolean(shown("percent"))}
                   type="number"
                   min={1}
                   max={100}
@@ -239,7 +280,7 @@ function NewPromoDialog({
               </Field>
             </>
           ) : (
-            <Field label={t("marketing.valueFixed")} htmlFor="p-fixed">
+            <Field label={t("marketing.valueFixed")} htmlFor="p-fixed" error={shown("fixed")}>
               <MoneyInput id="p-fixed" value={fixed} onChange={setFixed} />
             </Field>
           )}
@@ -254,18 +295,20 @@ function NewPromoDialog({
               onChange={(e) => setValidTo(e.target.value)}
             />
           </Field>
-          <Field label={t("marketing.maxUses")} htmlFor="p-uses">
+          <Field label={t("marketing.maxUses")} htmlFor="p-uses" error={shown("maxUses")}>
             <Input
               id="p-uses"
+              aria-invalid={Boolean(shown("maxUses"))}
               type="number"
               min={1}
               value={maxUses}
               onChange={(e) => setMaxUses(e.target.value)}
             />
           </Field>
-          <Field label={t("marketing.perClient")} htmlFor="p-per">
+          <Field label={t("marketing.perClient")} htmlFor="p-per" error={shown("perClient")}>
             <Input
               id="p-per"
+              aria-invalid={Boolean(shown("perClient"))}
               type="number"
               min={1}
               value={perClient}
@@ -285,11 +328,7 @@ function NewPromoDialog({
           </label>
         </div>
         <div className="flex justify-end">
-          <Button
-            disabled={code.trim().length < 3}
-            loading={create.isPending}
-            onClick={() => create.mutate()}
-          >
+          <Button loading={create.isPending} onClick={submit}>
             {t("common.create")}
           </Button>
         </div>
@@ -448,6 +487,15 @@ function Broadcasts() {
           >
             <Send /> {t("marketing.send")}
           </Button>
+          <DisabledReason
+            reason={
+              !texts.ru.trim()
+                ? t("common.fillIn", { fields: t("marketing.textRuShort") })
+                : count === null
+                  ? t("marketing.countFirst")
+                  : count === 0 && t("marketing.noRecipients")
+            }
+          />
         </CardContent>
       </Card>
 

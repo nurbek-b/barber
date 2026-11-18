@@ -161,17 +161,31 @@ async def test_brand_colors(owner_client: httpx.AsyncClient, client: httpx.Async
 
     saved = await owner_client.put(
         f"{ADMIN}/settings/salon",
-        json={**current, "brand_color": "#C8A24A", "brand_color_2": "#2f3437"},
+        json={
+            **current,
+            "brand_color": "#C8A24A",
+            "brand_color_2": "#2f3437",
+            "brand_bg": "#FBF5EA",
+        },
     )
     assert saved.status_code == 200, saved.text
     salon = (await client.get("/api/v1/miniapp/salon", headers=tma_header())).json()
-    assert (salon["brand_color"], salon["brand_color_2"]) == ("#C8A24A", "#2f3437")
+    assert (salon["brand_color"], salon["brand_color_2"], salon["brand_bg"]) == (
+        "#C8A24A",
+        "#2f3437",
+        "#FBF5EA",
+    )
 
     bad = await owner_client.put(f"{ADMIN}/settings/salon", json={**current, "brand_color": "gold"})
     assert bad.status_code == 422
+    bad_bg = await owner_client.put(
+        f"{ADMIN}/settings/salon", json={**current, "brand_bg": "cream"}
+    )
+    assert bad_bg.status_code == 422
 
     # back to the Telegram theme
     reset = await owner_client.put(
-        f"{ADMIN}/settings/salon", json={**current, "brand_color": None, "brand_color_2": None}
+        f"{ADMIN}/settings/salon",
+        json={**current, "brand_color": None, "brand_color_2": None, "brand_bg": None},
     )
-    assert reset.json()["brand_color"] is None
+    assert (reset.json()["brand_color"], reset.json()["brand_bg"]) == (None, None)

@@ -20507,6 +20507,17 @@
             ],
             "title": "Brand Color 2"
           },
+          "brand_bg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Bg"
+          },
           "review_links": {
             "additionalProperties": {
               "type": "string"
@@ -20734,6 +20745,19 @@
             "title": "Brand Color 2",
             "description": "Secondary brand color, #rrggbb"
           },
+          "brand_bg": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Bg",
+            "description": "Page background tone, #rrggbb"
+          },
           "revisit_after_days": {
             "type": "integer",
             "maximum": 365.0,
@@ -20947,6 +20971,17 @@
               }
             ],
             "title": "Brand Color 2"
+          },
+          "brand_bg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Bg"
           }
         },
         "type": "object",

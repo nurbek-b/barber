@@ -57,6 +57,7 @@ def to_out(salon: SalonSettings) -> SalonSettingsOut:
         auto_no_show_hours=salon.auto_no_show_hours,
         brand_color=salon.brand_color,
         brand_color_2=salon.brand_color_2,
+        brand_bg=salon.brand_bg,
         revisit_after_days=salon.revisit_after_days,
     )
 

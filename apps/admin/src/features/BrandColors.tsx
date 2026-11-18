@@ -1,5 +1,5 @@
 import type { components } from "@barber/api-client";
-import { BRAND_PALETTES, brandColors, HEX_COLOR } from "@barber/ui";
+import { BRAND_PALETTES, brandColors, brandSurfaces, HEX_COLOR, inkBackground } from "@barber/ui";
 import { useTranslation } from "react-i18next";
 
 import { Button, Card, CardContent, Input } from "@/components/ui";
@@ -8,11 +8,25 @@ import { cn } from "@/lib/utils";
 type Salon = components["schemas"]["SalonSettingsOut"];
 
 const THEMES = [
-  { key: "lightTheme", bg: "#ffffff", page: "#f1f1f4", text: "#111111", hint: "#8a8a8f" },
-  { key: "darkTheme", bg: "#1c1c1d", page: "#000000", text: "#ffffff", hint: "#8a8a8f" },
+  {
+    key: "lightTheme",
+    dark: false,
+    bg: "#ffffff",
+    page: "#f1f1f4",
+    text: "#111111",
+    hint: "#8a8a8f",
+  },
+  {
+    key: "darkTheme",
+    dark: true,
+    bg: "#1c1c1d",
+    page: "#000000",
+    text: "#ffffff",
+    hint: "#8a8a8f",
+  },
 ] as const;
 
-/** Main and second brand colors for the Mini App, with presets and a light/dark preview. */
+/** Brand colors and background tone for the Mini App, with presets and a light/dark preview. */
 export function BrandColorsCard({
   form,
   set,
@@ -25,9 +39,12 @@ export function BrandColorsCard({
   const { t } = useTranslation();
   const primary = form.brand_color ?? null;
   const secondary = form.brand_color_2 ?? null;
-  const pick = (main: string | null, second: string | null) => {
+  const tone = form.brand_bg ?? null;
+  const same = (a: string | null, b: string) => a?.toLowerCase() === b.toLowerCase();
+  const pick = (main: string | null, second: string | null, background: string | null) => {
     set("brand_color", main);
     set("brand_color_2", second);
+    set("brand_bg", background);
   };
 
   return (
@@ -42,23 +59,21 @@ export function BrandColorsCard({
           <div className="mb-2 text-sm font-medium">{t("settings.palettes")}</div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-6">
             {BRAND_PALETTES.map((palette) => {
-              const [main, second] = palette.colors;
-              const on =
-                primary?.toLowerCase() === main.toLowerCase() &&
-                secondary?.toLowerCase() === second.toLowerCase();
+              const [main, second, background] = palette.colors;
+              const on = same(primary, main) && same(secondary, second) && same(tone, background);
               return (
                 <button
                   key={palette.id}
                   type="button"
                   disabled={!writable}
                   aria-pressed={on}
-                  onClick={() => pick(main, second)}
+                  onClick={() => pick(main, second, background)}
                   className={cn(
                     "flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-accent disabled:opacity-60",
                     on && "border-primary ring-1 ring-primary",
                   )}
                 >
-                  <span className="flex shrink-0">
+                  <span className="flex shrink-0 rounded-full border p-0.5" style={{ background }}>
                     <span className="h-5 w-5 rounded-full border" style={{ background: main }} />
                     <span
                       className="-ml-1.5 h-5 w-5 rounded-full border"
@@ -72,11 +87,11 @@ export function BrandColorsCard({
             <button
               type="button"
               disabled={!writable}
-              aria-pressed={!primary}
-              onClick={() => pick(null, null)}
+              aria-pressed={!primary && !tone}
+              onClick={() => pick(null, null, null)}
               className={cn(
                 "flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-accent disabled:opacity-60",
-                !primary && "border-primary ring-1 ring-primary",
+                !primary && !tone && "border-primary ring-1 ring-primary",
               )}
             >
               <span className="h-5 w-5 shrink-0 rounded-full border bg-[#2481cc]" />
@@ -85,7 +100,7 @@ export function BrandColorsCard({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <ColorField
             id="brand-color"
             label={t("settings.primaryColor")}
@@ -102,13 +117,28 @@ export function BrandColorsCard({
             disabled={!writable || !primary}
             onChange={(value) => set("brand_color_2", value)}
           />
+          <ColorField
+            id="brand-bg"
+            label={t("settings.backgroundColor")}
+            hint={t("settings.backgroundHint")}
+            value={tone}
+            fallback="#f1f1f4"
+            disabled={!writable}
+            onChange={(value) => set("brand_bg", value)}
+          />
         </div>
 
         <div>
           <div className="mb-2 text-sm font-medium">{t("settings.preview")}</div>
           <div className="grid gap-3 sm:grid-cols-2">
             {THEMES.map((theme) => (
-              <Preview key={theme.key} theme={theme} primary={primary} secondary={secondary} />
+              <Preview
+                key={theme.key}
+                theme={theme}
+                primary={primary}
+                secondary={secondary}
+                tone={tone}
+              />
             ))}
           </div>
           {writable && (
@@ -125,6 +155,7 @@ function ColorField({
   label,
   hint,
   value,
+  fallback = "#2481cc",
   disabled,
   onChange,
 }: {
@@ -132,6 +163,7 @@ function ColorField({
   label: string;
   hint: string;
   value: string | null;
+  fallback?: string;
   disabled: boolean;
   onChange: (value: string | null) => void;
 }) {
@@ -146,7 +178,7 @@ function ColorField({
         <input
           type="color"
           aria-label={label}
-          value={value ?? "#2481cc"}
+          value={value ?? fallback}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value.toUpperCase())}
           className="h-10 w-12 shrink-0 cursor-pointer rounded-md border bg-transparent p-1 disabled:cursor-not-allowed disabled:opacity-50"
@@ -180,13 +212,22 @@ function Preview({
   theme,
   primary,
   secondary,
+  tone,
 }: {
   theme: (typeof THEMES)[number];
   primary: string | null;
   secondary: string | null;
+  tone: string | null;
 }) {
   const { t } = useTranslation();
-  const colors = brandColors(primary, secondary, theme.bg) ?? {
+  const surfaces = brandSurfaces(tone, theme.bg);
+  const page = surfaces?.page ?? theme.page;
+  const card = surfaces?.section ?? theme.bg;
+  const colors = brandColors(
+    primary,
+    secondary,
+    surfaces ? inkBackground(surfaces, theme.dark) : theme.bg,
+  ) ?? {
     brand: "#2481cc",
     brandText: "#ffffff",
     brandInk: theme.bg === "#ffffff" ? "#2481cc" : "#5eb5f7",
@@ -196,14 +237,14 @@ function Preview({
   };
   const tint = (hex: string) => `color-mix(in srgb, ${hex} 15%, transparent)`;
   return (
-    <div className="overflow-hidden rounded-xl border" style={{ background: theme.page }}>
+    <div className="overflow-hidden rounded-xl border" style={{ background: page }}>
       <div className="px-3 pt-2 text-xs" style={{ color: theme.hint }}>
         {t(`settings.${theme.key}`)}
       </div>
       <div className="space-y-2 p-3">
         <div
           className="flex items-center justify-between rounded-lg p-3"
-          style={{ background: theme.bg, color: theme.text }}
+          style={{ background: card, color: theme.text }}
         >
           <div>
             <div className="text-sm font-semibold">Britva Barber</div>
@@ -226,7 +267,7 @@ function Preview({
               style={
                 index === 1
                   ? { background: colors.brand, color: colors.brandText }
-                  : { background: theme.bg, color: theme.text }
+                  : { background: card, color: theme.text }
               }
             >
               {slot}

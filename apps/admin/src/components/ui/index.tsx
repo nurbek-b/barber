@@ -76,7 +76,7 @@ Button.displayName = "Button";
 // ------------------------------------------------------------------ inputs
 
 const field =
-  "flex w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "flex w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => (
@@ -116,6 +116,16 @@ export const Label = forwardRef<
   />
 ));
 Label.displayName = "Label";
+
+/** Says why the action next to it is unavailable, so a disabled button is never a mystery. */
+export function DisabledReason({ reason }: { reason?: string | false | null }) {
+  if (!reason) return null;
+  return (
+    <p className="text-xs text-muted-foreground" role="status">
+      {reason}
+    </p>
+  );
+}
 
 export function Field({
   label,
